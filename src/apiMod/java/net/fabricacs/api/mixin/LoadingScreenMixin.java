@@ -1,3 +1,6 @@
+/*
+ * LoadingScreenMixin.java — 监听两个 LoadingScreen 构造重载；构造链可能产生多次通知。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.AirshipGame;

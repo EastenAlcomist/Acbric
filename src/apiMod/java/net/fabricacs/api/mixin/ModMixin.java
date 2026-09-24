@@ -1,3 +1,6 @@
+/*
+ * ModMixin.java — 在原版 MOD 列表刷新后补入 Fabric 行，保留原版扫描流程。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.Mod;

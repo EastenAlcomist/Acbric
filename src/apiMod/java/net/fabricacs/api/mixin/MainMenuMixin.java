@@ -1,3 +1,6 @@
+/*
+ * MainMenuMixin.java — 在主菜单构造完成时通知监听器；不是菜单显示一次就只触发一次的保证。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.AirshipGame;

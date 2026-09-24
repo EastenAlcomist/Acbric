@@ -1,3 +1,7 @@
+/*
+ * RenameShipPanelMixin.java — 保留重命名面板的旧 ONE_SHOT 回调，再触发准确命名的 RENAME_SHIP 回调。
+ * 任何 BEFORE 取消都会阻止后续组、原方法及全部 AFTER，不能悄悄改旧钩子位置。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.MyDraw;
@@ -14,6 +18,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+// 旧回调始终先执行，其取消短路行为也必须保留。
+@SuppressWarnings("deprecation")
 @Mixin(value = RenameShipPanel.class, remap = false)
 public abstract class RenameShipPanelMixin {
 
@@ -33,6 +39,10 @@ public abstract class RenameShipPanelMixin {
         if (LifecycleHooks.fireOneShotPowerBeforeDraw(
                 CombatUiPanelType.ONE_SHOT_POWER, this, draw, mouse, mode, hooks, screen)) {
             ci.cancel();
+            return;
+        }
+        if (LifecycleHooks.fireRenameShipBeforeDraw(this, draw, mouse, mode, hooks, screen)) {
+            ci.cancel();
         }
     }
 
@@ -45,6 +55,7 @@ public abstract class RenameShipPanelMixin {
                 CombatUiPanelType.ONE_SHOT_BUOYANCY, this, draw, mouse, mode, hooks, screen);
         LifecycleHooks.fireOneShotPowerAfterDraw(
                 CombatUiPanelType.ONE_SHOT_POWER, this, draw, mouse, mode, hooks, screen);
+        LifecycleHooks.fireRenameShipAfterDraw(this, draw, mouse, mode, hooks, screen);
     }
 
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true, remap = false)
@@ -63,6 +74,10 @@ public abstract class RenameShipPanelMixin {
         if (LifecycleHooks.fireOneShotPowerBeforeTick(
                 CombatUiPanelType.ONE_SHOT_POWER, this, input, elapsedMs, screen)) {
             ci.cancel();
+            return;
+        }
+        if (LifecycleHooks.fireRenameShipBeforeTick(this, input, elapsedMs, screen)) {
+            ci.cancel();
         }
     }
 
@@ -75,5 +90,6 @@ public abstract class RenameShipPanelMixin {
                 CombatUiPanelType.ONE_SHOT_BUOYANCY, this, input, elapsedMs, screen);
         LifecycleHooks.fireOneShotPowerAfterTick(
                 CombatUiPanelType.ONE_SHOT_POWER, this, input, elapsedMs, screen);
+        LifecycleHooks.fireRenameShipAfterTick(this, input, elapsedMs, screen);
     }
 }

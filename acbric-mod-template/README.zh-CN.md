@@ -16,7 +16,7 @@
 gameDir=C:/path/to/Acbric/game
 ```
 
-Gradle 8.13 需要使用兼容的 Java 运行。若本机 `JAVA_HOME` 指向 JDK 25 或更新版本，请临时切到 JDK 17/21：
+Gradle 8.13 需要使用兼容的 Java 运行。若本机 `JAVA_HOME` 指向 JDK 25 或更新版本，请临时切到 JDK 21：
 
 ```powershell
 $env:JAVA_HOME="C:\Program Files\Java\jdk-21"
@@ -86,3 +86,11 @@ public final class TemplateMod implements AcbricInitializer {
   "<modid>.mixins.json"
 ]
 ```
+
+## UI 事件版本
+
+本模板需要开发版 Acbric API `0.3.3-dev.1` 或更新版本及 Java 21，请先从匹配框架源码同步编译依赖。
+入口的 `RENAME_SHIP_AFTER_TICK` 示例只在面板 tick 后输出一次日志，不表示改名已确认。
+旧 `ONE_SHOT_*` 属于已弃用的兼容接口，新代码使用准确命名的新事件；复制模板时保留 metadata 中的最低 API 版本。
+
+完整接口与取消/路径规则见框架仓库的 [API 手册](../API.zh-CN.md)，本次变化见 [中文改动记录](../CHANGELOG.zh-CN.md)。复制模板到独立位置后，可到上游仓库 dev 分支查阅这些文档。

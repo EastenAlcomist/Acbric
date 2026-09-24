@@ -1,1 +1,2 @@
+// 框架根工程名，用于生成默认产物文件名。
 rootProject.name = 'Acbric'

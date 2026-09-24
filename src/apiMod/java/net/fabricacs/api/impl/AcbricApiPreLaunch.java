@@ -1,3 +1,7 @@
+/*
+ * AcbricApiPreLaunch.java — Fabric 预启动桥：先准备内嵌原版资源，再逐个调用 MOD 的 acbric 入口。
+ * 入口初始化异常分别记录；普通事件回调的异常策略由 Event/各事件工厂保持。
+ */
 package net.fabricacs.api.impl;
 
 import net.fabricacs.api.AcbricEntrypoints;

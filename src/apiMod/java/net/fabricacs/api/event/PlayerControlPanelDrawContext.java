@@ -1,7 +1,11 @@
+/*
+ * PlayerControlPanelDrawContext.java — 面板绘制上下文：保存面板类型、对象与 draw 原始参数，不复制底层游戏对象。
+ */
 package net.fabricacs.api.event;
 
 public final class PlayerControlPanelDrawContext {
     private final CombatUiPanelType panelType;
+    // 原方法传入的游戏对象引用；字段不可重新赋值，但对象自身仍可变化。
     private final Object panel;
     private final Object draw;
     private final Object mouse;

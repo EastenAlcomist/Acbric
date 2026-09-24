@@ -1,3 +1,6 @@
+/*
+ * ModsScreenModAdapterMixin.java — 仅替换 Fabric 合成列表行的名称与状态，原版 MOD 仍由游戏原逻辑显示。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.Mod;

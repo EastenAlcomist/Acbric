@@ -1,3 +1,6 @@
+/*
+ * AirshipGameMixin.java — 在客户端构造完成及 input 方法前后发送生命周期/客户端事件。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.AirshipGame;

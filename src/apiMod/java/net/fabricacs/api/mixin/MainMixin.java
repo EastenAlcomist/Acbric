@@ -1,3 +1,6 @@
+/*
+ * MainMixin.java — 在 Main.main 入口通知游戏启动，不修改传给原方法的参数数组。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.Main;
