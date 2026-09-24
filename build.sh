@@ -51,6 +51,7 @@ normalize_home() {
         [A-Za-z]:[\\/]*)
             d=$(printf '%s' "$1" | cut -c1 | tr 'A-Z' 'a-z')
             rest=$(printf '%s' "$1" | cut -c3- | tr '\\' '/')
+            rest=${rest#/}
             printf '/%s/%s\n' "$d" "$rest"
             ;;
         *) printf '%s\n' "$1" ;;

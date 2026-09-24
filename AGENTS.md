@@ -55,6 +55,25 @@ build <任意 gradle 任务>            # 其余参数原样透传，如 build i
 `JAVA_HOME` 指向 Java 8 也会被跳过继续找。完整说明、排错与跨平台约束见
 **`BUILDING.zh-CN.md`**（[English](BUILDING.md)）—— 加新脚本或改构建行为前必读。
 
+日常测试同理，别每次都跑全量：
+
+```powershell
+test all             # 全部套件 872 项断言（收尾前必跑）
+test event           # 只跑 event（改 Event.java 时）
+test ui              # 只跑 ui（改 UiRuntime / 输入遮蔽时）
+test devtools        # 只跑 devtools（改控制台 / 命令绑定时）
+test settings        # 别名也行（settings -> config）
+test list            # 列出套件与覆盖范围
+./test.sh event      # Linux / macOS / Git Bash
+```
+
+套件 15 个、共 872 项断言：原有 `data` `bundle` `classpath` `event` `rename` `mods`
+（对应 CHANGELOG 的 F01–F12），加上 dev 功能线的 `campaign` `config` `scopes`
+`manifest` `handshake` `rules` `identity` `ui` `devtools`；每个套件的覆盖范围与断言数见
+`BUILDING.zh-CN.md` 的套件表（实测值，加完套件要更新）。选择支持唯一前缀（`test ev`）
+与别名；未知或歧义会直接报错。
+**`check` 仍然依赖 `regressionTest`，不带选择参数时跑全部套件，所以 CI 行为没变。**
+
 其余 Gradle 任务不变：
 
 ```powershell
