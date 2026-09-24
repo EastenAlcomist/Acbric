@@ -11,7 +11,7 @@
 
 ## ⚠️ 本仓库不含任何游戏内容
 
-本仓库只包含**框架本体**。以下三项刻意不含：
+本仓库只包含**框架本体**。以下三项不含：
 
 | 不含 | 原因 |
 |---|---|
@@ -48,7 +48,7 @@ libs/
 
 ### `game/` —— 游戏自己的目录
 
-请复制包含 `Airships.json` 的那个游戏目录（启动垫片要解析它）：
+请复制包含 `Airships.json` 的那个游戏目录：
 
 ```
 game/
@@ -99,7 +99,7 @@ Acbric/
 
 | 层 | 位置 | 职责 |
 |---|---|---|
-| 启动层 | `src/main` | `AirshipsGameProvider` 把游戏塞进 Fabric：解析 `game/Airships.json`、拼装类路径、反射调用 `Main.main`。零依赖，不碰 API。 |
+| 启动层 | `src/main` | `AirshipsGameProvider` 解析 `game/Airships.json`、拼装类路径、反射调用 `Main.main`。 |
 | API 层 | `src/apiMod` | `acbric_api` —— 事件系统、入口桥、原生 MOD 界面集成、13 个 hook mixin。 |
 
 **启动主链路**：`KnotClient.main` → ServiceLoader 发现 `AirshipsGameProvider` →
