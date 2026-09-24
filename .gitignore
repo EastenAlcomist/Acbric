@@ -1,0 +1,20 @@
+### Game content — NOT shipped in this repository ###
+# Copy these from your own Airships installation (see README.md).
+libs/
+game/
+
+### Build output ###
+build/
+.gradle/
+out/
+
+### IDE ###
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+### OS ###
+.DS_Store
+Thumbs.db

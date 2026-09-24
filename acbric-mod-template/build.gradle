@@ -1,0 +1,99 @@
+plugins {
+    id 'java'
+}
+
+group = findProperty('mavenGroup') ?: 'net.fabricacs.template'
+version = findProperty('modVersion') ?: '0.1.0'
+
+repositories {
+    mavenCentral()
+    maven {
+        url = 'https://maven.fabricmc.net/'
+    }
+}
+
+def templateLibsDir = file('libs')
+def fabricLoaderJar = new File(templateLibsDir, 'fabric-loader-0.19.3.jar')
+def acbricApiJar = new File(templateLibsDir, 'acbric-api.jar')
+def airshipsJarA = new File(templateLibsDir, 'asplit-A.zip')
+def airshipsJarB = new File(templateLibsDir, 'asplit-B.zip')
+def gameDir = file(findProperty('gameDir') ?: '../game')
+
+tasks.register('verifyAcbricTemplateInputs') {
+    doLast {
+        def missing = [fabricLoaderJar, acbricApiJar, airshipsJarA, airshipsJarB].findAll { !it.isFile() }
+        if (!missing.isEmpty()) {
+            throw new GradleException(
+                            'Missing Acbric template dependencies:\n' +
+                            missing.collect { ' - ' + it.absolutePath }.join('\n') +
+                            '\n\nCopy the Acbric template dependency bundle into this project\'s libs/ directory.'
+            )
+        }
+    }
+}
+
+dependencies {
+    compileOnly files(fabricLoaderJar)
+    compileOnly files(acbricApiJar)
+    compileOnly files(airshipsJarA, airshipsJarB)
+    compileOnly fileTree(dir: templateLibsDir, include: ['*.jar'], exclude: ['fabric-loader-*.jar', 'acbric-api.jar'])
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach {
+    dependsOn tasks.named('verifyAcbricTemplateInputs')
+    options.encoding = 'UTF-8'
+}
+
+processResources {
+    inputs.property 'modId', findProperty('modId')
+    inputs.property 'modName', findProperty('modName')
+    inputs.property 'modDescription', findProperty('modDescription')
+    inputs.property 'modVersion', findProperty('modVersion')
+    filesMatching('fabric.mod.json') {
+        expand(
+                modId: findProperty('modId'),
+                modName: findProperty('modName'),
+                modDescription: findProperty('modDescription'),
+                modVersion: findProperty('modVersion')
+        )
+    }
+}
+
+jar {
+    archiveBaseName = findProperty('modArchiveName') ?: project.name
+}
+
+tasks.register('installMod', Copy) {
+    group = 'acbric'
+    description = 'Builds this template mod and copies it into gameDir/mods.'
+    dependsOn tasks.named('jar'), tasks.named('verifyInstallTarget')
+    from tasks.named('jar')
+    into new File(gameDir, 'mods')
+    rename { "${findProperty('modArchiveName') ?: project.name}.jar" }
+}
+
+tasks.register('verifyInstallTarget') {
+    doLast {
+        if (!gameDir.isDirectory()) {
+            throw new GradleException("gameDir does not exist: ${gameDir.absolutePath}\nSet gameDir in gradle.properties or pass -PgameDir=...")
+        }
+    }
+}
+
+tasks.register('printTemplateInfo') {
+    group = 'acbric'
+    description = 'Prints the resolved Acbric paths used by this template project.'
+    doLast {
+        println "modId=${findProperty('modId')}"
+        println "modName=${findProperty('modName')}"
+        println "modVersion=${findProperty('modVersion')}"
+        println "libsDir=${templateLibsDir.absolutePath}"
+        println "gameDir=${gameDir.absolutePath}"
+        println "installTarget=${new File(gameDir, 'mods').absolutePath}"
+    }
+}

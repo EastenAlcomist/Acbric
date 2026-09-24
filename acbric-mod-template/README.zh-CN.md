@@ -1,0 +1,88 @@
+# Acbric MOD 模板项目
+
+这是一个独立 Gradle 项目，用来作为新的 Acbric MOD 起点。模板构建只依赖本目录自身内容，编译依赖放在 `libs/`，不会读取 Acbric 主工程的 `build.gradle`、`libs/` 或 `game/mods`。
+
+## 构建
+
+在本目录执行：
+
+```powershell
+.\gradlew.bat build
+```
+
+如果你把模板复制到了其他位置，`.\gradlew.bat build` 仍可直接运行。只有安装到游戏目录时需要修改 `gradle.properties`：
+
+```properties
+gameDir=C:/path/to/Acbric/game
+```
+
+Gradle 8.13 需要使用兼容的 Java 运行。若本机 `JAVA_HOME` 指向 JDK 25 或更新版本，请临时切到 JDK 17/21：
+
+```powershell
+$env:JAVA_HOME="C:\Program Files\Java\jdk-21"
+$env:PATH="$env:JAVA_HOME\bin;$env:PATH"
+.\gradlew.bat build
+```
+
+## 安装到游戏
+
+```powershell
+.\gradlew.bat installMod
+```
+
+该任务会构建 MOD，并复制到：
+
+```text
+<gameDir>/mods/acbric-template-mod.jar
+```
+
+## 改名清单
+
+创建新 MOD 时通常需要修改这些位置：
+
+- `gradle.properties`: `modId`、`modName`、`modDescription`、`modVersion`、`mavenGroup`、`modArchiveName`
+- `src/main/resources/fabric.mod.json`: entrypoint 类名、描述和图标 metadata
+- `src/main/java/net/fabricacs/template/TemplateMod.java`: Java 包名和类名
+- `src/main/resources/assets/acbric_template_mod/icon.png`: 默认 MOD 图标
+
+`libs/` 是模板的编译依赖目录，复制模板项目时需要一起复制。它包含 Acbric API、Fabric Loader、游戏编译桩和基础运行库，仅用于编译；最终 MOD jar 不会把这些依赖打包进去。在主工程内可执行 `.\gradlew.bat syncModTemplateLibs` 自动补齐此目录。
+
+`modId` 建议只使用小写字母、数字和下划线，例如 `my_airships_mod`。
+
+## 可用 API 示例
+
+模板入口使用 Acbric API 的 `acbric` entrypoint：
+
+```java
+public final class TemplateMod implements AcbricInitializer {
+    @Override
+    public void onInitializeAcbric(AcbricModContext context) {
+        context.logger().info("initialized");
+    }
+
+    @Override
+    public void onInitializeAcbric() {
+    }
+}
+```
+
+常用上下文：
+
+- `context.logger()`: 输出带 MOD id 的日志
+- `context.ensureConfigDir()`: 获取并创建当前 MOD 的配置目录
+- `context.ensureDataDir()`: 获取并创建当前 MOD 的数据目录
+
+常用事件：
+
+- `AirshipsLifecycleEvents`: 游戏生命周期
+- `AirshipsDataEvents.DATA_LOADED`: ACS 数据加载完成
+- `AirshipsClientEvents.CLIENT_TICK_START`: 客户端 tick
+- `AirshipsCombatUiEvents`: 战斗 UI 扩展点
+
+需要 Mixin 时，新增 `src/main/resources/<modid>.mixins.json`，并在 `fabric.mod.json` 里加入：
+
+```json
+"mixins": [
+  "<modid>.mixins.json"
+]
+```

@@ -1,0 +1,15 @@
+# Normalise line endings for a Windows-authored, cross-platform project.
+* text=auto
+
+# Gradle wrapper / shell scripts must stay LF so they work on Linux and macOS.
+gradlew text eol=lf
+*.sh    text eol=lf
+
+# Windows batch files stay CRLF.
+*.bat   text eol=crlf
+
+# Binary assets never get line-ending translation.
+*.jar   binary
+*.zip   binary
+*.png   binary
+*.dll   binary

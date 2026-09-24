@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "acbric_api",
+  "version": "0.3.2",
+  "name": "Acbric API",
+  "description": "Fabric-style API layer for Airships: Conquer the Skies.",
+  "icon": "assets/acbric_api/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "preLaunch": [
+      "net.fabricacs.api.impl.AcbricApiPreLaunch"
+    ]
+  },
+  "mixins": [
+    "acbric-api.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "airships": "*"
+  }
+}

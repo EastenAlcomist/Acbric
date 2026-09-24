@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "${modId}",
+  "version": "${modVersion}",
+  "name": "${modName}",
+  "description": "${modDescription}",
+  "icon": "assets/acbric_template_mod/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "acbric": [
+      "net.fabricacs.template.TemplateMod"
+    ]
+  },
+  "depends": {
+    "acbric_api": ">=0.3.2"
+  }
+}

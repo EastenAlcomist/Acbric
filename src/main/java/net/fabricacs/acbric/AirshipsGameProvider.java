@@ -1,0 +1,256 @@
+package net.fabricacs.acbric;
+
+import net.fabricmc.loader.api.metadata.ModMetadata;
+import net.fabricmc.loader.impl.game.GameProvider;
+import net.fabricmc.loader.impl.game.patch.GameTransformer;
+import net.fabricmc.loader.impl.launch.FabricLauncher;
+import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
+import net.fabricmc.loader.impl.util.Arguments;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public final class AirshipsGameProvider implements GameProvider {
+    private static final String DEFAULT_MAIN_CLASS = "com.zarkonnen.airships.Main";
+    private static final Pattern MAIN_CLASS_PATTERN = Pattern.compile("\"mainClass\"\\s*:\\s*\"([^\"]+)\"");
+    private static final Pattern CLASSPATH_PATTERN = Pattern.compile("\"classPath\"\\s*:\\s*\\[(.*?)]", Pattern.DOTALL);
+    private static final Pattern STRING_PATTERN = Pattern.compile("\"([^\"]+)\"");
+
+    private final Arguments arguments = new Arguments();
+    private final GameTransformer transformer = new GameTransformer();
+    private final List<Path> gameClassPath = new ArrayList<>();
+
+    private Path gameDirectory;
+    private Path libsDirectory;
+    private String mainClass = DEFAULT_MAIN_CLASS;
+
+    @Override
+    public String getGameId() {
+        return "airships";
+    }
+
+    @Override
+    public String getGameName() {
+        return "Airships: Conquer the Skies";
+    }
+
+    @Override
+    public String getRawGameVersion() {
+        return "unknown";
+    }
+
+    @Override
+    public String getNormalizedGameVersion() {
+        return "0.0.0";
+    }
+
+    @Override
+    public Collection<BuiltinMod> getBuiltinMods() {
+        ModMetadata metadata = new BuiltinModMetadata.Builder(getGameId(), getNormalizedGameVersion())
+                .setName(getGameName())
+                .build();
+        return Collections.singletonList(new BuiltinMod(Collections.unmodifiableList(gameClassPath), metadata));
+    }
+
+    @Override
+    public String getEntrypoint() {
+        return mainClass;
+    }
+
+    @Override
+    public Path getLaunchDirectory() {
+        return gameDirectory;
+    }
+
+    @Override
+    public boolean requiresUrlClassLoader() {
+        return true;
+    }
+
+    @Override
+    public Set<BuiltinTransform> getBuiltinTransforms(String className) {
+        return EnumSet.noneOf(BuiltinTransform.class);
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+    @Override
+    public boolean locateGame(FabricLauncher launcher, String[] args) {
+        arguments.parse(args);
+
+        Path cwd = Paths.get("").toAbsolutePath().normalize();
+        Path candidateGameDir = findGameDirectory(cwd);
+        if (candidateGameDir == null) {
+            return false;
+        }
+
+        gameDirectory = candidateGameDir;
+        libsDirectory = findLibsDirectory(cwd, gameDirectory);
+        if (libsDirectory == null) {
+            return false;
+        }
+
+        try {
+            readAirshipsConfig(gameDirectory.resolve("Airships.json"));
+            collectClassPath();
+            configureNativeLibraries();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to locate Airships launch files", e);
+        }
+
+        return !gameClassPath.isEmpty();
+    }
+
+    @Override
+    public void initialize(FabricLauncher launcher) {
+        transformer.locateEntrypoints(launcher, gameClassPath);
+    }
+
+    @Override
+    public GameTransformer getEntrypointTransformer() {
+        return transformer;
+    }
+
+    @Override
+    public void unlockClassPath(FabricLauncher launcher) {
+        for (Path path : gameClassPath) {
+            launcher.addToClassPath(path);
+        }
+    }
+
+    @Override
+    public void launch(ClassLoader loader) {
+        Thread.currentThread().setContextClassLoader(loader);
+
+        try {
+            Class<?> main = Class.forName(mainClass, true, loader);
+            Method mainMethod = main.getMethod("main", String[].class);
+            mainMethod.invoke(null, (Object) getLaunchArguments(false));
+        } catch (InvocationTargetException e) {
+            Throwable target = e.getTargetException();
+            if (target instanceof RuntimeException) {
+                throw (RuntimeException) target;
+            }
+            if (target instanceof Error) {
+                throw (Error) target;
+            }
+            throw new RuntimeException(target);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to launch " + mainClass, e);
+        }
+    }
+
+    @Override
+    public Arguments getArguments() {
+        return arguments;
+    }
+
+    @Override
+    public String[] getLaunchArguments(boolean sanitize) {
+        return arguments.getExtraArgs().toArray(new String[0]);
+    }
+
+    @Override
+    public boolean canOpenErrorGui() {
+        return true;
+    }
+
+    @Override
+    public boolean hasAwtSupport() {
+        return true;
+    }
+
+    private static Path findGameDirectory(Path cwd) {
+        if (Files.isRegularFile(cwd.resolve("Airships.json"))) {
+            return cwd;
+        }
+
+        Path nested = cwd.resolve("game");
+        if (Files.isRegularFile(nested.resolve("Airships.json"))) {
+            return nested;
+        }
+
+        return null;
+    }
+
+    private static Path findLibsDirectory(Path cwd, Path gameDir) {
+        Path siblingFromRoot = cwd.resolve("libs");
+        if (Files.isDirectory(siblingFromRoot)) {
+            return siblingFromRoot;
+        }
+
+        Path siblingFromGame = gameDir.resolveSibling("libs");
+        if (Files.isDirectory(siblingFromGame)) {
+            return siblingFromGame;
+        }
+
+        return null;
+    }
+
+    private void readAirshipsConfig(Path configPath) throws IOException {
+        String json = new String(Files.readAllBytes(configPath), StandardCharsets.UTF_8);
+        Matcher mainClassMatcher = MAIN_CLASS_PATTERN.matcher(json);
+        if (mainClassMatcher.find()) {
+            mainClass = mainClassMatcher.group(1);
+        }
+
+        Matcher classPathMatcher = CLASSPATH_PATTERN.matcher(json);
+        if (!classPathMatcher.find()) {
+            return;
+        }
+
+        Matcher entryMatcher = STRING_PATTERN.matcher(classPathMatcher.group(1));
+        while (entryMatcher.find()) {
+            Path path = libsDirectory.resolve(entryMatcher.group(1)).toAbsolutePath().normalize();
+            if (Files.isRegularFile(path)) {
+                gameClassPath.add(path);
+            }
+        }
+    }
+
+    private void collectClassPath() throws IOException {
+        try (java.util.stream.Stream<Path> paths = Files.list(libsDirectory)) {
+            paths
+                    .filter(Files::isRegularFile)
+                    .filter(this::isRuntimeLibrary)
+                    .map(path -> path.toAbsolutePath().normalize())
+                    .filter(path -> !gameClassPath.contains(path))
+                    .forEach(gameClassPath::add);
+        }
+    }
+
+    private boolean isRuntimeLibrary(Path path) {
+        String fileName = path.getFileName().toString().toLowerCase();
+        return (fileName.endsWith(".jar") || fileName.endsWith(".zip"))
+                && !fileName.startsWith("fabric-loader-")
+                && !fileName.equals("steamworks4j-1.3.0.jar");
+    }
+
+    private void configureNativeLibraries() {
+        Path nativeDirectory = libsDirectory.resolve("native").toAbsolutePath().normalize();
+        if (!Files.isDirectory(nativeDirectory)) {
+            return;
+        }
+
+        String nativePath = nativeDirectory.toString();
+        System.setProperty("org.lwjgl.librarypath", nativePath);
+        System.setProperty("net.java.games.input.librarypath", nativePath);
+        System.setProperty("java.library.path", nativePath);
+    }
+}
