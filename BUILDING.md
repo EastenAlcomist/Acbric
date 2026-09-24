@@ -14,6 +14,9 @@
 | Compile + all tests | `build full` | `.\build full` | `./build.sh full` |
 | Clean, then compile | `build clean` | `.\build clean` | `./build.sh clean` |
 | Forward to Gradle | `build installApiMod` | `.\build installApiMod` | `./build.sh installApiMod` |
+| **Run all tests** | `test all` | `.\test all` | `./test.sh all` |
+| **Run one suite** | `test event` | `.\test event` | `./test.sh event` |
+| List suites | `test list` | `.\test list` | `./test.sh list` |
 | Launch the game | `gradlew startAirships` | — | `./gradlew startAirships` |
 
 > PowerShell does **not** run `build.cmd` from the current directory; type `.\build`. cmd.exe accepts a bare `build`.
@@ -151,14 +154,63 @@ If it ever misbehaves on your machine, disable it for one run:
 
 ## 4. Testing
 
-- `./build.sh full` / `gradlew build` — compile plus the full regression.
-- `gradlew regressionTest` — the headless regression on its own (currently 80 assertions).
+```sh
+./test.sh all          # every suite (currently 80 assertions)
+./test.sh event        # one suite
+./test.sh ev           # unique prefix works too
+./test.sh data rename  # several suites, run in the order given
+./test.sh cp           # alias (cp = classpath)
+./test.sh list         # list suites and what they cover
+```
+
+### Suites
+
+| Suite | Covers | Fix |
+|---|---|---|
+| `data` | `DATA_LOADED` reports the game's real result: no log clearing, no failure-to-success rewriting | F01 |
+| `bundle` | bundled vanilla resource store: 9 traversal cases, updates, user-edit preservation, conflicts, backups, interrupted-transaction recovery | F02 / F05 |
+| `classpath` | launcher classpath excluded **by archive content** (Loader/Mixin/ASM/shim), game libraries kept, no duplicates | F03 |
+| `event` | event bus: `registerOnce` fires exactly once, handle identity, duplicate registrations | F04 / F12 |
+| `rename` | rename-panel legacy vs new event ordering and cancellation contract | F06 |
+| `mods` | Fabric mod install validation: bad schema / id / missing fields rejected | F07 |
+
+Resolution order: exact name → alias → **unique** prefix → unique substring. An ambiguous or unknown
+selector fails loudly with the list of valid names — it never silently runs the wrong thing.
+
+### Sandbox
 
 The regression needs **no** `game/` and **never touches player saves**: it redirects `user.home`,
 `APPDATA` and the working directory into `build/regression-sandbox/` and writes a sandbox-pointing
-`launch_settings.json` there.
+`launch_settings.json` there. Fixtures live in `build/regression-sandbox/run-<random>/` and can be
+deleted at any time.
 
-`check` depends on `regressionTest`, so **CI and `build full` always run everything**.
+### CI semantics are unchanged
+
+`check` still depends on `regressionTest`, and with no selector `regressionTest` **runs every suite**.
+So `gradlew build`, `build full` and CI behave exactly as before — suite selection only affects local
+manual runs.
+
+```sh
+./build.sh full                                        # = gradlew build = compile + every suite
+./test.sh all                                          # just every suite
+gradlew regressionTest -Pacbric.suites=event,rename    # the equivalent for IDE / CI
+```
+
+> The launchers pass the selection through the **`ACBRIC_SUITES` environment variable** rather than
+> `-Pacbric.suites=`, because cmd.exe splits an argument at `=`. The environment variable behaves
+> identically in `.cmd` and `.sh`. Gradle itself accepts both forms.
+
+### Adding a suite
+
+1. Write a class under `src/regressionTest/java/net/fabricacs/regression/` following the existing style
+   (`public static int run(...)`, asserting via `check(condition, message)` and returning the count).
+2. Register it in the `static { ... }` block of `FrameworkRegression`:
+   `register("name", "one-line description", FrameworkRegression::suiteXxx)`.
+3. Call it from `suiteXxx` and accumulate with `checks += ...` like the others.
+4. Verify with `./test.sh list` and `./test.sh <name>`.
+
+**Do not start a parallel test entry point** (a second main, a second Gradle task) — the suite registry
+is the single entry point, which is what keeps `test <name>` and CI from diverging.
 
 ---
 
@@ -181,7 +233,12 @@ This entry point is designed so that it does not break on another machine. The h
    `C:\Users\liu chang\…`, so paths with spaces are the normal case, not the exception.
 6. **Git Bash / msys / cygwin hand over `JAVA_HOME` as a Windows path** (`C:\Program Files\…`);
    `build.sh` normalises it to `/c/Program Files/…` before testing it.
-7. **Two batch hazards are documented in the script comments** so they are not reintroduced:
+7. **cmd.exe splits arguments at `=`.** `build regressionTest -Pacbric.suites=event` arrives as
+   `-Pacbric.suites` and `event`, and Gradle then reports a confusing `Task 'event' not found`.
+   Quote it — `build regressionTest "-Pacbric.suites=event"` — or use the env variable
+   (`set ACBRIC_SUITES=event`), which is what the launchers do. build.cmd detects the split and prints
+   a hint instead of leaving you with Gradle's message.
+8. **Two batch hazards are documented in the script comments** so they are not reintroduced:
    `for /f ('"\"quoted exe\" args"')` needs an **even** number of quotes or the parser swallows the rest
    of the file; and a path containing `)` closes a `( … )` block early. The current implementation
    redirects to a temp file and uses `set /p`, sidestepping both.
@@ -199,6 +256,8 @@ This entry point is designed so that it does not break on another machine. The h
 | `./gradlew: Permission denied` on Linux/macOS | executable bit lost in an older checkout | `chmod +x gradlew build.sh`, or re-clone (the mode is fixed in this repository) |
 | `bad interpreter` | a `.sh` checked out as CRLF | verify with `git check-attr eol build.sh` |
 | First build is slow | Maven Central / maven.fabricmc.net fetch sponge-mixin and ASM | expected; cached afterwards |
+| `Task 'event' not found` after `-Pacbric.suites=event` | cmd.exe split the argument at `=` | quote it, or use `set ACBRIC_SUITES=event` |
+| `unknown regression suite: 'x'` | typo, or an ambiguous prefix | run `test list`; use the full suite name |
 
 ---
 
@@ -211,5 +270,8 @@ This entry point is designed so that it does not break on another machine. The h
   against the real bytecode).
 - **Never put logic in `build.cmd` / `build.sh` / `test.cmd` / `test.sh`.** They only find a JDK and
   forward. Add a Gradle task instead so the IDE and CI benefit too.
+- **Run the suite that covers what you touched, then `test all` before you call it done.** A full run
+  is 80 assertions and a few seconds; there is no reason to skip it. Use `test <suite>` while iterating
+  (`test bundle` when editing `BundledResourceStore`, `test event` when editing `Event`).
 - Add new tests to the suite registry (see "Adding a suite" in this document) rather than starting a
   parallel test entry point.

@@ -88,6 +88,10 @@ game/
 build                 # Windows cmd；PowerShell 里写 .\build
 build full            # 编译 + 全部回归检查
 ./build.sh            # Linux / macOS / Git Bash
+
+test all              # 全部回归套件（80 项断言）
+test event            # 只跑某个套件；test list 列出全部
+./test.sh bundle      # Linux / macOS / Git Bash
 ```
 
 前置条件、实测依据、跨平台注意事项与排错见 **[BUILDING.zh-CN.md](BUILDING.zh-CN.md)**

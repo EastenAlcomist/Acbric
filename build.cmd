@@ -55,6 +55,8 @@ if not defined ACBRIC_JAVA_HOME (
 )
 set "JAVA_HOME=%ACBRIC_JAVA_HOME%"
 
+rem 原始命令行，用于检测 cmd.exe 在 '=' 处拆参数（见 :run 的提示）
+set "RAW=%*"
 set "TASKS=assemble"
 set "EXTRA="
 
@@ -80,6 +82,24 @@ shift
 goto :parse
 
 :run
+rem cmd.exe 会把 "-Pkey=value" 在 '=' 处拆成两个参数，%1..%9 拿到的已经是拆开的，
+rem 只有 %* 保留原样。检测到这种情况时给一句提示，否则使用者只会看到
+rem Gradle 莫名其妙的 "Task 'value' not found"。
+set "RAW_HAS_EQ="
+if not defined RAW goto :run_now
+echo %RAW%| findstr "=" >nul
+if not errorlevel 1 set "RAW_HAS_EQ=1"
+set "EXTRA_HAS_EQ="
+if not defined EXTRA goto :run_pick
+echo %EXTRA%| findstr "=" >nul
+if not errorlevel 1 set "EXTRA_HAS_EQ=1"
+:run_pick
+if not defined RAW_HAS_EQ goto :run_now
+if defined EXTRA_HAS_EQ goto :run_now
+echo [build] note: cmd.exe splits an argument at '='; quote it, e.g.
+echo [build]       build %TASKS% "-Pacbric.suites=event"
+echo [build]       (or set ACBRIC_SUITES=event and just run: build %TASKS%)
+:run_now
 echo [build] JDK 21  = %JAVA_HOME%
 echo [build] gradlew %TASKS%%EXTRA%
 call gradlew.bat %TASKS% %EXTRA%

@@ -104,6 +104,18 @@ tasks.register('regressionTest', JavaExec) {
     dependsOn tasks.named('regressionTestClasses')
     classpath = sourceSets.regressionTest.runtimeClasspath
     mainClass = 'net.fabricacs.regression.FrameworkRegression'
+
+    // 套件选择，两种等价写法（不传 = 全部套件，即 check 与 CI 一直以来的行为，永远不会漏跑）：
+    //   -Pacbric.suites=event,rename   Gradle / IDE / CI 用
+    //   ACBRIC_SUITES=event,rename     启动脚本 test.cmd / test.sh 用
+    // 脚本走环境变量是因为 cmd.exe 会把参数里的 '=' 当分隔符拆开，
+    // "-Pacbric.suites=event" 到不了 Gradle；环境变量没有这个问题，且两端脚本写法一致。
+    // 套件名与覆盖范围见 BUILDING.zh-CN.md，或跑 regressionTest -Pacbric.suites=list。
+    def suiteSelection = (findProperty('acbric.suites') ?: System.getenv('ACBRIC_SUITES') ?: '').toString().trim()
+    if (!suiteSelection.isEmpty()) {
+        setArgs(suiteSelection.split(',')*.trim().findAll { !it.isEmpty() })
+    }
+
     def sandbox = layout.buildDirectory.dir('regression-sandbox')
     workingDir = sandbox
     systemProperty 'java.awt.headless', 'true'

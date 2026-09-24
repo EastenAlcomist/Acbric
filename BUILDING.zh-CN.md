@@ -13,9 +13,12 @@
 | 编译 + 全部测试 | `build full` | `.\build full` | `./build.sh full` |
 | 清理后编译 | `build clean` | `.\build clean` | `./build.sh clean` |
 | 透传给 Gradle | `build installApiMod` | `.\build installApiMod` | `./build.sh installApiMod` |
+| **跑全部测试** | `test all` | `.\test all` | `./test.sh all` |
+| **只跑某个套件** | `test event` | `.\test event` | `./test.sh event` |
+| 列出所有套件 | `test list` | `.\test list` | `./test.sh list` |
 | 启动游戏 | `gradlew startAirships` | — | `./gradlew startAirships` |
 
-> PowerShell **不会**从当前目录执行 `build.cmd`，必须写 `.uild`。cmd.exe 可以直接敲 `build`。
+> PowerShell **不会**从当前目录执行 `build.cmd`，必须写 `.\build`。cmd.exe 可以直接敲 `build`。
 > 由于大小写不敏感的文件系统上 `build` 会和 Gradle 的 `build/` 目录撞车，POSIX 端刻意命名为 `build.sh`。
 
 ---
@@ -146,13 +149,61 @@ cp -r "<your Airships>/libs" ./libs
 
 ## 4. 测试
 
-- `./build.sh full` / `gradlew build` —— 编译 + 全部回归测试。
-- `gradlew regressionTest` —— 只跑无界面回归（当前 80 项断言）。
+```sh
+./test.sh all          # 全部套件（当前 80 项断言）
+./test.sh event        # 只跑 event
+./test.sh ev           # 唯一前缀也行
+./test.sh data rename  # 多选，按给定顺序执行
+./test.sh cp           # 别名（cp = classpath）
+./test.sh list         # 列出套件与覆盖范围
+```
+
+### 套件
+
+| 套件 | 覆盖 | 对应修复 |
+|---|---|---|
+| `data` | `DATA_LOADED` 原样传递游戏结果：不清理诊断、不把失败改成成功 | F01 |
+| `bundle` | 内嵌原版资源归属存储：9 种路径穿越、更新、保留用户改动、冲突、备份与中断恢复 | F02 / F05 |
+| `classpath` | 启动类路径按**归档内容**排除 Loader/Mixin/ASM/垫片，保留游戏库，且不重复 | F03 |
+| `event` | 事件总线：`registerOnce` 只执行一次、句柄身份、重复注册 | F04 / F12 |
+| `rename` | 重命名面板新旧事件的顺序与取消契约 | F06 |
+| `mods` | Fabric MOD 安装校验：非法 schema / id / 缺字段一律拒绝 | F07 |
+
+选择规则：精确名 → 别名 → **唯一**前缀 → 唯一子串。歧义或未知会直接报错并列出可选套件，
+不会静默跑错东西。
+
+### 沙箱
 
 回归**不需要 `game/`**，也**不碰玩家存档**：它把 `user.home`、`APPDATA`、工作目录全部改到
 `build/regression-sandbox/` 下，并在那里写一个指向沙箱的 `launch_settings.json`。
+夹具目录是 `build/regression-sandbox/run-<随机数>/`，可以直接删。
 
-`check` 依赖 `regressionTest`，所以 **CI 与 `build full` 永远跑全部测试**。
+### CI 语义没有变
+
+`check` 仍然依赖 `regressionTest`，而不传选择参数时 `regressionTest` **跑全部套件**。
+所以 `gradlew build`、`build full`、CI 的行为与以前完全一致 —— 选套件只影响本地手动运行。
+
+```sh
+./build.sh full                                        # = gradlew build = 编译 + 全部套件
+./test.sh all                                          # 只跑全部套件
+gradlew regressionTest -Pacbric.suites=event,rename    # IDE / CI 里的等价写法
+```
+
+> 启动脚本用**环境变量 `ACBRIC_SUITES`** 而不是 `-Pacbric.suites=` 传选择，
+> 因为 cmd.exe 会把参数里的 `=` 当分隔符拆开；环境变量在 `.cmd` 与 `.sh` 两端行为一致。
+> Gradle 侧两种写法都支持。
+
+### 加一个新套件
+
+1. 在 `src/regressionTest/java/net/fabricacs/regression/` 下按现有风格写一个类
+   （`public static int run(...)`，内部用 `check(condition, message)` 断言并返回条数）。
+2. 在 `FrameworkRegression` 的 `static { ... }` 块里
+   `register("名字", "一句话说明", FrameworkRegression::suiteXxx)`。
+3. 在 `suiteXxx` 里调用它，并像其它套件一样 `checks += ...` 累加。
+4. 跑 `./test.sh list` 与 `./test.sh <新名字>` 验证。
+
+**不要新建平行的测试入口**（第二个 main、第二个 Gradle 任务）——套件注册表是唯一入口，
+这样 `test <名字>` 与 CI 才不会分叉。
 
 ---
 
@@ -174,7 +225,12 @@ cp -r "<your Airships>/libs" ./libs
    路径含空格（例如 `C:\Users\liu chang\…`）时全程加引号——本机就是这个路径，已实测。
 6. **Git Bash / msys / cygwin 的 `JAVA_HOME` 是 Windows 路径**（`C:\Program Files\…`），
    `build.sh` 会把它归一化成 `/c/Program Files/…` 再判断。
-7. **批处理的两个坑已在注释里标出**，改脚本时别踩回去：
+7. **cmd.exe 会把参数里的 `=` 当分隔符拆开。** `build regressionTest -Pacbric.suites=event`
+   到 Gradle 手里会变成 `-Pacbric.suites` 和 `event` 两个参数，然后报一个莫名其妙的
+   `Task 'event' not found`。要么加引号（`build regressionTest "-Pacbric.suites=event"`），
+   要么用环境变量（`set ACBRIC_SUITES=event`）——启动脚本走的就是后者。
+   `build.cmd` 检测到这种拆分时会先打印一句提示，不让你对着 Gradle 的报错发呆。
+8. **批处理的两个坑已在注释里标出**，改脚本时别踩回去：
    `for /f ('""quoted exe" args"') ` 的引号数必须是偶数，否则解析器会吞掉整个文件；
    路径里带 `)` 会提前关闭 `( … )` 块。现在的实现改成"重定向到临时文件 + `set /p`"，两个坑一起绕开。
 
@@ -191,6 +247,8 @@ cp -r "<your Airships>/libs" ./libs
 | Linux/macOS 上 `./gradlew: Permission denied` | 老版本 checkout 的可执行位丢失 | `chmod +x gradlew build.sh`，或重新 clone（本仓库已把模式修正为 100755） |
 | `bad interpreter` | `.sh` 被 checkout 成 CRLF | 确认 `.gitattributes` 生效：`git check-attr eol build.sh` |
 | 首次构建很慢 | 要从 Maven Central / maven.fabricmc.net 拉 sponge-mixin 与 ASM | 属正常；之后走 Gradle 缓存 |
+| 写了 `-Pacbric.suites=event` 却报 `Task 'event' not found` | cmd.exe 在 `=` 处拆了参数 | 加引号，或改 `set ACBRIC_SUITES=event` |
+| `unknown regression suite: 'x'` | 名字打错，或前缀有歧义 | 先 `test list`；用完整套件名 |
 
 ---
 
@@ -201,4 +259,7 @@ cp -r "<your Airships>/libs" ./libs
   `Ac source/tools` 里的 `acbric.cmd verify`（静态校验注入目标与 `@At` 调用点）。
 - **不要把逻辑写进 `build.cmd` / `build.sh` / `test.cmd` / `test.sh`**：
   它们只是"找 JDK + 转发"。要加行为就加 Gradle 任务，这样 IDE 和 CI 都受益。
-- 新增测试请加进套件注册表（见 `BUILDING.md` 的 "Adding a suite"），不要新建平行的测试入口。
+- **先跑覆盖你改动的那一套，收尾前再跑 `test all`。** 全量只有 80 项断言、几秒钟，
+  没有理由跳过。迭代过程中用 `test <套件>` 更快：改 `BundledResourceStore` 跑 `test bundle`，
+  改 `Event` 跑 `test event`。
+- 新增测试请加进套件注册表（见下文 "加一个新套件"），不要新建平行的测试入口。
