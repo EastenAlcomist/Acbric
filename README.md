@@ -180,6 +180,10 @@ classpath), which differs slightly from stock Fabric:
 
 ## 7. License / credits · 许可
 
-The framework code in this repository. The game *Airships: Conquer the Skies* and all game
-assets are the property of their respective owners and are **not** included here.
-本仓库为本框架代码；游戏《Airships: Conquer the Skies》及其全部资源归其所有者所有，本仓库不包含。
+The framework code in this repository is released under the **MIT License** — see
+[`LICENSE`](LICENSE).
+本仓库的框架代码以 **MIT 许可**发布，见 [`LICENSE`](LICENSE)。
+
+The game *Airships: Conquer the Skies* and all of its assets are the property of their
+respective owners and are **not** included in this repository.
+游戏《Airships: Conquer the Skies》及其全部资源归其所有者所有，本仓库不包含。
