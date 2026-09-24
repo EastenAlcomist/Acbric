@@ -1,0 +1,222 @@
+# Building and testing
+
+> **中文**: [BUILDING.zh-CN.md](BUILDING.zh-CN.md)
+> Written for the **humans and agents** who join this project. After reading it you should be able to
+> compile and test on any machine, and know where to look when something fails.
+
+---
+
+## 0. Cheat sheet
+
+| What you want | Windows (cmd) | Windows (PowerShell) | Linux / macOS / Git Bash |
+|---|---|---|---|
+| Compile only | `build` | `.\build` | `./build.sh` |
+| Compile + all tests | `build full` | `.\build full` | `./build.sh full` |
+| Clean, then compile | `build clean` | `.\build clean` | `./build.sh clean` |
+| Forward to Gradle | `build installApiMod` | `.\build installApiMod` | `./build.sh installApiMod` |
+| Launch the game | `gradlew startAirships` | — | `./gradlew startAirships` |
+
+> PowerShell does **not** run `build.cmd` from the current directory; type `.\build`. cmd.exe accepts a bare `build`.
+> The POSIX launcher is deliberately `build.sh`, not an extension-less `build`: on case-insensitive
+> filesystems (Windows, macOS by default) that name collides with Gradle's `build/` output directory.
+
+---
+
+## 1. Why a "fast compile" entry point exists
+
+Measured on Windows with a warm Gradle daemon — not a guess:
+
+| Command | Time | Output lines |
+|---|---|---|
+| `gradlew --version` (pure startup floor) | 1975 ms | 15 |
+| `gradlew assemble` (one source file edited) | 2775 ms | **23** |
+| `gradlew build` (same edit) | 3822 ms | **167** |
+| `gradlew assemble --no-daemon` | 12421 ms | — |
+| `gradlew assemble` with `libs/` missing | fails | **825** |
+
+Four reasons:
+
+1. **The real feedback loop is "edit → launch the game (~72 s) → read the log".** Everything before the
+   launch is pure overhead, and correctness here only shows up at runtime (mixins are load-time bytecode
+   injection), so the loop runs often.
+2. **`build` had no compile-only meaning.** Upstream wired `check` to `regressionTest`, so
+   `gradlew build` = compile + 80 assertions. Compiling alone meant remembering Gradle's internal
+   `assemble` name. Now `build` compiles and `build full` compiles and tests.
+3. **145 lines of test noise bury compile errors.** The regression prints a lot of
+   `[Acbric] Bundle conflict …`; a compile error is a couple of lines. Compiling only keeps it visible.
+4. **Onboarding cost on a fresh machine.** With `libs/` missing Gradle emits 825 lines that never say what
+   to do; JDK 21 became a hard requirement (F11) with nothing to help you find one; and Linux/macOS
+   contributors previously had no convenient entry point at all.
+
+---
+
+## 2. One-time setup
+
+### 2.1 JDK 21 (required)
+
+`build.gradle` sets `sourceCompatibility = JavaVersion.VERSION_21`. The repository deliberately does
+**not** pin a JDK path (`gradle.properties` has no `org.gradle.java.home`), so you supply JDK 21.
+
+`build` / `build.sh` locate one for you, in this order:
+
+1. `JAVA_HOME` (skipped when its major version is < 21)
+2. `java` on `PATH` (same version check)
+3. common installation directories
+
+| Platform | Locations scanned |
+|---|---|
+| Windows | `%ProgramFiles%\Eclipse Adoptium\jdk-2*`, `%ProgramFiles%\Java\jdk-2*`, `Microsoft\jdk-2*`, `Amazon Corretto\jdk2*`, `Zulu\zulu-2*`, `BellSoft\LibericaJDK-2*`, `%USERPROFILE%\.jdks\*`, … |
+| Linux | `/usr/lib/jvm/*`, `/usr/java/*`, `/opt/java/*`, `/opt/jdk*`, `$HOME/.sdkman/candidates/java/*` |
+| macOS | `/Library/Java/JavaVirtualMachines/*/Contents/Home`, `/opt/homebrew/opt/openjdk*`, `/usr/local/opt/openjdk*` |
+
+If none is found the script prints actionable instructions and exits, instead of leaving you to decode a
+Gradle stack trace.
+
+> **A `PATH` pointing at Java 8 is fine.** The script skips it and keeps looking. Verified: with
+> `JAVA_HOME` pointed at Java 8 it still found the Adoptium JDK 21 on disk and compiled successfully.
+
+### 2.2 `libs/` (required to compile, ~13 MB)
+
+**Not redistributed** (copyright). Copy it from your own Airships installation:
+
+```powershell
+# Windows
+Copy-Item '<your Airships>\libs' .\libs -Recurse -Force
+```
+
+```sh
+# Linux / macOS
+cp -r "<your Airships>/libs" ./libs
+```
+
+Three files are mandatory; `verifyFrameworkInputs` stops the build before compilation if any is missing:
+
+| File | Purpose |
+|---|---|
+| `libs/asplit-A.zip` | game kernel classes (compile + run) |
+| `libs/asplit-B.zip` | game kernel classes (compile + run) |
+| `libs/fabric-loader-0.19.3.jar` | `compileOnly` dependency |
+
+One more file is needed **only by the regression tests** (not by compilation). `verifyTestInputs`
+checks it when you run `test`/`check`, so a compile-only `build` still works without it:
+
+| File | Purpose |
+|---|---|
+| `libs/FloatIO.jar` | vanilla JSON decimal formatting; patched into `jdk.unsupported` for `regressionTest` |
+
+### 2.3 `game/` (only to launch the game)
+
+About 1.3 GB: `Airships.json`, `data/`, `lib/native`, … **Neither compilation nor the headless
+regression needs it.** Only `gradlew startAirships` does, and `verifyGameInputs` reports it clearly.
+
+If you would rather not copy 1.3 GB, keep only `mods/` separate and junction/symlink the rest to an
+existing game directory — see `tools/reports/06-build-and-test.md` for a verified recipe.
+
+---
+
+## 3. Compiling
+
+```sh
+./build.sh              # compile only: gradle assemble
+./build.sh full         # compile + all tests: gradle build
+./build.sh clean        # clean, then compile: gradle clean assemble
+./build.sh installApiMod        # anything else is forwarded to gradlew
+./build.sh --info assemble      # Gradle options work too
+```
+
+Artifacts:
+
+| File | What it is |
+|---|---|
+| `build/libs/Acbric-1.0-SNAPSHOT-api-mod.jar` | the API layer (source of `game/mods/acbric-api.jar`) |
+| `build/libs/Acbric-1.0-SNAPSHOT.jar` | the launch shim `AirshipsGameProvider` |
+
+> The scripts do exactly two things: **find a JDK 21** and **hand the command to `gradlew`**.
+> All build logic lives in `build.gradle`, so the IDE, CI and a hand-typed `gradlew` behave identically.
+> The scripts are not a build system — do not put logic in them.
+
+### Why it is fast
+
+Three settings in `gradle.properties`, each backed by a measurement:
+
+| Setting | Effect |
+|---|---|
+| `org.gradle.configuration-cache=true` | reuses the configuration phase: `assemble` 2.8 s → **1.9 s (−33 %)** |
+| `org.gradle.parallel=true` | schedules the main / apiMod / regressionTest source sets in parallel |
+| `org.gradle.caching=true` | content-addressed task output reuse — faster rebuilds and branch switches |
+| `org.gradle.daemon=true` | **must stay on**: `--no-daemon` turns `assemble` into 12.4 s |
+
+The configuration cache was verified against `build`, `regressionTest`, `apiModJar`, `installApiMod`,
+`startAirships`, `distDir` and `syncModTemplateLibs` — no warnings, no incompatibilities.
+If it ever misbehaves on your machine, disable it for one run:
+
+```sh
+./build.sh --no-configuration-cache
+```
+
+---
+
+## 4. Testing
+
+- `./build.sh full` / `gradlew build` — compile plus the full regression.
+- `gradlew regressionTest` — the headless regression on its own (currently 80 assertions).
+
+The regression needs **no** `game/` and **never touches player saves**: it redirects `user.home`,
+`APPDATA` and the working directory into `build/regression-sandbox/` and writes a sandbox-pointing
+`launch_settings.json` there.
+
+`check` depends on `regressionTest`, so **CI and `build full` always run everything**.
+
+---
+
+## 5. Cross-platform notes
+
+This entry point is designed so that it does not break on another machine. The hard constraints:
+
+1. **`.cmd` files are ASCII-only and CRLF.** cmd.exe reads batch files using the console OEM code page,
+   so UTF-8 comments get mis-decoded and executed as commands on a machine with a different code page
+   (hit and fixed during development). `.gitattributes` pins `*.cmd text eol=crlf`.
+2. **`.sh` files must stay LF.** A CRLF shell script dies with
+   `bad interpreter: No such file or directory` on Linux/macOS. `.gitattributes` pins `*.sh text eol=lf`.
+3. **No extension-less `build` / `test` on POSIX.** On case-insensitive filesystems (Windows, macOS by
+   default) the name collides with Gradle's `build/` output directory, so the POSIX launchers are
+   `build.sh` / `test.sh`.
+4. **`gradlew` is now mode 100755.** It used to be 100644, which made `./gradlew` fail with
+   `Permission denied` on Linux and macOS.
+5. **The scripts locate the repo from their own path** (`%~dp0` / `$(dirname "$0")`), never from the
+   current directory, and quote every path — this repository lives under
+   `C:\Users\liu chang\…`, so paths with spaces are the normal case, not the exception.
+6. **Git Bash / msys / cygwin hand over `JAVA_HOME` as a Windows path** (`C:\Program Files\…`);
+   `build.sh` normalises it to `/c/Program Files/…` before testing it.
+7. **Two batch hazards are documented in the script comments** so they are not reintroduced:
+   `for /f ('"\"quoted exe\" args"')` needs an **even** number of quotes or the parser swallows the rest
+   of the file; and a path containing `)` closes a `( … )` block early. The current implementation
+   redirects to a temp file and uses `set /p`, sidestepping both.
+
+---
+
+## 6. Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `No JDK 21 found.` | no JDK 21 installed and `JAVA_HOME` is unusable | install one, or `set JAVA_HOME=C:\path\to\jdk-21` / `export JAVA_HOME=/path/to/jdk-21` |
+| `Missing game files required for compilation` | `libs/asplit-*.zip` etc. absent | copy them from your Airships installation (§2.2) |
+| `Missing game files required to launch Airships` | `game/Airships.json` etc. absent | only needed to launch; compiling and testing work without it |
+| `Timeout … gradle-8.13-bin.zip` | another process holds the wrapper lock (often VS Code's Gradle extension downloading) | wait it out; do not delete the `.lck` |
+| `./gradlew: Permission denied` on Linux/macOS | executable bit lost in an older checkout | `chmod +x gradlew build.sh`, or re-clone (the mode is fixed in this repository) |
+| `bad interpreter` | a `.sh` checked out as CRLF | verify with `git check-attr eol build.sh` |
+| First build is slow | Maven Central / maven.fabricmc.net fetch sponge-mixin and ASM | expected; cached afterwards |
+
+---
+
+## 7. Rules for agents
+
+- **Use `build`** to verify compilation. Do not use `gradlew build` for that — it also runs every test and
+  prints 167 lines.
+- After editing a mixin or `fabric.mod.json`, run the full regression **and**
+  `acbric.cmd verify` from `Ac source/tools` (it statically checks injection targets and `@At` callsites
+  against the real bytecode).
+- **Never put logic in `build.cmd` / `build.sh` / `test.cmd` / `test.sh`.** They only find a JDK and
+  forward. Add a Gradle task instead so the IDE and CI benefit too.
+- Add new tests to the suite registry (see "Adding a suite" in this document) rather than starting a
+  parallel test entry point.

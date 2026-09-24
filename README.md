@@ -86,6 +86,19 @@ game/
 
 ## 3. Build & Run
 
+Fast entry points (they locate a JDK 21 for you and forward to Gradle):
+
+```powershell
+build                 # Windows cmd;  use .\build from PowerShell
+build full            # compile + all regression checks
+./build.sh            # Linux / macOS / Git Bash
+```
+
+See **[BUILDING.md](BUILDING.md)** ([中文](BUILDING.zh-CN.md)) for prerequisites, the measured
+rationale, cross-platform notes and troubleshooting.
+
+Everything is still plain Gradle underneath:
+
 ```powershell
 # Compile both framework layers and run headless regression checks
 .\gradlew.bat build --console=plain

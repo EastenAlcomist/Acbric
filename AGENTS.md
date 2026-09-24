@@ -41,6 +41,22 @@ Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Ski
 
 ## 构建与运行
 
+**日常用快速入口，别直接用 `gradlew build`**（那会连带跑全部测试、刷上百行输出）：
+
+```powershell
+build                              # 只编译（Windows cmd；PowerShell 写 .\build）
+build full                         # 编译 + 全部回归
+build clean                        # 清理后编译
+build <任意 gradle 任务>            # 其余参数原样透传，如 build installApiMod
+./build.sh                         # Linux / macOS / Git Bash 的对应写法
+```
+
+入口脚本只做两件事：**定位 JDK 21**、**把命令交给 `gradlew`**；
+`JAVA_HOME` 指向 Java 8 也会被跳过继续找。完整说明、排错与跨平台约束见
+**`BUILDING.zh-CN.md`**（[English](BUILDING.md)）—— 加新脚本或改构建行为前必读。
+
+其余 Gradle 任务不变：
+
 ```powershell
 .\gradlew.bat startAirships        # 构建框架并启动游戏(KnotClient)
 .\gradlew.bat installApiMod        # 只构建/安装 API jar 到 game/mods/
@@ -48,6 +64,8 @@ Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Ski
 ```
 
 - 要求 **JDK 21**（使用 `JAVA_HOME` 或 `-Dorg.gradle.java.home` 指定）、Gradle 8.13；JavaCompile 固定 UTF-8 和 Java 21 输出目标。
+- **不要在 `build.cmd`/`build.sh`/`test.cmd`/`test.sh` 里加逻辑**：它们只是"找 JDK + 转发"。
+  要加行为就加 Gradle 任务，这样 IDE 与 CI 同样受益。
 - **前置游戏文件不在仓库内**,须从自有的 Airships 安装目录复制:
   - `libs/` — `asplit-A.zip` / `asplit-B.zip`(游戏 class)、`fabric-loader-0.19.3.jar`、
     游戏自带的库 jar、`libs/native/`
