@@ -82,6 +82,19 @@ game/
 
 ## 3. 构建与运行
 
+快速入口（会自己找 JDK 21，再转发给 Gradle）：
+
+```powershell
+build                 # Windows cmd；PowerShell 里写 .\build
+build full            # 编译 + 全部回归检查
+./build.sh            # Linux / macOS / Git Bash
+```
+
+前置条件、实测依据、跨平台注意事项与排错见 **[BUILDING.zh-CN.md](BUILDING.zh-CN.md)**
+（[English](BUILDING.md)）。
+
+底层仍然是标准 Gradle：
+
 ```powershell
 # 编译启动层与 API，并运行无界面回归检查
 .\gradlew.bat build --console=plain

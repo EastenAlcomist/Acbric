@@ -18,6 +18,38 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+// ---- 输入自检：把"游戏文件没准备好"变成一句人话 ----------------------------
+// 缺 libs/asplit-*.zip 时，compileApiModJava 会以 800+ 行 Gradle 原始输出失败，
+// 新协作者和新机器上完全看不出该怎么办。这里提前检查并给出可直接照做的指引。
+//
+// 只检查"编译必需"的文件；game/ 只有真正启动游戏时才需要，另由 verifyGameInputs 负责。
+// 文件对象在配置阶段就解析好，doLast 里不碰 project，保证配置缓存可用。
+def compileInputs = [
+        ['libs/asplit-A.zip',             '游戏内核 class，编译与运行都依赖'],
+        ['libs/asplit-B.zip',             '游戏内核 class，编译与运行都依赖'],
+        ['libs/fabric-loader-0.19.3.jar', 'Fabric Loader，compileOnly 依赖'],
+].collect { [it[0], layout.projectDirectory.file(it[0]).asFile, it[1]] }
+
+tasks.register('verifyFrameworkInputs') {
+    group = 'acbric'
+    description = 'Fails early with an actionable message when game files required for compilation are missing.'
+    doLast {
+        def missing = compileInputs.findAll { !it[1].isFile() }
+        if (!missing.isEmpty()) {
+            throw new GradleException(
+                    'Missing game files required for compilation:\n' +
+                    missing.collect { '  - ' + it[0] + '   (' + it[2] + ')' }.join('\n') +
+                    '\n\nThese files are NOT redistributed with this repository (copyright).' +
+                    '\nCopy them from your own Airships: Conquer the Skies installation into this project\'s libs/.' +
+                    '\nSee BUILDING.md / BUILDING.zh-CN.md for the exact list and one-line copy command.')
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    dependsOn tasks.named('verifyFrameworkInputs')
+}
+
 repositories {
     mavenCentral()
     maven {
@@ -126,9 +158,32 @@ tasks.register('installAirshipsNativeLibraries', Copy) {
     into layout.projectDirectory.dir('game/lib/native')
 }
 
+// 启动游戏需要完整的 game/ 目录；检查和编译一样要提前、要给人话。
+def gameInputs = [
+        ['game/Airships.json',      'GameProvider 靠它定位主类与内核 classPath'],
+        ['game/data/checksum',      '游戏静态数据是否已拷入的标志文件'],
+].collect { [it[0], layout.projectDirectory.file(it[0]).asFile, it[1]] }
+
+tasks.register('verifyGameInputs') {
+    group = 'acbric'
+    description = 'Fails early with an actionable message when the game directory required to launch is missing.'
+    doLast {
+        def missing = gameInputs.findAll { !it[1].isFile() }
+        if (!missing.isEmpty()) {
+            throw new GradleException(
+                    'Missing game files required to launch Airships:\n' +
+                    missing.collect { '  - ' + it[0] + '   (' + it[2] + ')' }.join('\n') +
+                    '\n\nCopy your Airships game directory (Airships.json, data/, lib/native, ...) into this project\'s game/.' +
+                    '\nRun without game files is still possible for library checks: gradlew assemble / gradlew regressionTest.' +
+                    '\nSee BUILDING.md / BUILDING.zh-CN.md.')
+        }
+    }
+}
+
 tasks.register('runAirshipsFabric', JavaExec) {
     group = 'application'
     description = 'Builds, installs the Acbric API, and starts Airships with Fabric Loader.'
+    dependsOn tasks.named('verifyGameInputs')
     dependsOn tasks.named('jar'), tasks.named('installApiMod'), tasks.named('installAirshipsNativeLibraries')
 
     workingDir = layout.projectDirectory.dir('game').asFile
@@ -185,7 +240,8 @@ tasks.register('distDir', Sync) {
         include 'run.bat'
     }
     from 'LICENSE'
-    from 'BUNDLED_RESOURCES.md', 'EVENTS.md', 'CHANGELOG.md', 'CHANGELOG.zh-CN.md', 'API.zh-CN.md'
+    from 'BUNDLED_RESOURCES.md', 'EVENTS.md', 'CHANGELOG.md', 'CHANGELOG.zh-CN.md', 'API.zh-CN.md',
+         'BUILDING.md', 'BUILDING.zh-CN.md'
     doFirst {
         if (!file('src/dist/run.bat').isFile()) {
             throw new GradleException('Missing distribution launcher: src/dist/run.bat')
