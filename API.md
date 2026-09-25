@@ -2,7 +2,7 @@
 
 **English** | [中文](API.zh-CN.md)
 
-Applies to **`acbric_api 0.3.3-dev.4`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
+Applies to **`acbric_api 0.3.3-dev.5`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
 
 - Installation, building and launching: [README.md](README.md).
 - Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
@@ -10,6 +10,8 @@ Applies to **`acbric_api 0.3.3-dev.4`**, an unpublished development version, not
 - Bundled native resources, conflicts and migration: [BUNDLED_RESOURCES.md](BUNDLED_RESOURCES.md).
 - Game build identity and startup reports: [DIAGNOSTICS.md](DIAGNOSTICS.md).
 - Campaign persistence, migration and multiplayer boundaries: [CAMPAIGN_DATA.md](CAMPAIGN_DATA.md).
+
+- [MOD configuration: defaults, validation, migration, backups and explicit reload](CONFIG.md), requires dev.5.
 
 ## 1. Development setup and entrypoints
 
@@ -99,6 +101,7 @@ Game data and UI objects may not yet exist during pre-launch. Register the appro
 | `dataDir()` / `ensureDataDir()` | Get / create this mod's data directory |
 | `logger()` | `AcbricLogger` tagged with this mod's ID |
 | `campaignData(Object worldMap)` | `CampaignData` scoped to this mod and the given map (since dev.3) |
+| `config(name, dataVersion, defaults, validator)` | Create a configuration handle; explicit I/O, migration and reload (dev.5), see [CONFIG](CONFIG.md) |
 
 You can also construct a logger with `new AcbricLogger(modId)`. It supports `info(String)`, `warn(String)`, `error(String)` and `error(String, Throwable)`. Messages use the format `[Acbric/<modId>/<level>] ...`. INFO goes to stdout; WARN and ERROR go to stderr. A supplied Throwable adds its stack trace. The logger does not manage rotation of separate log files.
 
@@ -253,7 +256,7 @@ Since `0.3.3-dev.2`, GameProvider reads `AGame.VERSION` from bytecode before dep
 
 ## 10. Validation scope
 
-The standard build passes 141 headless assertions, including 31 campaign-data and 10 lifecycle checks. Real Fabric probes against game 1.2.15.2 and 1.2.14 each pass 10 additional campaign constructor/save/recovery checks, alongside existing loading/event probes. Manual successful-launch feedback covers dev.1 and dev.2, not dev.3 persistence or dev.4 lifecycle behavior. See the changelog for details; these checks do not replace full campaign or live multiplayer acceptance.
+The standard build passes 203 headless assertions, including 62 config checks. Real Fabric probes on games 1.2.15.2 and 1.2.14 each pass 10 campaign-data and 28 lifecycle/demo-v3 checks. The latter include explicit event dispatch for configuration policies; they do not replace GUI or live multiplayer acceptance. User feedback for dev.4 reports no issues so far; dev.5 remains pending manual acceptance.
 
 ## 11. Campaign data
 
@@ -264,3 +267,7 @@ Writes affect local shared game state and **do not broadcast**. Use deterministi
 ## 12. Campaign lifecycle
 
 Since dev.4, `AirshipsCampaignEvents` exposes `CREATED`, `LOADED`, `RESTORED` and `EXITED`. Creation precedes the initial autosave; loaded JSON includes campaign extension data; restoration only rebinds local handles and must not mutate shared state. See [the full lifecycle contract](CAMPAIGN_LIFECYCLE.md). Existing public members remain available.
+
+## 13. MOD configuration (dev.5)
+
+Use `context.config(...)` followed by explicit `load/migrate/save/reload`. Defaults fill missing fields only; failures retain the previous snapshot. Disk commits use backups and conflict checks. Local preferences may reload, while shared gameplay rules belong in campaign data. See [the configuration guide](CONFIG.md).

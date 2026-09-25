@@ -116,12 +116,42 @@ public final class CampaignLifecycleRuntimeRegression {
         action.invoke(null, world, "ADD");
         check(data.read().orElseThrow().data().getInt(field) == before + 1, "real demo blocks local multiplayer writes");
         world.mpClient = null;
-        if (schema == 2) {
+        if (schema >= 2) {
             data.remove(); data.write(1, new JSONObject().put("counter", 7));
             SavedStateOutPipe pipe = new SavedStateOutPipe(); JSONObject json = world.toJSON(pipe); pipe.compileAndGetHash();
             CampaignWorld migrated = new CampaignWorld(json, null, true, new JSONObjectInPipe(pipe.toJSON()));
             var result = new CampaignData(migrated.map, "acbric_campaign_demo").read().orElseThrow();
-            check(result.dataVersion() == 2 && result.data().getInt("value") == 7 && !result.data().has("counter"), "real v2 demo migrates v1 save via LOADED exactly preserving value");
+            check(result.dataVersion() == schema && result.data().getInt("value") == 7 && !result.data().has("counter"), "real demo migrates v1 save via LOADED exactly preserving value");
         }
+        if (schema == 3) configDemo(world, action, demo);
+    }
+
+    /** 真实入口生成配置，重新加载仅改变本地偏好，新建单机战役才采用新参数。 */
+    private static void configDemo(CampaignWorld world, java.lang.reflect.Method action, Class<?> demo) throws Exception {
+        var path = net.fabricacs.api.util.AirshipsPaths.configDir().resolve("acbric_campaign_demo/settings.json");
+        JSONObject file = new JSONObject(java.nio.file.Files.readString(path));
+        check(file.getInt("version") == 2 && file.getJSONObject("data").getInt("newCampaignIncrement") == 1, "real mod context initializes config defaults");
+        // 前一项迁移测试已把 world 写回 schema 1，先通过显式事件恢复到 v3。
+        AirshipsCampaignEvents.LOADED.invoker().onLoaded(world, true);
+        CampaignData data = new CampaignData(world.map, "acbric_campaign_demo");
+        file.getJSONObject("data").put("newCampaignIncrement", 4).put("showHud", false);
+        java.nio.file.Files.writeString(path, file.toString()); action.invoke(null, world, "RELOAD");
+        check(!(Boolean) demo.getMethod("showHud").invoke(null) && data.read().orElseThrow().data().getJSONObject("rules").getInt("increment") == 1,
+                "config reload changes local HUD only and preserves campaign rules");
+        int before = data.read().orElseThrow().data().getInt("value"); action.invoke(null, world, "ADD");
+        check(data.read().orElseThrow().data().getInt("value") == before + 1, "existing campaign still uses frozen increment");
+        java.nio.file.Files.writeString(path, "broken"); action.invoke(null, world, "RELOAD");
+        check(!(Boolean) demo.getMethod("showHud").invoke(null) && java.nio.file.Files.readString(path).equals("broken"), "bad reload preserves active preferences and bad file");
+        java.nio.file.Files.writeString(path, "{\"format\":1,\"version\":1,\"data\":{\"step\":3,\"showHud\":true}}");
+        action.invoke(null, world, "RELOAD");
+        check(new JSONObject(java.nio.file.Files.readString(path)).getJSONObject("data").getInt("newCampaignIncrement") == 3
+                && new JSONObject(java.nio.file.Files.readString(path.resolveSibling("settings.json.bak"))).getInt("version") == 1, "real demo migrates config with old version backup");
+        data.remove(); AirshipsCampaignEvents.CREATED.invoker().onCreated(world);
+        check(data.read().orElseThrow().data().getJSONObject("rules").getInt("increment") == 3, "new singleplayer campaign freezes current config");
+        data.remove(); world.mpClient = blank(Client.class); AirshipsCampaignEvents.CREATED.invoker().onCreated(world); world.mpClient = null;
+        check(data.read().orElseThrow().data().getJSONObject("rules").getInt("increment") == 1, "new multiplayer campaign ignores peer-local gameplay settings");
+        data.remove(); data.write(2, new JSONObject().put("value", 8)); AirshipsCampaignEvents.LOADED.invoker().onLoaded(world, true);
+        check(data.read().orElseThrow().dataVersion() == 3 && data.read().orElseThrow().data().getInt("value") == 8
+                && data.read().orElseThrow().data().getJSONObject("rules").getInt("increment") == 1, "v2 campaign migration uses deterministic rules instead of local config");
     }
 }

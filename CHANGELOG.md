@@ -2,7 +2,15 @@
 
 [中文改动记录](CHANGELOG.zh-CN.md) | [API guide](API.md) ([中文](API.zh-CN.md))
 
-## Unreleased — API build 0.3.3-dev.4
+## Unreleased — API build 0.3.3-dev.5
+
+- Add `AcbricModContext.config` and `ModConfig`/`ConfigSnapshot`/`ConfigException`: strict namespaced JSON, missing defaults, validation, explicit migration/reload and defensive snapshots.
+- Save through a locked, conflict-checked, same-directory atomic replacement with a one-generation raw backup. Corrupt/future files and failed migrations are not silently reset. See the bilingual [configuration contract](CONFIG.md), included in distributions.
+- Extend the separate demo to schema 3: F11 reloads local preferences; gameplay increments are frozen in campaign data. New multiplayer campaigns and old-save migrations use deterministic defaults, not peer-local config. Existing public members, storage format and the 16 mixins are unchanged.
+
+Validation: 203 headless checks (62 new config checks). Games 1.2.15.2 and 1.2.14 each pass 10 campaign-data and 28 lifecycle/demo-v3 checks through real Fabric; configuration-policy checks also dispatch events explicitly. The 1.2.14 run includes legacy mods. All 31 original public types and 125 members/descriptors remain. Evidence is recorded in the workspace research directory. Full GUI and live multiplayer testing remain manual; dev.4 user feedback is not dev.5 acceptance.
+
+## Previous development build — API 0.3.3-dev.4
 
 - Add `AirshipsCampaignEvents.CREATED`, `LOADED`, `RESTORED` and `EXITED`. Generation readiness precedes the first autosave/state snapshot; JSON loading occurs after extension restoration; recovery hands off actual world identities without replaying initialization.
 - Track active campaign references per client and release them on observed menu/lobby transitions or normal application exit. Temporary screens and recovery waiting do not imply exit. See [lifecycle contracts](CAMPAIGN_LIFECYCLE.md) and its Chinese counterpart, included in distributions.

@@ -188,6 +188,7 @@ tasks.register('distDir', Sync) {
     }
     from 'LICENSE'
     from 'README.md', 'README.zh-CN.md', 'BUNDLED_RESOURCES.md', 'EVENTS.md', 'CHANGELOG.md', 'CHANGELOG.zh-CN.md', 'API.md', 'API.zh-CN.md', 'DIAGNOSTICS.md', 'DIAGNOSTICS.zh-CN.md'
+    from 'CONFIG.md', 'CONFIG.zh-CN.md'
     from 'CAMPAIGN_DATA.md', 'CAMPAIGN_DATA.zh-CN.md'
     from 'CAMPAIGN_LIFECYCLE.md', 'CAMPAIGN_LIFECYCLE.zh-CN.md'
     doFirst {
