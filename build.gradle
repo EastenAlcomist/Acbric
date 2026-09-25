@@ -93,6 +93,23 @@ tasks.named('check') {
     dependsOn tasks.named('regressionTest')
 }
 
+// 只读取两份已导出的清单；非零退出码区分差异、无法验证及输入错误。
+tasks.register('compareCodeManifests', JavaExec) {
+    group = 'verification'
+    description = 'Compares two local code manifests without starting the game.'
+    dependsOn tasks.named('apiModClasses')
+    classpath = sourceSets.apiMod.runtimeClasspath
+    mainClass = 'net.fabricacs.api.impl.CodeManifestCompare'
+    systemProperty 'file.encoding', 'UTF-8'
+    doFirst {
+        if (!project.hasProperty('manifestLeft') || !project.hasProperty('manifestRight')) {
+            throw new GradleException('Supply -PmanifestLeft=<file> -PmanifestRight=<file>')
+        }
+        args = [project.file(project.property('manifestLeft')).absolutePath,
+                project.file(project.property('manifestRight')).absolutePath]
+    }
+}
+
 tasks.register('installApiMod', Copy) {
     dependsOn tasks.named('apiModJar')
     from tasks.named('apiModJar')
@@ -189,6 +206,8 @@ tasks.register('distDir', Sync) {
     from 'LICENSE'
     from 'README.md', 'README.zh-CN.md', 'BUNDLED_RESOURCES.md', 'EVENTS.md', 'CHANGELOG.md', 'CHANGELOG.zh-CN.md', 'API.md', 'API.zh-CN.md', 'DIAGNOSTICS.md', 'DIAGNOSTICS.zh-CN.md'
     from 'EVENT_SCOPES.md', 'EVENT_SCOPES.zh-CN.md'
+    from 'CODE_MANIFEST.md', 'CODE_MANIFEST.zh-CN.md'
+    from 'CODE_HANDSHAKE.md', 'CODE_HANDSHAKE.zh-CN.md'
     from 'CONFIG.md', 'CONFIG.zh-CN.md'
     from 'CAMPAIGN_DATA.md', 'CAMPAIGN_DATA.zh-CN.md'
     from 'CAMPAIGN_LIFECYCLE.md', 'CAMPAIGN_LIFECYCLE.zh-CN.md'

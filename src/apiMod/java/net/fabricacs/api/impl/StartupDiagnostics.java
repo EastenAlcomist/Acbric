@@ -26,8 +26,10 @@ final class StartupDiagnostics {
     private final Map<String, JSONObject> mods = new LinkedHashMap<>();
     private boolean discoveryComplete;
     private boolean writeWarning;
+    private final Collection<ModContainer> loadedMods;
 
     StartupDiagnostics(Path gameDir, Collection<ModContainer> loadedMods) {
+        this.loadedMods = java.util.List.copyOf(loadedMods);
         String session = System.getProperty("acbric.internal.diagnostics.session", "");
         // 防止外部属性意外变成路径；正常会话由 Provider 在每次启动时重新生成。
         if (!session.matches("[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}")) session = UUID.randomUUID().toString();
@@ -82,6 +84,14 @@ final class StartupDiagnostics {
     void finish() {
         boolean failed = mods.values().stream().anyMatch(row -> status(row).equals("FAILED"));
         phase(failed ? "ENTRYPOINTS_COMPLETED_WITH_FAILURES" : "ENTRYPOINTS_COMPLETED");
+        try {
+            Map<String, String> states = new LinkedHashMap<>();
+            mods.forEach((id, row) -> states.put(id, status(row)));
+            CodeManifestCollector.publish(directory, CodeManifestCollector.collect(loadedMods, states));
+            System.out.println("[Acbric API] Local code manifest: " + directory.resolve("code-manifest.json"));
+        } catch (IOException | RuntimeException failure) {
+            System.err.println("[Acbric API] Cannot export local code manifest: " + failure.getClass().getSimpleName());
+        }
         System.out.println("[Acbric API] Entrypoint diagnostics: " + directory.resolve("startup.json")
                 + (failed ? " (initialization failures recorded)" : ""));
     }

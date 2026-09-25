@@ -15,13 +15,17 @@ public final class ConfigJson {
     private int pos;
     private ConfigJson(String text) { this.text = text; }
     public static JSONObject parse(String text) {
+        return CampaignJson.copy(parseObject(text), 72);
+    }
+    // 协议字段需要保留原始数值类型，不能先经游戏序列化器把 1.0 归一化成整数 1。
+    static JSONObject parseObject(String text) {
         if (text.startsWith("\ufeff")) text = text.substring(1);
         ConfigJson parser = new ConfigJson(text);
         parser.space();
         if (parser.peek() != '{') throw parser.invalid();
         parser.value(0); parser.space();
         if (parser.pos != text.length()) throw parser.invalid();
-        return CampaignJson.copy(new JSONObject(text), 72);
+        return new JSONObject(text);
     }
     private IllegalArgumentException invalid() { return new IllegalArgumentException("Invalid config JSON at character " + pos); }
     private char peek() { return pos < text.length() ? text.charAt(pos) : '\0'; }

@@ -20,6 +20,8 @@ final class LaunchDiagnostics {
         String session = UUID.randomUUID().toString();
         // 仅传递字符串，避免启动层与游戏层共享自定义类身份；不是公开 MOD API。
         System.setProperty("acbric.internal.diagnostics.session", session);
+        System.setProperty("acbric.internal.game.version", identity.rawVersion());
+        System.setProperty("acbric.internal.game.fingerprint", identity.fingerprint());
         directory = gameDirectory.resolve("logs/acbric").resolve(session);
         report.setProperty("schema", "1");
         report.setProperty("session", session);

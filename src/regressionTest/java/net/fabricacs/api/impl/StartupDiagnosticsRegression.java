@@ -29,6 +29,7 @@ public final class StartupDiagnosticsRegression {
         return (ModContainer) Proxy.newProxyInstance(ModContainer.class.getClassLoader(), new Class<?>[]{ModContainer.class},
                 (proxy, method, args) -> {
                     if (method.getName().equals("getMetadata")) return metadata;
+                    if (method.getName().equals("getRootPaths")) return List.of();
                     throw new AssertionError(method.getName());
                 });
     }

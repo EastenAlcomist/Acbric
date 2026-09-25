@@ -64,3 +64,7 @@ game/logs/acbric/<会话 UUID>/
 ## dev.6 运行期事件诊断
 
 受管理 EventScope 回调失败写入同一启动会话的 runtime-events.jsonl。旧注册方式保持。归属、输出上限及异常契约见 [订阅范围手册](EVENT_SCOPES.zh-CN.md)。
+
+## 本地代码清单（dev.7）
+
+acbric 入口处理完成后，同一会话目录新增 `code-manifest.json`。见[覆盖范围、指纹规则与离线比较](CODE_MANIFEST.zh-CN.md)。这不表示所有初始化完成，也不保证联机兼容。

@@ -2,7 +2,24 @@
 
 [中文改动记录](CHANGELOG.zh-CN.md) | [API guide](API.md) ([中文](API.zh-CN.md))
 
-## Unreleased — API build 0.3.3-dev.6
+## Unreleased — API build 0.3.3-dev.8
+
+- Add a package-private code-handshake protocol and state machine: per-context/per-peer challenges, roster invalidation, bounded retries, explicit timeout, expiring confirmation and immutable diagnostic snapshots. See [contract](CODE_HANDSHAKE.md).
+- Bound wire messages and manifests below native transport limits; oversized manifests remain explicitly unverifiable. Reject stale/history/misaddressed messages and unsupported formats without falling back to success.
+- Preserve raw numeric types during strict protocol/manifest parsing before serialization. Existing configuration normalization is unchanged.
+- No lobby UI, ready/start gate or automatic multiplayer synchronization is connected. No public MOD API or mixin changes.
+
+Validation: 433 standard assertions (77 new handshake checks). Actual native Server plus independent Fabric clients on games 1.2.15.2 and 1.2.14 exercise the product engine through an experimental adapter; 70 real communication assertions and six CLI checks pass; original 31 types/125 members and dev.6's 46 types/185 members are retained. GUI and cross-machine acceptance remain outside this stage.
+
+## Previous development build — API 0.3.3-dev.7
+
+- Export a local startup code manifest from resolved Loader roots, game identity and Acbric entrypoint results. Handle nested/development roots, normalized content hashes, bounded reads and explicit unverifiable states.
+- Add a strict offline JSON comparator and `compareCodeManifests` Gradle task with directional differences and distinct match/difference/unverifiable/invalid outcomes. See the bilingual [tool guide](CODE_MANIFEST.md).
+- Preserve public MOD APIs and all 16 mixins. No room handshake, ready gate, shared-settings exchange or automatic synchronization is added. Startup export failure only warns.
+
+Validation: 356 standard checks (45 new manifest checks); two actual Fabric/game probes export 8/13 resolved containers including nested and legacy mods, while existing 5 event, 10 storage and 31 lifecycle/demo checks pass per game. Six CLI process checks cover all exit outcomes and real-manifest self-comparison. Original 31 types/125 members and dev.6's 46 public types/185 members remain. No live multiplayer or full GUI acceptance claim.
+
+## Previous development build — API 0.3.3-dev.6
 
 - Add EventScope/context.eventScope(name): grouped cleanup, one-shot consumption, stale-snapshot deactivation and listener-reference release. MODs explicitly manage application/campaign lifetimes.
 - Name all 34 built-in events. Managed failures report MOD/event/scope/thread context in the current startup session runtime-events.jsonl, with occurrence/count/byte limits and best-effort logging that preserves original exceptions.

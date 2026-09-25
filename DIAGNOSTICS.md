@@ -64,3 +64,7 @@ Reports use temporary files and atomic replacement where supported, with a repla
 ## Runtime event diagnostics (dev.6)
 
 Managed EventScope callback failures use runtime-events.jsonl in the same startup session. Legacy registrations are unchanged. See [ownership, limits and exception contracts](EVENT_SCOPES.md).
+
+## Local code manifest (dev.7)
+
+After Acbric entrypoint processing, `code-manifest.json` is exported in the same session directory. See [coverage, fingerprint rules and offline comparison](CODE_MANIFEST.md). This does not certify complete initialization or multiplayer compatibility.

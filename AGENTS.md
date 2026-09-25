@@ -42,7 +42,7 @@ Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Ski
 | 层 | 位置 | 职责 | 依赖 |
 |---|---|---|---|
 | 启动层 | `src/main` | `AirshipsGameProvider` 把游戏塞进 Fabric(解析 `game/Airships.json`、拼类路径、反射调 `Main.main`) | Fabric Loader；不依赖游戏 API 或 Acbric API |
-| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.3-dev.6（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、16 个 hook mixin | 游戏 + fabric-loader |
+| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.3-dev.8（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、16 个 hook mixin | 游戏 + fabric-loader |
 
 功能 MOD 不属于本仓库:使用者在自己的项目里编写(可以 `acbric-mod-template/` 为起点),
 编译期依赖 API JAR，通常还依赖 `libs/asplit-*.zip`。独立模板使用其本地 API JAR；同工程 source set 才可直接依赖 `apiMod.output`。
@@ -133,11 +133,11 @@ Fabric 略有差异:
   `javap -p -c` 反编译 `libs/asplit-*.zip` 里的目标 class 核对。
 - 当前源码未实现读取 `disabledMods` 配置；合成 Fabric 列表展示已加载 MOD，不代表具备完整禁用／卸载能力。
 - 真实入口是 `src/main` 的 GameProvider + ServiceLoader 注册,不是任何 `fabric.mod.json`。
-- API 版本号 `acbric_api` = 0.3.3-dev.6（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
+- API 版本号 `acbric_api` = 0.3.3-dev.8（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
 
 ## 最近验证状态
 
-当前标准构建通过 311 项无界面回归。游戏 1.2.15.2 / 1.2.14 的真实 Fabric 探针各通过 10 项新增战役存储检查，包括原生二进制往返和实际 StoredState 恢复。用户已确认 dev.1、dev.2 运行正常，并对 dev.4 测试反馈“暂时没有发现问题”；未提供逐项测试记录，不推断全部联机和恢复场景已验收。详细边界以 CHANGELOG.md 为准；不能据此声称完整战役、双机联机和全部第三方 MOD 兼容。
+当前标准构建通过 433 项无界面回归。游戏 1.2.15.2 / 1.2.14 的真实 Fabric 探针各通过 10 项新增战役存储检查，包括原生二进制往返和实际 StoredState 恢复。用户已确认 dev.1、dev.2 运行正常，并对 dev.4 测试反馈“暂时没有发现问题”；未提供逐项测试记录，不推断全部联机和恢复场景已验收。详细边界以 CHANGELOG.md 为准；不能据此声称完整战役、双机联机和全部第三方 MOD 兼容。
 
 - dev.4 生命周期见 `CAMPAIGN_LIFECYCLE.md` / 中文版。CREATED 在生成的 setupPlayer 后、首次自动保存前；LOADED 只挂 JSON 战役构造成功出口；RESTORED 不执行初始化/迁移。EXITED 在客户端 input 边界或正常退出时发出，不保证强杀回调。
 - 独立工作区示例在相邻 `../acbric-campaign-demo/`，不加入框架 source set 或默认 MOD。用户对 dev.4 反馈暂未发现问题，完整逐场景覆盖仍未确认。
@@ -145,3 +145,7 @@ Fabric 略有差异:
 - dev.5 新增 MOD 配置，见 `CONFIG.md` / `CONFIG.zh-CN.md`。构造/load 不写盘，迁移/save/reload 显式执行；损坏文件不自动重置，磁盘冲突不覆盖。本地配置不广播，共享玩法值在创建时固化到战役；独立 v3 示例验证此边界。
 
 - dev.6 范围/诊断契约见 `EVENT_SCOPES.md` / 中文版：仅受管理订阅归属可知；旧注册不自动包裹。关闭释放监听器并屏蔽未开始的旧快照调用，不等待在途回调。应用与战役范围由 MOD 显式分开，异常记录后仍原样抛出。
+
+- dev.7 本地代码清单与离线比较见 `CODE_MANIFEST.md` / 中文版。自动导出在 acbric 入口完成后，使用实际 Loader 根；NO_ACBRIC_ENTRYPOINT 不表示所有初始化成功。CODE_MATCH 不含原生资源、配置、战役状态或身份认证。尚未接入大厅/网络；禁止把此结果描述为完整联机兼容。
+
+- dev.8 内部代码握手核心见 `CODE_HANDSHAKE.md` / 中文版，433 项回归含 77 项新增握手检查。两版真实 Server/双 Fabric Client 已验证协议，适配器仅在工作区探针中；产品尚无大厅/准备/开局接入。不要把 CODE_MATCH 当成房间共识或反作弊；32 人/32000 字节清单/40000 字节报文、5 次尝试/10 秒超时/30 秒一致有效期。本阶段包含 dev.7 与 dev.8 实现；提交状态以 Git 为准。
