@@ -47,6 +47,9 @@ public final class FrameworkRegression {
         checks += net.fabricacs.api.impl.SharedRulesRegression.run();
         checks += net.fabricacs.api.impl.RuleSaveRegression.run(root.resolve("rule-saves"));
         checks += net.fabricacs.api.impl.JavaModManagerRegression.run(root.resolve("java-mod-manager"));
+        checks += net.fabricacs.api.ui.UiRegression.run();
+        checks += net.fabricacs.api.impl.UiInputDiagnosticsRegression.run(root.resolve("ui-input"));
+        checks += net.fabricacs.api.util.LanguageRegression.run();
         System.out.println("REGRESSION PASS: " + checks + " checks; fixtures=" + root);
     }
 

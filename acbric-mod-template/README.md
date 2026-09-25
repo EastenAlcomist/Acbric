@@ -38,3 +38,5 @@ The template now requires API >=0.3.3-dev.10 and registers through `context.even
 ## Shared rules example (dev.10)
 
 Optionally call `SharedRulesExample.declare(context, damagePercent)` once at entrypoint initialization. Gameplay reads `multiplier(handle, world)`; explicit config reload may call `changeNextCampaign` to update candidates. The default entrypoint does not enable this example or change damage. Read [shared rules](../SHARED_RULES.md), especially the rule-missing old-save restrictions, before adopting it.
+
+Shared UI tools require API dev.13 or newer: see [UI.md](../UI.md). Raise the template dependency minimum only when using these APIs.

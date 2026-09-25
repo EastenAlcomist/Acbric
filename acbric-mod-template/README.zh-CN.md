@@ -106,3 +106,5 @@ public final class TemplateMod implements AcbricInitializer {
 ## 共享规则示例（dev.10）
 
 `SharedRulesExample.declare(context, damagePercent)` 可在入口显式调用一次；玩法读取 `multiplier(handle, world)`，配置重载后用 `changeNextCampaign` 更新候选值。默认入口未启用此示例，不改变伤害。采用前阅读 [共享规则](../SHARED_RULES.zh-CN.md)，尤其是缺少规则的旧存档不能自动接纳。
+
+公共 UI 需要 API dev.13 或更新版：见 [UI.zh-CN.md](../UI.zh-CN.md)。使用这些接口时请提高模板的最低 API 依赖版本。

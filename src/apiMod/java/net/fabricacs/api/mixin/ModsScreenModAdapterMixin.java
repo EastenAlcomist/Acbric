@@ -1,5 +1,5 @@
 /*
- * ModsScreenModAdapterMixin.java — 仅替换 Fabric 合成列表行的名称与状态，原版 MOD 仍由游戏原逻辑显示。
+ * ModsScreenModAdapterMixin.java — 为 Fabric 行安排启停及详情按钮并保留选中反馈；原版行沿用游戏绘制。
  */
 package net.fabricacs.api.mixin;
 
@@ -34,14 +34,20 @@ public abstract class ModsScreenModAdapterMixin {
             cir.setReturnValue(FabricModListBridge.chinese() ? "配套 Java MOD 已停用" : "Owning Java MOD is disabled");
         }
     }
+
+    @Inject(method = "getHeight(Lcom/zarkonnen/airships/Mod;Lcom/zarkonnen/airships/MyDraw;I)I", at = @At("HEAD"), cancellable = true, remap = false)
+    private void acbric$rowHeight(Mod mod, com.zarkonnen.airships.MyDraw draw, int width, CallbackInfoReturnable<Integer> cir) {
+        if (FabricModListBridge.isSyntheticFabricMod(mod)) cir.setReturnValue(FabricModListBridge.managerRowHeight(mod, draw, width));
+    }
+
     @Inject(method = "draw(Lcom/zarkonnen/airships/Mod;Lcom/zarkonnen/airships/MyDraw;III)V",
-            at = @At("RETURN"), remap = false)
+            at = @At("HEAD"), cancellable = true, remap = false)
     private void acbric$drawManagerButton(Mod mod, com.zarkonnen.airships.MyDraw draw, int x, int y, int width,
                                           org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         if (FabricModListBridge.isSyntheticFabricMod(mod)) {
-            FabricModListBridge.drawManagerButton(mod, draw, x, y, width,
+            FabricModListBridge.drawManagerRow(mod, draw, x, y, width, mod == this.this$0.selected, () -> this.this$0.selected = mod,
                     ((net.fabricacs.api.impl.ModManagerScreenAccess) this.this$0)::acbric$managerMessage);
+            ci.cancel();
         }
     }
-
 }

@@ -243,7 +243,7 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
 
     public String status() {
         var snapshot = gate.snapshot(now());
-        boolean zh = Lang.currentLocale != null && Lang.currentLocale.getLanguage().equals("zh");
+        boolean zh = net.fabricacs.api.util.AcbricLanguage.isChinese();
         String label = switch (snapshot.state()) {
             case CODE_MATCH -> gate.canReady(now()) ? (zh ? "代码一致" : "Code match") : (zh ? "等待房主确认" : "Waiting for host");
             case DIFFERENT -> zh ? "代码不同" : "Code differs";
@@ -274,7 +274,7 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
                     .forEach(d -> text.append(" / ").append(d.id()).append(' ').append(d.code()));
         });
         rulesExchange.differences().forEach(d->text.append('\n').append(d));
-        return text.append("\n").append(Lang.currentLocale != null && Lang.currentLocale.getLanguage().equals("zh")
+        return text.append("\n").append(net.fabricacs.api.util.AcbricLanguage.isChinese()
                 ? "点击重新检查；只比较代码和显式声明的规则，不保证完整状态同步。" : "Click to retry. Code and declared rules only; not full state synchronization.").toString();
     }
     /** 复用左上角连接信息位置，不占用准备/离开按钮；原连接文字保留在提示中。 */

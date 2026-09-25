@@ -2,7 +2,7 @@
 
 [English](API.md) | **中文**
 
-适用版本：**`acbric_api 0.3.3-dev.12`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
+适用版本：**`acbric_api 0.3.3-dev.17`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
 
 - 安装、编译和启动：[README.zh-CN.md](README.zh-CN.md)。
 - 本次兼容性调整：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。
@@ -294,3 +294,9 @@ Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/�
 ## 19. 存档规则预检查与转换（dev.11）
 
 `SharedRules.migration` 注册旧版本到当前版本的显式转换；`CampaignRuleSaves.inspect` 返回报告，`prepare` 生成前后值预览，`writeNew` 只发布到不存在的新目录。普通加载不迁移、不补默认。详见 [完整契约](RULE_SAVE_MIGRATION.zh-CN.md)。新增 `OpenGameMissionMixin`，共 21 个 Mixin；结构错误、原档变化和目标冲突明确拒绝。
+
+## 20. 公共 UI 组件（dev.13）
+
+`context.ui()` 注册 MOD 工具入口并打开组件窗口。`Ui` 构建标签、按钮、开关、单行文本、行列布局、面板和滚动区域；`UiWindowHandle` 管理子弹窗和托管资源。完整签名、线程与清理契约、示例及限制见 [UI.zh-CN.md](UI.zh-CN.md)。模态窗口不暂停模拟和网络 tick。框架 [MOD 详情页](MOD_MANAGEMENT.zh-CN.md) 使用同一套组件。
+
+本地化：dev.14 新增 `AcbricLanguage.text(英文, 中文)` 与 `ModUi.register(id, Supplier<String>, factory)`，见 [UI.zh-CN.md](UI.zh-CN.md)。

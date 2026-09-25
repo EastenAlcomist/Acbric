@@ -1,6 +1,14 @@
 # Acbric — Airships Fabric Mod Framework
 
-dev.12 adds [Java MOD management](MOD_MANAGEMENT.md): enable/disable on the next restart, protected core components, dependency prechecks and persistent disabled rows. **Update both launcher and API JARs.** Standard regression now covers 652 checks.
+dev.17 corrects shared-UI hit testing when Slick click-event coordinates drift from the current cursor. Native clicks still trigger actions; hit testing uses the polled cursor with scaling, masking and missing-cursor fallback preserved. Title-bar close now uses the supported X glyph. Offset replay passes; Windows focus switching still needs a real-game retest.
+
+dev.16 fixes text-field caret measurement and vertical alignment. Intermittent ignored clicks remain unconfirmed; bounded input diagnostics are included, not a claimed fix. Keep showcase 0.1.1.
+
+dev.15 fixes Details crashing back to the main menu; update the framework and keep showcase 0.1.1. Game exceptions are normally recorded in `%APPDATA%/AirshipsGame/log.txt` (or the configured custom user-data directory).
+
+**dev.14 language fix:** Native Chinese (`chi`) is now recognized. UI/tool labels follow game language. See [UI localization](UI.md#bilingual-ui-dev14).
+
+dev.13 adds [shared UI components](UI.md): native controls, layout, scrolling, focus, modal dialogs and lifecycle cleanup. Framework MOD details use the same API and expose registered MOD tools. Java enable/disable still applies on restart; update launcher and API together.
 
 **English** | [中文](README.zh-CN.md)
 
@@ -24,7 +32,7 @@ native JSON data-mod system.
 
 - [Runtime diagnostics and event scopes](EVENT_SCOPES.md): MOD attribution, grouped cleanup and error reporting.
 
-The current API build is **0.3.3-dev.12**. This release adds restart-based Java MOD management. Saved-rule preflight and explicit conversion continue to support previewing old-save adoption/migrations and writing a separate save. Campaign lobbies check startup code and declared gameplay rules before preparation/start. New campaigns freeze the confirmed rules; resumed campaigns read saved values. Peers need matching framework/game/MOD code; this is not state synchronization or support for mixed framework versions. Runtime event diagnostics and managed subscription scopes remain available. Campaign lifecycle and native save/recovery integration remain available. Existing public members and event semantics remain compatible.
+The current API build is **0.3.3-dev.17**. This release adds shared UI components and MOD tool entries. Restart-based Java MOD management remains available. Saved-rule preflight and explicit conversion continue to support previewing old-save adoption/migrations and writing a separate save. Campaign lobbies check startup code and declared gameplay rules before preparation/start. New campaigns freeze the confirmed rules; resumed campaigns read saved values. Peers need matching framework/game/MOD code; this is not state synchronization or support for mixed framework versions. Runtime event diagnostics and managed subscription scopes remain available. Campaign lifecycle and native save/recovery integration remain available. Existing public members and event semantics remain compatible.
 
 - [Complete API guide](API.md) / [中文](API.zh-CN.md): entrypoints, context, paths, events and resources.
 - [Change record (Chinese)](CHANGELOG.zh-CN.md) / [English changelog](CHANGELOG.md).
@@ -34,7 +42,7 @@ The current API build is **0.3.3-dev.12**. This release adds restart-based Java 
 - [Campaign lifecycle events](CAMPAIGN_LIFECYCLE.md): creation, loading, restoration and exit.
 - [Campaign data API](CAMPAIGN_DATA.md): persistence, schema migration and multiplayer boundaries.
 
-The build passes 652 assertions (two existing symlink scenarios skipped for host permissions). Both game builds pass 114 restart-chain checks, 56 old-launcher/failure-state/button-callback checks and six expected startup failures. dev.11 save/network evidence remains historical; full network checks were not rerun this round. Rendered GUI/mouse interaction and full campaigns remain manual.
+The build passes 698 assertions (two existing symlink scenarios skipped for host permissions). UI probes on both game builds cover native input ticks, scaling, click masking, tool entries and recording-renderer clip restoration. Earlier restart/save/network results remain historical. OpenGL rendering and full in-game acceptance remain manual.
 
 - [Configuration API](CONFIG.md): local preferences, explicit reload and frozen campaign rules.
 
@@ -134,7 +142,7 @@ See [unreleased changes](CHANGELOG.md) for behavior changes and remaining limita
 For resource conflicts, backups and old-directory migration, see [bundled resources](BUNDLED_RESOURCES.md).
 
 New UI events, cancellation/order and legacy migration: [event contract](EVENTS.md).
-The current API build is `0.3.3-dev.12`; the template requires `>=0.3.3-dev.10`; the template includes an opt-in campaign-data example.
+The current API build is `0.3.3-dev.17`; the template requires `>=0.3.3-dev.10`; the template includes an opt-in campaign-data example.
 
 ## 4. Project layout
 

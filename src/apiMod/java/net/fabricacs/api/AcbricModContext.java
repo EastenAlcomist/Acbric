@@ -76,6 +76,9 @@ public final class AcbricModContext {
         return AirshipsPaths.ensureModDataDir(modId());
     }
 
+    /** 当前 MOD 的公共界面入口；注册可在初始化时完成，打开窗口须在游戏线程。 */
+    public net.fabricacs.api.ui.ModUi ui() { return new net.fabricacs.api.ui.ModUi(modId()); }
+
     public AcbricLogger logger() {
         return logger;
     }

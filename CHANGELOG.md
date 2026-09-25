@@ -1,5 +1,30 @@
 # Changelog
 
+2026-09-26 player feedback: the user accepted the dev.17 UI fixes and approved proceeding. This stage includes shared components, details/tool entries, English/Chinese support, text positioning, focus-return hit testing, and the close glyph. Existing validation: 712 standard checks and 230 integration checks across two game versions. All 34 changed files matched the tested snapshot before this commit; only acceptance notes were then added. Unchanged code was not retested. This does not establish coverage of every GPU, IME, or third-party MOD combination.
+
+## Development build — API 0.3.3-dev.17
+
+dev.17 corrects shared-UI hit testing when Slick click-event coordinates drift from the current cursor. Native clicks still trigger actions; hit testing uses the polled cursor with scaling, masking and missing-cursor fallback preserved. Title-bar close now uses the supported X glyph. Offset replay passes; Windows focus switching still needs a real-game retest.
+
+## Development build — API 0.3.3-dev.16
+
+The caret incorrectly used MyDraw.tw (large-font toggle width including decoration). It now measures AGame.FOUNT, matching the rendered text, and centers text and caret vertically. Click semantics and focus are unchanged. The latest player log contained no new exception; this does not rule out missing input events. acbric-ui-input.log and acbric-ui-input.previous.log in the game user-data directory retain up to 64 KiB each. They record display activity, mouse press/release, native clicks, navigation keys, and framework barrier/layout/hit decisions, never text content. A write failure disables diagnostics without interrupting gameplay.
+
+## Development build — API 0.3.3-dev.15
+
+Fix Details returning to the main menu: modal input masking set the cursor to null, but native MyDraw.button requires a non-null drawing coordinate. Restore drawing cursor/state at render HEAD, before Screen.render; keep pointer/keyboard masking in input. Handle the close-release frame and an absent device cursor. Both old game builds reproduce the dev.14 failure; the fixed builds pass 132 UI/locale/native-render checks using real AirshipGame.render and MyDraw.button with a no-GPU terminal. Standard build: 698 checks; actual GPU visuals still require acceptance.
+
+## Development build — API 0.3.3-dev.14
+
+Fix Chinese detection for the native `chi` locale (also recognize `zh`/`zho`). Add `AcbricLanguage`, dynamic UI entry labels, localized default message actions and MOD description fields. Showcase 0.1.1 follows game language instead of the system locale. Lobby labels use the same selector. Add eight language assertions (698 total); both real Fabric game probes cover switching and language mismatch. No network protocol changes.
+
+## Development build — API 0.3.3-dev.13
+
+- Add public shared UI: labels, buttons, toggles, Unicode single-line editing, row/column/panel/scroll layouts, focus, tooltips, modal children and managed cleanup. See [UI contract](UI.md).
+- Add framework MOD details/tool entries using the same components; preserve restart-based management, row icons and selection feedback. Independent showcase remains outside this repository.
+- Mask native input after scaling while continuing game ticks. Guard opening/closing clicks, stale scroll hits, disabled ancestors, screen changes and cleanup reentrancy. Legacy event timing remains unchanged.
+- Add 38 standard checks (690 total). Real Fabric probes cover both game builds, native input loops and scaling, tool factories, actual details callbacks, and clip restoration through a recording renderer. OpenGL, IME and full GUI acceptance remain pending; previous multiplayer/restart results were not rerun in full.
+
 ## Development build — API 0.3.3-dev.12
 
 - Add Java MOD enable/disable controls, disk inventory including disabled archives, initialization failure and pending restart states; see [contract](MOD_MANAGEMENT.md). Changes save immediately and apply on the next restart.

@@ -213,6 +213,7 @@ tasks.register('distDir', Sync) {
     from 'SHARED_RULES.md', 'SHARED_RULES.zh-CN.md'
     from 'RULE_SAVE_MIGRATION.md', 'RULE_SAVE_MIGRATION.zh-CN.md'
     from 'MOD_MANAGEMENT.md', 'MOD_MANAGEMENT.zh-CN.md'
+    from 'UI.md', 'UI.zh-CN.md'
     from 'CONFIG.md', 'CONFIG.zh-CN.md'
     from 'CAMPAIGN_DATA.md', 'CAMPAIGN_DATA.zh-CN.md'
     from 'CAMPAIGN_LIFECYCLE.md', 'CAMPAIGN_LIFECYCLE.zh-CN.md'

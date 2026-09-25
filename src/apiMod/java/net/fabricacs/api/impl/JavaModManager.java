@@ -98,6 +98,23 @@ public final class JavaModManager {
     public Entry entry(String id) { return entries.get(id); }
     public boolean enabledNext(String id) { return !selection.disabled().contains(id) && !external.contains(id); }
     public String reason(String id) { return !error.isEmpty() ? error : entries.get(id).readOnlyReason(); }
+    /** 展示层才读取游戏语言，磁盘校验不提前初始化游戏字体及资源。 */
+    public String displayReason(String id) {
+        String reason = reason(id);
+        if (!net.fabricacs.api.util.AcbricLanguage.isChinese()) {
+            int split = reason.indexOf(" / ");
+            return split >= 0 && reason.codePoints().anyMatch(c -> c >= 0x4E00 && c <= 0x9FFF) ? reason.substring(0, split) : reason;
+        }
+        return switch (reason) {
+            case "Nested / external / built-in MOD" -> "嵌套、外部来源或内置 MOD，无法在此启停";
+            case "Core MOD / 核心组件" -> "框架核心组件，无法停用";
+            case "Not a client MOD / 非客户端 MOD" -> "非客户端 MOD";
+            case "Loaded from another source / 当前加载来源不同" -> "当前加载来源不同，无法在此启停";
+            case "Disabled by launch arguments / 启动参数停用" -> "已被启动参数停用";
+            case "Update the launcher and API together / 请同时更新启动器和 API" -> "请同时更新启动器和 API";
+            default -> reason;
+        };
+    }
     public String status(String id, boolean zh) {
         Entry entry = entries.get(id);
         String status = entry.loaded() ? (zh ? "已加载" : "Loaded") : (zh ? "未加载" : "Not loaded");

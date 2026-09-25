@@ -1,5 +1,7 @@
 # AGENTS.md — Acbric
 
+2026-09-26 实机反馈：用户确认 dev.17 本轮 UI 修复可以继续推进。本阶段包含公共组件、详情/工具入口、中英文、输入框定位、切屏坐标与关闭字形修复。已有 712 项标准检查、两版共 230 项集成检查；本次提交前 34 个变更文件与已验证快照完全一致，仅补充验收记录，不重复运行未变更代码的测试。此确认不扩大为全部 GPU/输入法/第三方 MOD 组合已验收。
+
 Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Skies》(Java,
 `com.zarkonnen.airships` 包,无混淆、无映射命名空间)。框架把 Fabric Loader 的
 `KnotClient` 启动器嫁接到该游戏上,让 MOD 能用 Java 代码 + mixin 扩展游戏逻辑,
@@ -42,7 +44,7 @@ Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Ski
 | 层 | 位置 | 职责 | 依赖 |
 |---|---|---|---|
 | 启动层 | `src/main` | `AirshipsGameProvider` 把游戏塞进 Fabric(解析 `game/Airships.json`、拼类路径、反射调 `Main.main`) | Fabric Loader；不依赖游戏 API 或 Acbric API |
-| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.3-dev.12（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、21 个 hook mixin | 游戏 + fabric-loader |
+| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.3-dev.17（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、21 个 hook mixin | 游戏 + fabric-loader |
 
 功能 MOD 不属于本仓库:使用者在自己的项目里编写(可以 `acbric-mod-template/` 为起点),
 编译期依赖 API JAR，通常还依赖 `libs/asplit-*.zip`。独立模板使用其本地 API JAR；同工程 source set 才可直接依赖 `apiMod.output`。
@@ -133,11 +135,11 @@ Fabric 略有差异:
   `javap -p -c` 反编译 `libs/asplit-*.zip` 里的目标 class 核对。
 - dev.12 的 `disabledMods` 在 Provider 定位阶段读取，交由固定 Loader 候选过滤；必须同时更新启动器和 API。Java 启停重启后生效，原生热重载按钮不影响此选择，见 MOD_MANAGEMENT.md。不可实现成只跳过 acbric 入口，否则 Mixin 仍生效。
 - 真实入口是 `src/main` 的 GameProvider + ServiceLoader 注册,不是任何 `fabric.mod.json`。
-- API 版本号 `acbric_api` = 0.3.3-dev.12（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
+- API 版本号 `acbric_api` = 0.3.3-dev.17（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
 
 ## 最近验证状态
 
-当前标准构建通过 652 项无界面回归。游戏 1.2.15.2 / 1.2.14 的真实 Fabric 探针各通过 10 项新增战役存储检查，包括原生二进制往返和实际 StoredState 恢复。用户已确认 dev.1、dev.2 运行正常，并对 dev.4 测试反馈“暂时没有发现问题”；未提供逐项测试记录，不推断全部联机和恢复场景已验收。详细边界以 CHANGELOG.md 为准；不能据此声称完整战役、双机联机和全部第三方 MOD 兼容。
+当前标准构建通过 712 项无界面回归。游戏 1.2.15.2 / 1.2.14 的真实 Fabric 探针各通过 10 项新增战役存储检查，包括原生二进制往返和实际 StoredState 恢复。用户已确认 dev.1、dev.2 运行正常，并对 dev.4 测试反馈“暂时没有发现问题”；未提供逐项测试记录，不推断全部联机和恢复场景已验收。详细边界以 CHANGELOG.md 为准；不能据此声称完整战役、双机联机和全部第三方 MOD 兼容。
 
 - dev.4 生命周期见 `CAMPAIGN_LIFECYCLE.md` / 中文版。CREATED 在生成的 setupPlayer 后、首次自动保存前；LOADED 只挂 JSON 战役构造成功出口；RESTORED 不执行初始化/迁移。EXITED 在客户端 input 边界或正常退出时发出，不保证强杀回调。
 - 独立工作区示例在相邻 `../acbric-campaign-demo/`，不加入框架 source set 或默认 MOD。用户对 dev.4 反馈暂未发现问题，完整逐场景覆盖仍未确认。
@@ -157,3 +159,13 @@ Fabric 略有差异:
 - dev.11 用户批准显式旧档接纳/规则迁移和独立测试 MOD。见 `RULE_SAVE_MIGRATION.md` / 中文版。普通加载依旧不迁移，OpenGameMission 文件入口预检查；转换 API 仅支持原生目录存档，快照→显式预览→新目录发布，原档从不改写。缺失值必须明确传入，较旧版本必须有注册转换器。独立 `../acbric-rules-test` 提供互斥 legacy/v1/v2，不能作为框架默认 MOD。597 项标准检查，六进程 136 项原生规则/存档检查、四轮 54 项网络检查；不声称已完整程序生成世界/GUI/跨机器验收。
 
 - dev.12 Java MOD 管理：顶层 JAR 启停、待重启状态、依赖预检查和受管理配套资源屏蔽。`src/shared/java` 是两层共用的无游戏依赖配置协议，不共享可变静态状态。核心/嵌套/外部来源只读；无归属配套资源须先显式迁移，普通原生偏好保留。用户暂缓运行期同步和反作弊；本轮未新增公开 API。详见 MOD_MANAGEMENT.md / 中文版。
+
+- dev.13 公共 UI：见 UI.md / UI.zh-CN.md；context.ui() 注册工具，Ui/UiNode/UiWindow/UiWindowHandle 为公开入口。UiRuntime 虽为 public 但仅用于内部适配。一个根窗口、最多 8 层；关闭释放资源，清理回调不得重开。input 在原生 ScaledInput 之后遮蔽，保留 tick/网络；鼠标左键编号为 1。框架详情页与独立 ../acbric-ui-showcase 共用组件。标准 698 项；两版真实 Fabric 探针覆盖原生 input 和录制绘制器，不代表 OpenGL/全部第三方 MOD 验收。
+
+- UI 中英文为后续开发必需：使用游戏当前语言（原生中文为 `chi`，同时识别 `zh`/`zho`），禁止按系统默认 Locale 或启动期缓存来选择界面语言。框架和示例文案、默认按钮、工具入口及对应文档同步中英文；其他语言回退英文。优先复用 `AcbricLanguage` 与动态入口名称，并测试英文系统+中文游戏、中文系统+英文游戏及切换。
+
+- dev.15 原生绘制约束：MyDraw.in/button 不接受 null。遮蔽输入后必须在 render HEAD、Screen.render 之前恢复绘制坐标；晚到覆盖层绘制才恢复会使详情窗口直接报错回主菜单。关闭释放帧也必须恢复；不应通过取消输入遮蔽来修复。新增真实 render/button 探针在工作区 AcbricUI绘制修复-20260926；绘制替身不能替代这条路径。原生日志在用户数据目录 log.txt。
+
+- dev.16：输入框光标必须用正文 FOUNT 的 textSize，不能用开关宽度 tw。输入诊断位于游戏数据目录的 acbric-ui-input*.log，两份各 64 KiB，不记录文本。间歇点击失效尚未复现，禁止描述为已经解决；诊断是观测，不强行重置输入或焦点。
+
+- dev.17：日志发现点击事件位置与轮询位置约差 119 像素。Slick 输入用经过 ScaledInput 的 cursor 命中，clicked 仅作为触发；自定义 Input 和缺失 cursor 保留事件位置。禁止从 unwrap 后取未缩放坐标。关闭使用已验证有字形的 X。两版坐标回放通过，不宣称已自动复现 Windows 失焦；诊断保留 cursor/event。
