@@ -16,6 +16,10 @@ public final class SharedRules {
         current=checked(new SharedRuleSnapshot(version,values));
     }
     public String modId(){return modId;}
+    /** 为一个较旧版本注册直达当前版本的纯转换；仅显式存档预览执行。 */
+    public void migration(int sourceVersion, Migration migration) {
+        SharedRulesRegistry.registerMigration(this, sourceVersion, Objects.requireNonNull(migration));
+    }
     public synchronized SharedRuleSnapshot current(){return current;}
     /** 显式更新新战役候选值；失败保留旧值，活动战役必须继续读取 forCampaign。 */
     public synchronized void update(JSONObject values){
@@ -37,4 +41,5 @@ public final class SharedRules {
         finally{validating=false;}
     }
     @FunctionalInterface public interface Validator {void validate(JSONObject values) throws Exception;}
+    @FunctionalInterface public interface Migration {JSONObject migrate(int previousVersion, JSONObject values) throws Exception;}
 }

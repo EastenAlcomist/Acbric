@@ -1,5 +1,13 @@
 # Changelog
 
+## Development build — API 0.3.3-dev.11
+
+- Add read-only saved-rule reports, registered direct schema upgrades, explicit missing-rule adoption and immutable conversion previews. Publish a separate native directory save; never overwrite the source or an existing destination. See [contract](RULE_SAVE_MIGRATION.md).
+- Run rule preflight at native file-load return before world construction, with MOD IDs and versions; keep the constructor check before LOADED. Loading/serialization never executes converters. Adds one mixin (21 total).
+- Keep unrelated binary chunks, MOD namespaces and absent rule entries. Reject malformed/unsupported storage, stale source/declarations and invalid conversion outputs. Single-file save conversion is outside this release.
+- Add 56 checks (597 total), six real Fabric processes/136 checks and four dual-client experiments/54 checks. Separate workspace test MOD provides legacy/v1/v2 variants; it changes no combat mechanics. Full procedural generation, GUI and cross-machine acceptance remain pending.
+
+
 ## Development build — API 0.3.3-dev.10
 
 - Add `context.sharedRules`, immutable snapshots and explicit candidate updates; see [shared rules](SHARED_RULES.md). New campaigns freeze confirmed values before generation; resume reads saved values without changing local config.

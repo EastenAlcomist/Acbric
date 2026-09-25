@@ -45,6 +45,7 @@ public final class FrameworkRegression {
         checks += net.fabricacs.api.impl.CodeHandshakeRegression.run();
         checks += net.fabricacs.api.impl.LobbyCodeGateRegression.run();
         checks += net.fabricacs.api.impl.SharedRulesRegression.run();
+        checks += net.fabricacs.api.impl.RuleSaveRegression.run(root.resolve("rule-saves"));
         System.out.println("REGRESSION PASS: " + checks + " checks; fixtures=" + root);
     }
 

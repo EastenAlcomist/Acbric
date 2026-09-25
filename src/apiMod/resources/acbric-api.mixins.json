@@ -23,7 +23,8 @@
     "WorldMapMixin",
     "WorldGenScreenMixin",
     "CampaignWorldMixin",
-    "ResumeScreenMixin"
+    "ResumeScreenMixin",
+    "OpenGameMissionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

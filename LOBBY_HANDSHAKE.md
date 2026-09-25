@@ -1,5 +1,7 @@
 # Campaign lobby code check (dev.9–dev.10)
 
+> See [dev.11 conversion](RULE_SAVE_MIGRATION.md) for save preflight, explicit adoption/migration and save-as boundaries. Normal loading still does not migrate.
+
 > dev.10 also requires [matching declared rules](SHARED_RULES.md). Code status below is only one prerequisite; unconfirmed rules block ready/start. Rules freeze before generation and resume uses saved values.
 
 **English** | [中文](LOBBY_HANDSHAKE.zh-CN.md)

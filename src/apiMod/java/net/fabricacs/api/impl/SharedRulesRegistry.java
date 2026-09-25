@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class SharedRulesRegistry {
     private static final Map<String,SharedRules> DECLARED=new TreeMap<>();
     private static final AtomicLong REVISION=new AtomicLong();
+    private static final Map<String, Map<Integer, SharedRules.Migration>> MIGRATIONS = new HashMap<>();
     private SharedRulesRegistry(){}
     public static synchronized SharedRules register(String id,int version,JSONObject values,SharedRules.Validator validator){
         if(DECLARED.containsKey(id))throw new IllegalStateException("Shared rules already declared: "+id);
@@ -18,7 +19,17 @@ public final class SharedRulesRegistry {
     }
     public static void changed(){REVISION.incrementAndGet();}
     static long revision(){return REVISION.get();}
-    private static synchronized Map<String,SharedRules> declarations(){return Map.copyOf(DECLARED);}
+    static synchronized Map<String,SharedRules> declarations(){return Map.copyOf(DECLARED);}
+    public static synchronized void registerMigration(SharedRules handle, int from, SharedRules.Migration migration) {
+        if (DECLARED.get(handle.modId()) != handle) throw new IllegalStateException("Declare rules through AcbricModContext first");
+        if (from < 0 || from >= handle.current().version()) throw new IllegalArgumentException("Migration must upgrade an older schema");
+        var handlers = MIGRATIONS.computeIfAbsent(handle.modId(), id -> new HashMap<>());
+        if (handlers.putIfAbsent(from, Objects.requireNonNull(migration)) != null) throw new IllegalStateException("Duplicate rule migration");
+        changed();
+    }
+    static synchronized SharedRules.Migration migration(String id, int from) {
+        return MIGRATIONS.getOrDefault(id, Map.of()).get(from);
+    }
     static RuleSet newCampaign(){
         long before=revision();Map<String,SharedRuleSnapshot> values=new TreeMap<>();
         declarations().forEach((id,handle)->values.put(id,handle.current()));
@@ -30,7 +41,10 @@ public final class SharedRulesRegistry {
         return access.acbric$campaignDataStore();
     }
     private static RuleSet stored(Object map){
-        var entry=store(map).read("acbric_api");
+        return stored(store(map));
+    }
+    static RuleSet stored(CampaignDataStore store){
+        var entry=store.read("acbric_api");
         if(entry.isEmpty() || !entry.get().data().has("sharedRules"))return RuleSet.empty("SAVED");
         if(entry.get().dataVersion()!=1)throw new IllegalArgumentException("RULE_STORAGE_VERSION");
         Object raw=entry.get().data().get("sharedRules");
@@ -58,8 +72,13 @@ public final class SharedRulesRegistry {
     }
     /** 构造加载战役成功后、通知 LOADED 前校验；不补值、不迁移、不写盘。 */
     public static void validateLoaded(Object map) throws java.io.IOException {
-        RuleSet saved=saved(map);
-        if(!saved.valid())throw new java.io.IOException("Acbric shared rules: "+saved.problem);
+        RuleSaveSession.requireCompatible(store(map));
+    }
+    /** 在构造世界之前检查扩展块；此处只校验，不迁移、不写盘。 */
+    public static void preflight(org.json.JSONObject world, com.zarkonnen.airships.InPipe input) throws java.io.IOException {
+        CampaignDataStore temporary = new CampaignDataStore();
+        CampaignDataHooks.read(temporary, world.getJSONObject("map"), input);
+        RuleSaveSession.requireCompatible(temporary);
     }
     /** 原生地图反序列化只检查保留块结构，不执行任何 MOD 校验回调。 */
     public static void validateStored(Object map) throws java.io.IOException {

@@ -1,5 +1,7 @@
 # Campaign lifecycle events
 
+> See [dev.11 conversion](RULE_SAVE_MIGRATION.md) for save preflight, explicit adoption/migration and save-as boundaries. Normal loading still does not migrate.
+
 > dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
 
 **English** | [中文](CAMPAIGN_LIFECYCLE.zh-CN.md)

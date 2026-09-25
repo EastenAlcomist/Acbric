@@ -2,7 +2,7 @@
 
 [English](API.md) | **中文**
 
-适用版本：**`acbric_api 0.3.3-dev.10`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
+适用版本：**`acbric_api 0.3.3-dev.11`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
 
 - 安装、编译和启动：[README.zh-CN.md](README.zh-CN.md)。
 - 本次兼容性调整：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。
@@ -255,7 +255,7 @@ Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/�
 
 ## 10. 验证范围
 
-当前标准构建通过 541 项无界面回归（含 62 项配置检查）。游戏 1.2.15.2 / 1.2.14 真实 Fabric 探针各通过 10 项战役存储和 31 项生命周期/v3.1 示例和 5 项受管理事件检查，配置策略部分使用显式事件派发；不能替代 GUI 与真实联机验收。用户对 dev.4 反馈暂未发现问题，dev.10 仍待完整人工验收。
+当前标准构建通过 597 项无界面回归（含 62 项配置检查）。游戏 1.2.15.2 / 1.2.14 真实 Fabric 探针各通过 10 项战役存储和 31 项生命周期/v3.1 示例和 5 项受管理事件检查，配置策略部分使用显式事件派发；不能替代 GUI 与真实联机验收。用户对 dev.4 反馈暂未发现问题，dev.10 仍待完整人工验收。
 
 ## 11. 战役数据
 
@@ -277,7 +277,7 @@ Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/�
 
 ## 15. 本地代码清单（dev.7）
 
-[导出与离线比较](CODE_MANIFEST.zh-CN.md) 属于内部诊断工具，不是新增公开 MOD API。541 项标准回归包含 45 项新增清单检查。CODE_MATCH 仅表示启动代码身份一致，dev.9 已接入大厅，dev.10 新增显式声明规则检查，仍不提供自动状态同步；内部握手核心见下节。
+[导出与离线比较](CODE_MANIFEST.zh-CN.md) 属于内部诊断工具，不是新增公开 MOD API。597 项标准回归包含 45 项新增清单检查。CODE_MATCH 仅表示启动代码身份一致，dev.9 已接入大厅，dev.10 新增显式声明规则检查，仍不提供自动状态同步；内部握手核心见下节。
 
 ## 16. 内部代码握手（dev.8）
 
@@ -290,3 +290,7 @@ Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/�
 ## 18. 共享玩法规则（dev.10）
 
 通过 `context.sharedRules` 声明，由 `SharedRules` 管理候选值，`forCampaign(world.map)` 读取已固化值。见 [完整契约与示例](SHARED_RULES.zh-CN.md)。校验器无副作用；规则缺失或版本不符的旧档不能静默补值。大厅全员一致后才可准备，准备后修改撤销旧凭据，不覆盖本地配置。本轮新增 `rules` 公开包及 1 个 Mixin，共 20 个。
+
+## 19. 存档规则预检查与转换（dev.11）
+
+`SharedRules.migration` 注册旧版本到当前版本的显式转换；`CampaignRuleSaves.inspect` 返回报告，`prepare` 生成前后值预览，`writeNew` 只发布到不存在的新目录。普通加载不迁移、不补默认。详见 [完整契约](RULE_SAVE_MIGRATION.zh-CN.md)。新增 `OpenGameMissionMixin`，共 21 个 Mixin；结构错误、原档变化和目标冲突明确拒绝。

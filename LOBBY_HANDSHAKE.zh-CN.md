@@ -1,5 +1,7 @@
 # 战役大厅代码检查（dev.9–dev.10）
 
+> dev.11 的存档预检查、显式接纳/迁移及另存边界见 [转换契约](RULE_SAVE_MIGRATION.zh-CN.md)；普通加载仍不执行迁移。
+
 > dev.10 同时要求[共享规则一致](SHARED_RULES.zh-CN.md)。下文的代码状态只是必要条件，规则未确认也不能准备/开局；生成前固化规则，续局读存档。
 
 [English](LOBBY_HANDSHAKE.md) | **中文**

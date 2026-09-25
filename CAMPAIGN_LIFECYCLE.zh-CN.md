@@ -1,5 +1,7 @@
 # 战役生命周期事件
 
+> dev.11 的存档预检查、显式接纳/迁移及另存边界见 [转换契约](RULE_SAVE_MIGRATION.zh-CN.md)；普通加载仍不执行迁移。
+
 > dev.10：显式声明共享规则、生成前固化及续局检查见 [共享规则](SHARED_RULES.zh-CN.md)。原有本地配置/存储写入仍不自动广播；下文分版本验证记录保留为历史。
 
 [English](CAMPAIGN_LIFECYCLE.md) | **中文**

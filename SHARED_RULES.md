@@ -49,7 +49,7 @@ Rules are kept in the reserved `acbric_api` campaign-data namespace, schema 1, u
 
 On JSON campaign load, structural and declared-schema validation must succeed **before** `LOADED`. Invalid data aborts loading with `IOException`. Native map reconstruction checks structure only, without running MOD validators or migrations. `forCampaign` validates the requested rule. Resume checks compare the saved set, including entries for currently absent MODs; they do not compare current local candidates.
 
-An old save with no declaration block remains usable when no installed MOD declares rules. If a MOD now declares a rule absent from that save, loading/resuming fails with `RULE_MISSING`. Unsupported schemas/invalid values also fail. There is no implicit default, host override, migration or adoption API in this version. MOD authors must plan save compatibility before opting in or changing schema versions. Existing MODs which do not opt in retain their public APIs and behavior; their undeclared settings are not covered by these checks.
+An old save with no declaration block remains usable when no installed MOD declares rules. If a MOD now declares a rule absent from that save, loading/resuming fails with `RULE_MISSING`. Unsupported schemas/invalid values also fail. There is no implicit default or host override on load. dev.11 adds separate [explicit adoption and migration](RULE_SAVE_MIGRATION.md): preview and save a new copy before loading; normal loading does not convert saves. MOD authors must plan save compatibility before opting in or changing schema versions. Existing MODs which do not opt in retain their public APIs and behavior; their undeclared settings are not covered by these checks.
 
 ## Equality, limits and protocol
 
