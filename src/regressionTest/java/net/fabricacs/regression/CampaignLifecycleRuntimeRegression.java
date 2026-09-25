@@ -1,0 +1,127 @@
+/*
+ * CampaignLifecycleRuntimeRegression.java — 真实 Mixin 下验证创建/读取入口，及恢复成功条件和退出。
+ * 地图使用真实存档构造器；无 GUI 夹具的客户端/界面使用 Unsafe，不能替代实际双机恢复。
+ */
+package net.fabricacs.regression;
+
+import com.zarkonnen.airships.*;
+import net.fabricacs.api.event.AirshipsCampaignEvents;
+import net.fabricacs.api.impl.CampaignLifecycleHooks;
+import net.fabricacs.api.impl.CampaignSession;
+import net.fabricacs.api.save.CampaignData;
+import org.json.JSONObject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+
+public final class CampaignLifecycleRuntimeRegression {
+    private static int checks;
+    private static void check(boolean condition, String label) {
+        if (!condition) throw new AssertionError(label);
+        checks++;
+        System.out.println("PASS transformed lifecycle: " + label);
+    }
+    private static <T> T blank(Class<T> type) throws Exception {
+        Class<?> u = Class.forName("sun.misc.Unsafe");
+        Field f = u.getDeclaredField("theUnsafe"); f.setAccessible(true);
+        return type.cast(u.getMethod("allocateInstance", Class.class).invoke(f.get(null), type));
+    }
+    public static void run(WorldMap map) throws Exception {
+        checks = 0;
+        List<Object> created = new ArrayList<>(), loaded = new ArrayList<>(), restored = new ArrayList<>(), exited = new ArrayList<>();
+        var c = AirshipsCampaignEvents.CREATED.registerWithHandle(world -> {
+            CampaignWorld w = (CampaignWorld) world;
+            created.add(w);
+            new CampaignData(w.map, "lifecycle_test").write(1, new JSONObject().put("ready", 42));
+        });
+        var l = AirshipsCampaignEvents.LOADED.registerWithHandle((world, multiplayer) -> {
+            loaded.add(world);
+            check(multiplayer && new CampaignData(((CampaignWorld) world).map, "lifecycle_test").read().isPresent(), "load callback sees restored extension and load mode");
+        });
+        var r = AirshipsCampaignEvents.RESTORED.registerWithHandle((previous, current) -> { restored.add(previous); restored.add(current); });
+        var e = AirshipsCampaignEvents.EXITED.registerWithHandle(exited::add);
+        try {
+            CampaignWorld original = new CampaignWorld(map, null, null);
+            original.playerEmpireIndex = -1;
+            check(created.isEmpty() && loaded.isEmpty(), "wrapping a map for recovery does not fire creation/load");
+            original.setupPlayer();
+            check(created.isEmpty(), "setupPlayer outside generation does not signal creation");
+            map.campaignWorldDuringGen = original;
+            original.setupPlayer(); original.setupPlayer();
+            check(created.equals(List.of(original)), "generation ready hook fires once despite repeated setupPlayer");
+            map.campaignWorldDuringGen = null;
+            SavedStateOutPipe pipe = new SavedStateOutPipe();
+            JSONObject json = original.toJSON(pipe);
+            pipe.compileAndGetHash();
+            JSONObject packed = pipe.toJSON();
+            CampaignWorld deserialized = new CampaignWorld(json, null, true, new JSONObjectInPipe(packed));
+            check(loaded.equals(List.of(deserialized)) && new CampaignData(deserialized.map, "lifecycle_test").read().orElseThrow().data().getInt("ready") == 42,
+                    "ready callback data survives first subsequent save and load");
+            try {
+                new CampaignWorld(new JSONObject(json.toString()).put("version", -1), null, true, new JSONObjectInPipe(packed));
+                throw new AssertionError("invalid version accepted");
+            } catch (RuntimeException expected) { check(loaded.size() == 1, "failed constructor does not fire LOADED"); }
+
+            AirshipGame game = blank(AirshipGame.class);
+            for (Field f : AirshipGame.class.getDeclaredFields()) if (f.getType() == CampaignSession.class) {
+                f.setAccessible(true); f.set(game, new CampaignSession());
+            }
+            StrategicScreen screen = blank(StrategicScreen.class); screen.g = game;
+            Field screenWorld = StrategicScreen.class.getField("w"); screenWorld.setAccessible(true); screenWorld.set(screen, original);
+            game.s = screen;
+            CampaignLifecycleHooks.observe(game); CampaignLifecycleHooks.observe(game);
+            check(exited.isEmpty(), "same strategic screen does not create an exit");
+            game.s = null; CampaignLifecycleHooks.observe(game);
+            check(exited.isEmpty(), "unrecognized temporary screen does not imply exit");
+
+            WorldMap recovered = new WorldMap(json.getJSONObject("map"), null, new JSONObjectInPipe(packed));
+            CampaignWorld replacement = new CampaignWorld(recovered, null, game);
+            ResumeScreen resume = blank(ResumeScreen.class); resume.g = game; resume.oldWorld = original; resume.newWorld = replacement;
+            game.s = resume;
+            // 调用已注入目标类的 RETURN handler；原版网络阶段不在此探针中伪造。
+            var handler = java.util.Arrays.stream(ResumeScreen.class.getDeclaredMethods()).filter(m -> m.getName().contains("acbric$restored")).findFirst().orElseThrow();
+            handler.setAccessible(true);
+            handler.invoke(resume, new CallbackInfo("input", false));
+            CampaignLifecycleHooks.observe(game);
+            check(restored.isEmpty() && exited.isEmpty(), "allocated replacement still waiting in resume emits nothing");
+            StrategicScreen replacementScreen = blank(StrategicScreen.class); replacementScreen.g = game; screenWorld.set(replacementScreen, replacement);
+            game.s = replacementScreen;
+            handler.invoke(resume, new CallbackInfo("input", false));
+            handler.invoke(resume, new CallbackInfo("input", false));
+            CampaignLifecycleHooks.observe(game);
+            check(restored.equals(List.of(original, replacement)) && exited.isEmpty(), "successful installed replacement fires RESTORED once without EXITED");
+            check(created.size() == 1 && loaded.size() == 1, "restoration does not repeat creation or load callbacks");
+            check(new CampaignData(replacement.map, "lifecycle_test").read().orElseThrow().data().getInt("ready") == 42, "rebound handle observes recovered data unchanged");
+            game.startExit(); game.startExit();
+            check(exited.equals(List.of(replacement)), "actual transformed startExit releases restored world once");
+            demoIfPresent(replacement, packed);
+            System.out.println("CAMPAIGN LIFECYCLE RUNTIME PASS: " + checks + " checks; no live network or full GUI assertion");
+        } finally { c.unregister(); l.unregister(); r.unregister(); e.unregister(); }
+    }
+
+    private static void demoIfPresent(CampaignWorld world, JSONObject packed) throws Exception {
+        if (!net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("acbric_campaign_demo")) return;
+        Class<?> demo = Class.forName("net.fabricacs.demo.CampaignDemo");
+        var action = demo.getMethod("action", CampaignWorld.class, String.class);
+        CampaignData data = new CampaignData(world.map, "acbric_campaign_demo");
+        int schema = data.read().orElseThrow().dataVersion();
+        String field = schema == 1 ? "counter" : "value";
+        int before = data.read().orElseThrow().data().getInt(field);
+        action.invoke(null, world, "ADD");
+        check(data.read().orElseThrow().data().getInt(field) == before + 1, "real demo action increments persisted data");
+        action.invoke(null, world, "FAIL");
+        check(data.read().orElseThrow().dataVersion() == schema && data.read().orElseThrow().data().getInt(field) == before + 1, "real demo failed migration preserves value and schema");
+        world.mpClient = blank(Client.class);
+        action.invoke(null, world, "ADD");
+        check(data.read().orElseThrow().data().getInt(field) == before + 1, "real demo blocks local multiplayer writes");
+        world.mpClient = null;
+        if (schema == 2) {
+            data.remove(); data.write(1, new JSONObject().put("counter", 7));
+            SavedStateOutPipe pipe = new SavedStateOutPipe(); JSONObject json = world.toJSON(pipe); pipe.compileAndGetHash();
+            CampaignWorld migrated = new CampaignWorld(json, null, true, new JSONObjectInPipe(pipe.toJSON()));
+            var result = new CampaignData(migrated.map, "acbric_campaign_demo").read().orElseThrow();
+            check(result.dataVersion() == 2 && result.data().getInt("value") == 7 && !result.data().has("counter"), "real v2 demo migrates v1 save via LOADED exactly preserving value");
+        }
+    }
+}

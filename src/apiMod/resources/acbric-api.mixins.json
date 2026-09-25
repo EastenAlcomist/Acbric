@@ -17,7 +17,9 @@
     "CommandButtonsPanelMixin",
     "DirectControlPanelMixin",
     "RenameShipPanelMixin",
-    "WorldMapMixin"
+    "WorldMapMixin",
+    "CampaignWorldMixin",
+    "ResumeScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

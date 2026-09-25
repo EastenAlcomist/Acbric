@@ -106,6 +106,7 @@ public final class CampaignDataRuntimeRegression {
             } catch (IOException expected) { check(expected.getMessage().contains("Acbric campaign data"), "unsupported extension aborts actual load with diagnostic"); }
             check(data(map, "example_mod").read().orElseThrow().data().getInt("heat") == 18, "failed load does not mutate existing campaign");
             System.out.println("CAMPAIGN RUNTIME PASS: " + checks + " checks; no real player save or network connection used");
+            CampaignLifecycleRuntimeRegression.run(map);
         } finally {
             Loadable.map = oldMap;
             Loadable.alls = oldAll;

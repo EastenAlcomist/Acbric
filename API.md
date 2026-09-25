@@ -2,7 +2,7 @@
 
 **English** | [中文](API.zh-CN.md)
 
-Applies to **`acbric_api 0.3.3-dev.3`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
+Applies to **`acbric_api 0.3.3-dev.4`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
 
 - Installation, building and launching: [README.md](README.md).
 - Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
@@ -253,10 +253,14 @@ Since `0.3.3-dev.2`, GameProvider reads `AGame.VERSION` from bytecode before dep
 
 ## 10. Validation scope
 
-The standard build passes 131 headless assertions, including 31 campaign-data checks. Real Fabric probes against game 1.2.15.2 and 1.2.14 each pass 10 additional campaign constructor/save/recovery checks, alongside existing loading/event probes. Manual successful-launch feedback covers dev.1 and dev.2, not the new dev.3 persistence behavior. See the changelog for details; these checks do not replace full campaign or live multiplayer acceptance.
+The standard build passes 141 headless assertions, including 31 campaign-data and 10 lifecycle checks. Real Fabric probes against game 1.2.15.2 and 1.2.14 each pass 10 additional campaign constructor/save/recovery checks, alongside existing loading/event probes. Manual successful-launch feedback covers dev.1 and dev.2, not dev.3 persistence or dev.4 lifecycle behavior. See the changelog for details; these checks do not replace full campaign or live multiplayer acceptance.
 
 ## 11. Campaign data
 
 Use `context.campaignData(campaignWorld.map)` after obtaining the actual map. The `net.fabricacs.api.save` API provides `read`, `write`, `remove` and explicit `migrate`; reads return independent `CampaignDataSnapshot` values, and failed migrations preserve the original. Data is namespaced by mod ID, stored through the native save pipeline and restored with the map, including unknown mod namespaces. Serialization runs no mod callbacks.
 
 Writes affect local shared game state and **do not broadcast**. Use deterministic simulation/command execution on all peers. Handles belong to one map instance and must be reacquired after replacement. Supported values, exact contracts, schema handling and storage/recovery limits are in the [campaign data guide](CAMPAIGN_DATA.md).
+
+## 12. Campaign lifecycle
+
+Since dev.4, `AirshipsCampaignEvents` exposes `CREATED`, `LOADED`, `RESTORED` and `EXITED`. Creation precedes the initial autosave; loaded JSON includes campaign extension data; restoration only rebinds local handles and must not mutate shared state. See [the full lifecycle contract](CAMPAIGN_LIFECYCLE.md). Existing public members remain available.

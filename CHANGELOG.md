@@ -2,7 +2,17 @@
 
 [中文改动记录](CHANGELOG.zh-CN.md) | [API guide](API.md) ([中文](API.zh-CN.md))
 
-## Unreleased — API build 0.3.3-dev.3
+## Unreleased — API build 0.3.3-dev.4
+
+- Add `AirshipsCampaignEvents.CREATED`, `LOADED`, `RESTORED` and `EXITED`. Generation readiness precedes the first autosave/state snapshot; JSON loading occurs after extension restoration; recovery hands off actual world identities without replaying initialization.
+- Track active campaign references per client and release them on observed menu/lobby transitions or normal application exit. Temporary screens and recovery waiting do not imply exit. See [lifecycle contracts](CAMPAIGN_LIFECYCLE.md) and its Chinese counterpart, included in distributions.
+- Supply a separate workspace demo mod with schema 1/2 builds, explicit migration, a read-only restoration callback, on-screen data and singleplayer test controls. It is not included as a default framework mod. Storage format and existing public members are unchanged.
+
+Validation: 141 standard assertions; real Fabric probes on games 1.2.15.2 and 1.2.14 each pass the existing 10 campaign-data checks plus 18 lifecycle/demo-v2 checks. The demo-v1 probe passes 16 lifecycle/demo checks. Recovery checks use a transformed RETURN handler and minimal screen fixtures, not a live network connection. Full GUI generation/autosave and multiplayer acceptance remain manual.
+
+User feedback after testing dev.4: no issues found so far. No per-scenario checklist was supplied; this does not establish complete multiplayer/recovery coverage.
+
+## Previous development build — API 0.3.3-dev.3
 
 - Add `AcbricModContext.campaignData(worldMap)` and the `net.fabricacs.api.save` API for campaign JSON data isolated by mod ID. Reads return defensive snapshots; writes validate and copy; explicit migration commits only after a successful callback and validation. Reject downgrades and retain data belonging to absent mods.
 - Attach storage to `WorldMap` serialization/restoration, including native disk saves and state recovery. A separate unversioned block prevents the game's same-age cache from hiding updates; its JSON text payload supports null values unsupported by the native binary/hash encoding. Capture immutable data when registering each deferred write.

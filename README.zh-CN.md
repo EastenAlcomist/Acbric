@@ -9,16 +9,17 @@
 
 ## 当前开发版与文档
 
-当前 API 构建为 **0.3.3-dev.3**。新增按 MOD 隔离的战役数据、显式迁移及原版存档/恢复集成，保留已有公开成员和事件语义。
+当前 API 构建为 **0.3.3-dev.4**。本轮新增战役生命周期事件，并继续提供按 MOD 隔离的战役数据、显式迁移及原版存档/恢复集成，保留已有公开成员和事件语义。
 
 - [完整 API 开发手册](API.zh-CN.md) / [English](API.md)：入口、上下文、目录、事件、取消与资源管理。
 - [本次改动记录](CHANGELOG.zh-CN.md)：12 项修复、兼容变化、验证结果和当前限制。
 - [UI 事件契约](EVENTS.md) / [资源更新与迁移](BUNDLED_RESOURCES.md)。
 - [MOD 模板说明](acbric-mod-template/README.zh-CN.md)：创建独立功能 MOD。
 - [游戏身份与启动诊断](DIAGNOSTICS.zh-CN.md)：真实版本、构建指纹和逐入口初始化结果。
+- [战役生命周期](CAMPAIGN_LIFECYCLE.zh-CN.md)：创建、加载、恢复和退出时机。
 - [战役数据 API](CAMPAIGN_DATA.zh-CN.md)：持久化、格式迁移及联机边界。
 
-标准构建有 131 项无界面回归，两套游戏真实探针覆盖原版战役数据保存/恢复。人工启动正常反馈覆盖 **dev.1 和 dev.2**，不覆盖本轮 dev.3 持久化；完整战役、联机及第三方 MOD 仍需分别验证。
+标准构建有 141 项无界面回归，两套游戏真实探针覆盖原版战役数据保存/恢复。人工启动正常反馈覆盖 **dev.1 和 dev.2**，不覆盖 dev.3 持久化及 dev.4 生命周期；完整战役、联机及第三方 MOD 仍需分别验证。
 
 ---
 
@@ -132,7 +133,7 @@ Acbric/
 | 层 | 位置 | 职责 |
 |---|---|---|
 | 启动层 | `src/main` | `AirshipsGameProvider` 解析 `game/Airships.json`、拼装类路径、反射调用 `Main.main`。 |
-| API 层 | `src/apiMod` | `acbric_api` —— 事件系统、入口桥、原生 MOD 界面集成、战役数据及 14 个 hook mixin。 |
+| API 层 | `src/apiMod` | `acbric_api` —— 事件系统、入口桥、原生 MOD 界面集成、战役数据及 16 个 hook mixin。 |
 
 **启动主链路**：`KnotClient.main` → ServiceLoader 发现 `AirshipsGameProvider` →
 拼装类路径 → Fabric 跑 `preLaunch` 入口 → `AcbricApiPreLaunch` 遍历所有 `acbric`
@@ -144,3 +145,5 @@ API 的 mixin 触发事件 → MOD 监听器执行。
 本仓库的框架代码以 **MIT 许可**发布，见 [`LICENSE`](LICENSE)。
 
 游戏《Airships: Conquer the Skies》及其全部资源归其各自所有者所有，**不在**本仓库内。
+
+战役创建、加载、恢复和退出事件从 dev.4 提供，见[生命周期手册](CAMPAIGN_LIFECYCLE.zh-CN.md)。独立存档示例作为单独 MOD 提供，不内置到框架。
