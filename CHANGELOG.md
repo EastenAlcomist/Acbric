@@ -1,6 +1,6 @@
 # Changelog
 
-[中文改动记录](CHANGELOG.zh-CN.md) | [API guide (Chinese)](API.zh-CN.md)
+[中文改动记录](CHANGELOG.zh-CN.md) | [API guide](API.md) ([中文](API.zh-CN.md))
 
 ## Unreleased — API 0.3.3-dev.1
 

@@ -1,5 +1,7 @@
 # Acbric API 开发手册
 
+[English](API.md) | **中文**
+
 适用版本：**`acbric_api 0.3.3-dev.1`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不包含新增的 `RENAME_SHIP_*` 字段。
 
 - 安装、编译和启动：[README.zh-CN.md](README.zh-CN.md)。

@@ -28,7 +28,7 @@ Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Ski
 - `build` 包含启动层、`apiModJar` 和 `src/regressionTest` 下的无界面检查；`regressionTest` 隔离用户数据，符号链接权限不足时会报告跳过。仍需单独验收真实游戏玩法。
 - 分发的 `loader-libs/` 仅进入启动类路径，`libs/` 保存游戏依赖。Provider 会按归档内容排除 Loader/Mixin/ASM/启动垫片，兼容旧的混合库目录；不要把这些类再次加入游戏加载器。
 - UI 事件契约与迁移见 `EVENTS.md`：旧 `ONE_SHOT_*` 保留 RenameShipPanel 触发和标签，禁止悄悄重定向；新功能使用 `RENAME_SHIP_*`。新事件排在旧事件之后，任一 BEFORE 取消则跳过后续组、原方法及所有 AFTER。
-- 完整 API 手册见 `API.zh-CN.md`，累计中文变更见 `CHANGELOG.zh-CN.md`；修改公开接口时同步手册、示例与依赖版本。
+- 完整 API 手册见 `API.md`（英文）和 `API.zh-CN.md`（中文），累计中文变更见 `CHANGELOG.zh-CN.md`；修改公开接口时同步中英文手册、示例与依赖版本。
 - 所有自有 Java 源码使用 UTF-8 中文文件头，说明职责；复杂流程注释说明约束和原因，避免逐行复述。JSON 不添加注释，自动生成的 Gradle wrapper 与第三方许可证保持原样。
 - 当前行为变更见 `CHANGELOG.md`；资源更新、冲突保护和显式迁移见 `BUNDLED_RESOURCES.md`。不要清空 Loadable 诊断或把失败结果改成成功。
 - 资源更新只能改写哈希仍匹配的已归属文件；保留用户修改和旧无归属目录。不要绕过备份、锁和恢复日志直接覆盖目录。

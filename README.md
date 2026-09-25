@@ -13,7 +13,7 @@ native JSON data-mod system.
 The current API is **0.3.3-dev.1**. This revision preserves existing public members
 and adds accurately named rename-panel events.
 
-- [Complete API guide (Chinese)](API.zh-CN.md): entrypoints, context, paths, events and resources.
+- [Complete API guide](API.md) / [中文](API.zh-CN.md): entrypoints, context, paths, events and resources.
 - [Change record (Chinese)](CHANGELOG.zh-CN.md) / [English changelog](CHANGELOG.md).
 - [UI event contract](EVENTS.md) / [Bundled resource updates](BUNDLED_RESOURCES.md).
 - [Standalone mod template](acbric-mod-template/README.md).

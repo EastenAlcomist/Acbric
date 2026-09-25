@@ -11,7 +11,7 @@
 
 当前 API 为 **0.3.3-dev.1**。本次修复保留旧公共接口，同时新增准确命名的重命名面板事件。
 
-- [完整 API 开发手册](API.zh-CN.md)：入口、上下文、目录、事件、取消与资源管理。
+- [完整 API 开发手册](API.zh-CN.md) / [English](API.md)：入口、上下文、目录、事件、取消与资源管理。
 - [本次改动记录](CHANGELOG.zh-CN.md)：12 项修复、兼容变化、验证结果和当前限制。
 - [UI 事件契约](EVENTS.md) / [资源更新与迁移](BUNDLED_RESOURCES.md)。
 - [MOD 模板说明](acbric-mod-template/README.zh-CN.md)：创建独立功能 MOD。

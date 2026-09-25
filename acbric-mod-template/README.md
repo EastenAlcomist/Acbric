@@ -25,4 +25,4 @@ Sync its dependencies from the matching framework checkout before compiling. Its
 rename confirmation. The old `ONE_SHOT_*` names are deprecated compatibility hooks.
 When copied elsewhere, keep this API minimum in `fabric.mod.json`.
 
-See the framework [API guide (Chinese)](../API.zh-CN.md) and [change record](../CHANGELOG.md). After copying the template elsewhere, consult these documents on the upstream dev branch.
+See the framework [API guide](../API.md) ([中文](../API.zh-CN.md)) and [change record](../CHANGELOG.md). After copying the template elsewhere, consult these documents on the upstream dev branch.
