@@ -34,6 +34,9 @@ public final class FrameworkRegression {
         checks += EventRegression.run();
         checks += RenamePanelRegression.run();
         checks += ModManagementRegression.run(root.resolve("mod-management"));
+        checks += net.fabricacs.acbric.GameIdentityRegression.run(root.resolve("game-identity"));
+        checks += net.fabricacs.api.impl.StartupDiagnosticsRegression.run(root.resolve("startup-diagnostics"));
+        checks += CampaignDataRegression.run(root.resolve("campaign-data"));
         System.out.println("REGRESSION PASS: " + checks + " checks; fixtures=" + root);
     }
 

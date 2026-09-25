@@ -9,14 +9,16 @@
 
 ## 当前开发版与文档
 
-当前 API 为 **0.3.3-dev.1**。本次修复保留旧公共接口，同时新增准确命名的重命名面板事件。
+当前 API 构建为 **0.3.3-dev.3**。新增按 MOD 隔离的战役数据、显式迁移及原版存档/恢复集成，保留已有公开成员和事件语义。
 
 - [完整 API 开发手册](API.zh-CN.md) / [English](API.md)：入口、上下文、目录、事件、取消与资源管理。
 - [本次改动记录](CHANGELOG.zh-CN.md)：12 项修复、兼容变化、验证结果和当前限制。
 - [UI 事件契约](EVENTS.md) / [资源更新与迁移](BUNDLED_RESOURCES.md)。
 - [MOD 模板说明](acbric-mod-template/README.zh-CN.md)：创建独立功能 MOD。
+- [游戏身份与启动诊断](DIAGNOSTICS.zh-CN.md)：真实版本、构建指纹和逐入口初始化结果。
+- [战役数据 API](CAMPAIGN_DATA.zh-CN.md)：持久化、格式迁移及联机边界。
 
-标准构建有 80 项无界面回归。独立运行包经本地人工测试反馈运行正常、表现与原包基本一致；没有完整场景/MOD 清单，存档、联机及所有第三方 MOD 仍需分别验证。
+标准构建有 131 项无界面回归，两套游戏真实探针覆盖原版战役数据保存/恢复。人工启动正常反馈覆盖 **dev.1 和 dev.2**，不覆盖本轮 dev.3 持久化；完整战役、联机及第三方 MOD 仍需分别验证。
 
 ---
 
@@ -109,7 +111,7 @@ game/
 内嵌原版资源的哈希归属、冲突保留、备份和旧目录手动迁移见 [资源管理说明](BUNDLED_RESOURCES.md)。
 
 新增 UI 事件、触发顺序、取消规则与旧接口迁移见 [事件契约](EVENTS.md)。
-当前开发 API 为 `0.3.3-dev.1`（尚未发布），新模板已声明对应最低版本。
+当前开发 API 构建及更新后的模板最低依赖为 `0.3.3-dev.3`（尚未发布）；模板包含需显式调用的战役数据示例。
 
 ## 4. 项目结构
 
@@ -130,7 +132,7 @@ Acbric/
 | 层 | 位置 | 职责 |
 |---|---|---|
 | 启动层 | `src/main` | `AirshipsGameProvider` 解析 `game/Airships.json`、拼装类路径、反射调用 `Main.main`。 |
-| API 层 | `src/apiMod` | `acbric_api` —— 事件系统、入口桥、原生 MOD 界面集成、13 个 hook mixin。 |
+| API 层 | `src/apiMod` | `acbric_api` —— 事件系统、入口桥、原生 MOD 界面集成、战役数据及 14 个 hook mixin。 |
 
 **启动主链路**：`KnotClient.main` → ServiceLoader 发现 `AirshipsGameProvider` →
 拼装类路径 → Fabric 跑 `preLaunch` 入口 → `AcbricApiPreLaunch` 遍历所有 `acbric`

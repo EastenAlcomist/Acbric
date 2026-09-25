@@ -2,12 +2,14 @@
 
 **English** | [中文](API.zh-CN.md)
 
-Applies to **`acbric_api 0.3.3-dev.1`**, an unpublished development version, not a stable release. This guide follows the source in this repository; the older 0.3.2 binaries do not include the new `RENAME_SHIP_*` fields.
+Applies to **`acbric_api 0.3.3-dev.3`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
 
 - Installation, building and launching: [README.md](README.md).
 - Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
 - UI event contract: [EVENTS.md](EVENTS.md).
 - Bundled native resources, conflicts and migration: [BUNDLED_RESOURCES.md](BUNDLED_RESOURCES.md).
+- Game build identity and startup reports: [DIAGNOSTICS.md](DIAGNOSTICS.md).
+- Campaign persistence, migration and multiplayer boundaries: [CAMPAIGN_DATA.md](CAMPAIGN_DATA.md).
 
 ## 1. Development setup and entrypoints
 
@@ -71,7 +73,7 @@ Corresponding `src/main/resources/fabric.mod.json`:
   "depends": {
     "java": ">=21",
     "fabricloader": ">=0.19.3",
-    "acbric_api": ">=0.3.3-dev.1",
+    "acbric_api": ">=0.3.3-dev.3",
     "airships": "*"
   }
 }
@@ -96,6 +98,7 @@ Game data and UI objects may not yet exist during pre-launch. Register the appro
 | `configDir()` / `ensureConfigDir()` | Get / create this mod's configuration directory |
 | `dataDir()` / `ensureDataDir()` | Get / create this mod's data directory |
 | `logger()` | `AcbricLogger` tagged with this mod's ID |
+| `campaignData(Object worldMap)` | `CampaignData` scoped to this mod and the given map (since dev.3) |
 
 You can also construct a logger with `new AcbricLogger(modId)`. It supports `info(String)`, `warn(String)`, `error(String)` and `error(String, Throwable)`. Messages use the format `[Acbric/<modId>/<level>] ...`. INFO goes to stdout; WARN and ERROR go to stderr. A supplied Throwable adds its stack trace. The logger does not manage rotation of separate log files.
 
@@ -240,14 +243,20 @@ With the game closed, use `BundledVanillaModMigration` to explicitly migrate an 
 
 ## 9. Mixins, internal implementation and current limits
 
-The public extension surface is `net.fabricacs.api`, `event` and `util`. The `impl` and `mixin` packages are framework internals: a public method there is not necessarily a stable third-party extension contract. Do not call `LifecycleHooks.fire*` directly to simulate game behavior.
+The public extension surface is `net.fabricacs.api` and its `event`, `util` and `save` packages. The `impl` and `mixin` packages are framework internals: a public method there is not necessarily a stable third-party extension contract. Do not call `LifecycleHooks.fire*` directly to simulate game behavior.
 
 For capabilities not yet covered by the API, declare mixins in your own mod and use the actual game bytecode to determine signatures, invocation owners and injection points. There are currently no mappings; use `remap=false`. Public API compatibility does not automatically make custom mixins compatible across game versions.
 
 The Fabric mod installation UI stages JARs, validates the schema/ID/version/structure of `fabric.mod.json`, and rejects overwriting an existing file with the same name. It does not preflight all dependencies, nested contents or mixin execution. Restart after installation. The synthetic mod list only displays loaded mods; `disabledMods` is not implemented and cannot be relied on to disable a mod. To disable one, close the game and move its JAR out of the scanned directory.
 
-GameProvider currently reports the placeholder game version `0.0.0` (raw value `unknown`). This cannot precisely constrain the real game version; record and verify the game build you use separately.
+Since `0.3.3-dev.2`, GameProvider reads `AGame.VERSION` from bytecode before dependency resolution and reports recognized versions to Fabric. If unavailable or unrecognized, the normalized version falls back to `0.0.0` with a warning. Mods pinned to the former `0.0.0` placeholder may now fail dependency checks. Ordered game archive hashes distinguish different builds sharing a version number; they do not guarantee compatibility. Local session reports distinguish loaded mods from successful `acbric` entrypoints. See [diagnostics and compatibility details](DIAGNOSTICS.md); these reports introduce no new public mod API.
 
 ## 10. Validation scope
 
-This revision passed 80 headless regression assertions, public API member/descriptor compatibility comparisons, and partial real Fabric/Mixin loading checks against two local game inputs. A separately prepared runtime was manually tested locally and reported to behave normally, close to the original package. No complete test matrix or mod list was recorded, so these results are not a compatibility guarantee for all GUI scenarios, saves, multiplayer sessions or third-party mods.
+The standard build passes 131 headless assertions, including 31 campaign-data checks. Real Fabric probes against game 1.2.15.2 and 1.2.14 each pass 10 additional campaign constructor/save/recovery checks, alongside existing loading/event probes. Manual successful-launch feedback covers dev.1 and dev.2, not the new dev.3 persistence behavior. See the changelog for details; these checks do not replace full campaign or live multiplayer acceptance.
+
+## 11. Campaign data
+
+Use `context.campaignData(campaignWorld.map)` after obtaining the actual map. The `net.fabricacs.api.save` API provides `read`, `write`, `remove` and explicit `migrate`; reads return independent `CampaignDataSnapshot` values, and failed migrations preserve the original. Data is namespaced by mod ID, stored through the native save pipeline and restored with the map, including unknown mod namespaces. Serialization runs no mod callbacks.
+
+Writes affect local shared game state and **do not broadcast**. Use deterministic simulation/command execution on all peers. Handles belong to one map instance and must be reacquired after replacement. Supported values, exact contracts, schema handling and storage/recovery limits are in the [campaign data guide](CAMPAIGN_DATA.md).

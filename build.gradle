@@ -31,6 +31,8 @@ configurations {
 
 dependencies {
     compileOnly files('libs/fabric-loader-0.19.3.jar')
+    // 启动层只读字节码常量，不提前加载/初始化游戏类；运行时沿用已有 ASM。
+    compileOnly 'org.ow2.asm:asm:9.8'
     fabricLoaderRuntime files('libs/fabric-loader-0.19.3.jar')
     fabricLoaderRuntime 'net.fabricmc:sponge-mixin:0.17.3+mixin.0.8.7'
     fabricLoaderRuntime 'org.ow2.asm:asm:9.8'
@@ -185,7 +187,8 @@ tasks.register('distDir', Sync) {
         include 'run.bat'
     }
     from 'LICENSE'
-    from 'BUNDLED_RESOURCES.md', 'EVENTS.md', 'CHANGELOG.md', 'CHANGELOG.zh-CN.md', 'API.zh-CN.md'
+    from 'README.md', 'README.zh-CN.md', 'BUNDLED_RESOURCES.md', 'EVENTS.md', 'CHANGELOG.md', 'CHANGELOG.zh-CN.md', 'API.md', 'API.zh-CN.md', 'DIAGNOSTICS.md', 'DIAGNOSTICS.zh-CN.md'
+    from 'CAMPAIGN_DATA.md', 'CAMPAIGN_DATA.zh-CN.md'
     doFirst {
         if (!file('src/dist/run.bat').isFile()) {
             throw new GradleException('Missing distribution launcher: src/dist/run.bat')

@@ -2,7 +2,28 @@
 
 [中文改动记录](CHANGELOG.zh-CN.md) | [API guide](API.md) ([中文](API.zh-CN.md))
 
-## Unreleased — API 0.3.3-dev.1
+## Unreleased — API build 0.3.3-dev.3
+
+- Add `AcbricModContext.campaignData(worldMap)` and the `net.fabricacs.api.save` API for campaign JSON data isolated by mod ID. Reads return defensive snapshots; writes validate and copy; explicit migration commits only after a successful callback and validation. Reject downgrades and retain data belonging to absent mods.
+- Attach storage to `WorldMap` serialization/restoration, including native disk saves and state recovery. A separate unversioned block prevents the game's same-age cache from hiding updates; its JSON text payload supports null values unsupported by the native binary/hash encoding. Capture immutable data when registering each deferred write.
+- Read old saves without an extension as empty. Reject missing, damaged or unsupported declared blocks instead of replacing data with defaults. Save/hash operations never run migration callbacks. Writes do not broadcast network commands.
+- Add bilingual [campaign data documentation](CAMPAIGN_DATA.md) and an opt-in, compiled `CampaignDataExample` in the template. The template now requires API `>=0.3.3-dev.3`; existing public members and event semantics are retained. City-upgrade features, automatic object attributes and network command APIs remain outside this change.
+
+Validation: 131 standard headless assertions (31 new campaign assertions). Real Fabric probes on Steam `1.2.15.2` and packaged `1.2.14` each pass 10 additional campaign checks covering transformed map construction, native binary save/load, `CampaignWorld` round trips, actual `StoredState` recovery, same-age hash changes and frozen earlier snapshots. These supplement the existing 18 target classes and 22 rename-panel combinations per build. User feedback confirms dev.1 and dev.2 run normally; dev.3 still needs full gameplay and live multiplayer/reconnect acceptance.
+
+## Previous development build — API 0.3.3-dev.2
+
+- Read `AGame.VERSION` from bytecode before Fabric dependency resolution, without initializing game classes. Report recognized versions (including four-component versions) as the built-in `airships` version. Preserve an unrecognized raw value with a warned `0.0.0` fallback.
+- Fingerprint the ordered game code archives using SHA-256; record per-archive hashes, version source and shadowed definitions. This identifies inputs, not compatibility.
+- Write per-session local launch and `acbric` entrypoint reports under `game/logs/acbric/<UUID>/`. Distinguish loaded mods, mods without an Acbric entrypoint, pending/running initialization, success and failure. Retain each entrypoint result and stack trace; partial failure is not overwritten by a later success.
+- Preserve entrypoint failure continuation and propagation of main-method failures. Diagnostic file-write errors warn without preventing startup. No new public mod APIs, city-upgrade functionality or generic configuration service is introduced.
+- Include the English API guide and bilingual diagnostic guides in distributions. See [diagnostics](DIAGNOSTICS.md) for fields, phases and coverage limits.
+
+**Dependency compatibility:** mods pinned to the previous `airships =0.0.0` placeholder may now fail Fabric resolution. Use tested real versions, or `*` when intentionally unconstrained; the framework does not bypass dependency checks. Public API signatures and event behavior remain unchanged; the template still supports API `>=0.3.3-dev.1`.
+
+Validation: standard build passes 100 headless assertions (20 new); 31 baseline public types / 125 existing member descriptors remain available. Real Fabric/Mixin probes passed against Steam `1.2.15.2` with mixed libraries and packaged `1.2.14` with separated libraries and its existing mods. Each probe loads 18 target classes and exercises 22 rename-panel combinations. A real failing entrypoint constructor still permits the next entrypoint to run; a deliberately failing main method retains a nonzero exit and `MAIN_FAILED` report. These are isolated headless checks, not full GUI, gameplay, save or multiplayer acceptance. Previous manual feedback applies to `0.3.3-dev.1` only.
+
+## Previous development build — API 0.3.3-dev.1
 
 Existing public API method names, types and JVM descriptors remain compatible with the
 0.3.2 baseline; some Event methods now synchronize registry access.

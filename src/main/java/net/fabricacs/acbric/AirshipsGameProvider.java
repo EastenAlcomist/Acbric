@@ -42,6 +42,8 @@ public final class AirshipsGameProvider implements GameProvider {
     private Path gameDirectory;
     private Path libsDirectory;
     private String mainClass = DEFAULT_MAIN_CLASS;
+    private GameBuildIdentity buildIdentity = GameBuildIdentity.unknown();
+    private LaunchDiagnostics diagnostics;
 
     @Override
     public String getGameId() {
@@ -55,12 +57,12 @@ public final class AirshipsGameProvider implements GameProvider {
 
     @Override
     public String getRawGameVersion() {
-        return "unknown";
+        return buildIdentity.rawVersion();
     }
 
     @Override
     public String getNormalizedGameVersion() {
-        return "0.0.0";
+        return buildIdentity.normalizedVersion();
     }
 
     @Override
@@ -116,6 +118,8 @@ public final class AirshipsGameProvider implements GameProvider {
         try {
             readAirshipsConfig(gameDirectory.resolve("Airships.json"));
             collectClassPath();
+            buildIdentity = GameBuildIdentity.inspect(gameClassPath);
+            diagnostics = new LaunchDiagnostics(gameDirectory, buildIdentity);
             configureNativeLibraries();
         } catch (IOException e) {
             throw new RuntimeException("Failed to locate Airships launch files", e);
@@ -144,13 +148,16 @@ public final class AirshipsGameProvider implements GameProvider {
     @Override
     public void launch(ClassLoader loader) {
         Thread.currentThread().setContextClassLoader(loader);
+        if (diagnostics != null) diagnostics.phase("ENTERING_MAIN", null);
 
         try {
             Class<?> main = Class.forName(mainClass, true, loader);
             Method mainMethod = main.getMethod("main", String[].class);
             mainMethod.invoke(null, (Object) getLaunchArguments(false));
+            if (diagnostics != null) diagnostics.phase("MAIN_RETURNED", null);
         } catch (InvocationTargetException e) {
             Throwable target = e.getTargetException();
+            if (diagnostics != null) diagnostics.phase("MAIN_FAILED", target);
             if (target instanceof RuntimeException) {
                 throw (RuntimeException) target;
             }
@@ -159,7 +166,11 @@ public final class AirshipsGameProvider implements GameProvider {
             }
             throw new RuntimeException(target);
         } catch (ReflectiveOperationException e) {
+            if (diagnostics != null) diagnostics.phase("MAIN_FAILED", e);
             throw new RuntimeException("Failed to launch " + mainClass, e);
+        } catch (RuntimeException | Error e) {
+            if (diagnostics != null) diagnostics.phase("MAIN_FAILED", e);
+            throw e;
         }
     }
 

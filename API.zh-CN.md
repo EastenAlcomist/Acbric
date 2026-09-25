@@ -2,12 +2,14 @@
 
 [English](API.md) | **中文**
 
-适用版本：**`acbric_api 0.3.3-dev.1`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不包含新增的 `RENAME_SHIP_*` 字段。
+适用版本：**`acbric_api 0.3.3-dev.3`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
 
 - 安装、编译和启动：[README.zh-CN.md](README.zh-CN.md)。
 - 本次兼容性调整：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。
 - UI 事件的英文契约：[EVENTS.md](EVENTS.md)。
 - 内嵌原版资源、冲突和迁移：[BUNDLED_RESOURCES.md](BUNDLED_RESOURCES.md)。
+- 游戏构建身份与启动报告：[DIAGNOSTICS.zh-CN.md](DIAGNOSTICS.zh-CN.md)。
+- 战役数据、迁移与联机边界：[CAMPAIGN_DATA.zh-CN.md](CAMPAIGN_DATA.zh-CN.md)。
 
 ## 1. 开发准备与入口
 
@@ -69,7 +71,7 @@ public final class ExampleMod implements AcbricInitializer {
   "depends": {
     "java": ">=21",
     "fabricloader": ">=0.19.3",
-    "acbric_api": ">=0.3.3-dev.1",
+    "acbric_api": ">=0.3.3-dev.3",
     "airships": "*"
   }
 }
@@ -94,6 +96,7 @@ public final class ExampleMod implements AcbricInitializer {
 | `configDir()` / `ensureConfigDir()` | 获取 / 创建本 MOD 的配置目录 |
 | `dataDir()` / `ensureDataDir()` | 获取 / 创建本 MOD 的数据目录 |
 | `logger()` | 带当前 MOD ID 的 `AcbricLogger` |
+| `campaignData(Object worldMap)` | 绑定当前 MOD 和指定地图的 `CampaignData`（dev.3 新增） |
 
 `AcbricLogger` 也可通过 `new AcbricLogger(modId)` 创建。支持 `info(String)`、`warn(String)`、`error(String)`、`error(String, Throwable)`。日志格式为 `[Acbric/<modId>/<level>] ...`；INFO 输出到 stdout，WARN/ERROR 输出到 stderr，Throwable 追加堆栈。它不负责独立日志文件的轮转。
 
@@ -237,14 +240,20 @@ example-mod.jar
 
 ## 9. Mixin、实现层与当前限制
 
-公开扩展入口是 `net.fabricacs.api`、`event`、`util`。`impl` 和 `mixin` 是框架内部实现，即使有 public 方法也不等于稳定的第三方扩展协议；不要直接调用 `LifecycleHooks.fire*` 模拟游戏行为。
+公开扩展入口是 `net.fabricacs.api` 及其 `event`、`util`、`save` 包。`impl` 和 `mixin` 是框架内部实现，即使有 public 方法也不等于稳定的第三方扩展协议；不要直接调用 `LifecycleHooks.fire*` 模拟游戏行为。
 
 需要 API 尚未覆盖的能力时，可以在自己的 MOD 声明 Mixin，并对照实际游戏字节码确定签名、调用 owner 和注入位置。当前无映射，使用 `remap=false`。自定义 Mixin 不会因为公开 API 兼容就自动获得跨游戏版本兼容。
 
 Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/版本/结构并拒绝同名覆盖；不预检全部依赖、嵌套内容或 Mixin 执行，安装后需重启。合成 MOD 列表只展示已加载内容，`disabledMods` 尚未实现，不能用它保证禁用 MOD；停用时关闭游戏并把 JAR 移出扫描目录。
 
-GameProvider 当前报告的游戏版本是占位值 `0.0.0`（原始值 `unknown`）。不能借此精确约束真实游戏版本，应自行记录并验证所用游戏构建。
+从 `0.3.3-dev.2` 开始，GameProvider 在依赖解析前从字节码读取 `AGame.VERSION`，把可识别版本报告给 Fabric；无法取得或识别时告警并将规范版本回退到 `0.0.0`。精确依赖原占位值 `0.0.0` 的 MOD 现在可能无法通过依赖检查。有序游戏归档哈希用于区分相同版本号的不同构建，不代表兼容性保证。本地会话报告区分 Loader 已加载与 `acbric` 入口初始化成功；详见[诊断与兼容说明](DIAGNOSTICS.zh-CN.md)，报告没有引入新的公开 MOD API。
 
 ## 10. 验证范围
 
-本版完成 80 项无界面回归、公开 API 成员/描述符兼容对照，以及两套本地游戏输入的部分真实 Fabric/Mixin 加载检查。独立运行包经本地人工测试，反馈运行正常、表现与原包基本一致；未记录完整测试矩阵或 MOD 清单，因此不扩大为全部 GUI、存档、联机和第三方 MOD 的兼容承诺。
+当前标准构建通过 131 项无界面回归，其中新增 31 项战役数据检查。游戏 1.2.15.2 和 1.2.14 的真实 Fabric 探针在原有加载/事件检查外，各通过 10 项地图构造、存档和恢复检查。人工启动正常反馈覆盖 dev.1、dev.2，不覆盖新增 dev.3 持久化行为。细节见变更记录，这些检查不替代完整战役或实际联机验收。
+
+## 11. 战役数据
+
+取得实际地图后使用 `context.campaignData(campaignWorld.map)`。`net.fabricacs.api.save` 提供 `read`、`write`、`remove` 和显式 `migrate`；读取返回独立 `CampaignDataSnapshot`，迁移失败保留原数据。数据按 MOD ID 隔离，通过原版存档管线保存，并随地图恢复，包含暂时没有对应 MOD 的命名空间。序列化不调用 MOD 回调。
+
+写入改变本地共享游戏状态，**不会广播**；需要各端通过确定性模拟或同步指令一致执行。句柄绑定一个地图实例，地图替换后重新获取。支持的值、完整契约、格式处理及存储/恢复边界见[战役数据手册](CAMPAIGN_DATA.zh-CN.md)。

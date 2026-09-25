@@ -4,6 +4,7 @@
 package net.fabricacs.api;
 
 import net.fabricacs.api.util.AcbricLogger;
+import net.fabricacs.api.save.CampaignData;
 import net.fabricacs.api.util.AirshipsPaths;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.ModMetadata;
@@ -73,5 +74,10 @@ public final class AcbricModContext {
 
     public AcbricLogger logger() {
         return logger;
+    }
+
+    /** 获取指定 WorldMap 的本 MOD 数据；写入不广播，须在模拟线程按同步规则调用。 */
+    public CampaignData campaignData(Object worldMap) {
+        return new CampaignData(worldMap, modId());
     }
 }

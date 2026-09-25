@@ -16,7 +16,8 @@
     "ShipStatusChromeMixin",
     "CommandButtonsPanelMixin",
     "DirectControlPanelMixin",
-    "RenameShipPanelMixin"
+    "RenameShipPanelMixin",
+    "WorldMapMixin"
   ],
   "injectors": {
     "defaultRequire": 1

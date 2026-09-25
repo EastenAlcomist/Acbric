@@ -29,6 +29,8 @@ Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Ski
 - 分发的 `loader-libs/` 仅进入启动类路径，`libs/` 保存游戏依赖。Provider 会按归档内容排除 Loader/Mixin/ASM/启动垫片，兼容旧的混合库目录；不要把这些类再次加入游戏加载器。
 - UI 事件契约与迁移见 `EVENTS.md`：旧 `ONE_SHOT_*` 保留 RenameShipPanel 触发和标签，禁止悄悄重定向；新功能使用 `RENAME_SHIP_*`。新事件排在旧事件之后，任一 BEFORE 取消则跳过后续组、原方法及所有 AFTER。
 - 完整 API 手册见 `API.md`（英文）和 `API.zh-CN.md`（中文），累计中文变更见 `CHANGELOG.zh-CN.md`；修改公开接口时同步中英文手册、示例与依赖版本。
+- 用户已批准首批通用接口：按 MOD ID 隔离的战役 JSON 存储，见 `CAMPAIGN_DATA.md` / `CAMPAIGN_DATA.zh-CN.md`。城市升级试点仍暂缓，后续接口另行确定。构建身份/会话诊断见 `DIAGNOSTICS.md` / `DIAGNOSTICS.zh-CN.md`，诊断类和报告格式不是公开 API。
+- 战役数据必须保留缺失 MOD 的命名空间；声明的块损坏或格式不支持时中止加载，不回退默认值。迁移显式执行且只处理副本；保存/校验不得执行 MOD 迁移回调。写入不会广播，勿把接入原生状态恢复描述成自动网络同步。
 - 所有自有 Java 源码使用 UTF-8 中文文件头，说明职责；复杂流程注释说明约束和原因，避免逐行复述。JSON 不添加注释，自动生成的 Gradle wrapper 与第三方许可证保持原样。
 - 当前行为变更见 `CHANGELOG.md`；资源更新、冲突保护和显式迁移见 `BUNDLED_RESOURCES.md`。不要清空 Loadable 诊断或把失败结果改成成功。
 - 资源更新只能改写哈希仍匹配的已归属文件；保留用户修改和旧无归属目录。不要绕过备份、锁和恢复日志直接覆盖目录。
@@ -40,7 +42,7 @@ Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Ski
 | 层 | 位置 | 职责 | 依赖 |
 |---|---|---|---|
 | 启动层 | `src/main` | `AirshipsGameProvider` 把游戏塞进 Fabric(解析 `game/Airships.json`、拼类路径、反射调 `Main.main`) | Fabric Loader；不依赖游戏 API 或 Acbric API |
-| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.3-dev.1（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、13 个 hook mixin | 游戏 + fabric-loader |
+| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.3-dev.3（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、14 个 hook mixin | 游戏 + fabric-loader |
 
 功能 MOD 不属于本仓库:使用者在自己的项目里编写(可以 `acbric-mod-template/` 为起点),
 编译期依赖 API JAR，通常还依赖 `libs/asplit-*.zip`。独立模板使用其本地 API JAR；同工程 source set 才可直接依赖 `apiMod.output`。
@@ -59,7 +61,7 @@ Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Ski
 {
   "entrypoints": { "acbric": ["net.fabricacs.<mod>.SomeMod"] },
   "mixins": ["acbric-<mod>.mixins.json"],
-  "depends": { "acbric_api": ">=0.3.3-dev.1" }
+  "depends": { "acbric_api": ">=0.3.3-dev.3" }
 }
 ```
 
@@ -107,10 +109,10 @@ Fabric 略有差异:
 - `src/main/.../AirshipsGameProvider.java` — Fabric 启动垫片(唯一零 api 依赖代码)。
 - `src/main/resources/META-INF/services/net.fabricmc.loader.impl.game.GameProvider` —
   ServiceLoader 注册文件,去掉它启动垫片就不会被发现。
-- `src/apiMod/.../api/` — 公开 API(`AcbricInitializer`、`AcbricModContext`、`Event` 系列)。
+- `src/apiMod/.../api/` — 公开 API(`AcbricInitializer`、`AcbricModContext`、`Event` 系列和 `save/` 战役数据)。
 - `src/apiMod/.../api/impl/` — `AcbricApiPreLaunch`、`FabricModListBridge`、
   `FabricModInstallBridge`、`BundledVanillaModLoader`、`LifecycleHooks`。
-- `src/apiMod/.../api/mixin/` — 13 个 hook mixin(生命周期 6 个、原生 MOD 界面 3 个、战斗 UI 4 个)。
+- `src/apiMod/.../api/mixin/` — 14 个 hook mixin(生命周期 6 个、原生 MOD 界面 3 个、战斗 UI 4 个、地图存储 1 个)。
 - `acbric-mod-template/` — 独立 MOD 模板项目(不含 `libs/`,需 `syncModTemplateLibs` 或手动补齐)。
 
 **不在本仓库、需自备**(见 `README.md`):
@@ -131,8 +133,8 @@ Fabric 略有差异:
   `javap -p -c` 反编译 `libs/asplit-*.zip` 里的目标 class 核对。
 - 当前源码未实现读取 `disabledMods` 配置；合成 Fabric 列表展示已加载 MOD，不代表具备完整禁用／卸载能力。
 - 真实入口是 `src/main` 的 GameProvider + ServiceLoader 注册,不是任何 `fabric.mod.json`。
-- API 版本号 `acbric_api` = 0.3.3-dev.1（未发布）;MOD 的 `fabric.mod.json` 里 `depends` 写 `">=0.3.3-dev.1"`。
+- API 版本号 `acbric_api` = 0.3.3-dev.3（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
 
 ## 最近验证状态
 
-本开发版完成 80 项无界面回归及局部真实加载链验证。独立运行包的本地人工测试反馈运行正常、与原包表现基本一致；没有完整场景及 MOD 清单，不能据此声称所有存档、联机和第三方 MOD 兼容。
+当前标准构建通过 131 项无界面回归。游戏 1.2.15.2 / 1.2.14 的真实 Fabric 探针各通过 10 项新增战役存储检查，包括原生二进制往返和实际 StoredState 恢复。用户已确认 dev.1、dev.2 运行正常，尚未人工验收 dev.3。详细边界以 CHANGELOG.md 为准；不能据此声称完整战役、双机联机和全部第三方 MOD 兼容。

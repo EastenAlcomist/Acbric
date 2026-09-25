@@ -10,16 +10,18 @@ native JSON data-mod system.
 
 ## Current development API and documentation
 
-The current API is **0.3.3-dev.1**. This revision preserves existing public members
-and adds accurately named rename-panel events.
+The current API build is **0.3.3-dev.3**. This revision adds namespaced campaign data,
+explicit migration and native save/recovery integration. Existing public members and event semantics remain compatible.
 
 - [Complete API guide](API.md) / [中文](API.zh-CN.md): entrypoints, context, paths, events and resources.
 - [Change record (Chinese)](CHANGELOG.zh-CN.md) / [English changelog](CHANGELOG.md).
 - [UI event contract](EVENTS.md) / [Bundled resource updates](BUNDLED_RESOURCES.md).
 - [Standalone mod template](acbric-mod-template/README.md).
+- [Game identity and startup diagnostics](DIAGNOSTICS.md): real game versions, build fingerprints and per-entrypoint results.
+- [Campaign data API](CAMPAIGN_DATA.md): persistence, schema migration and multiplayer boundaries.
 
-The build runs 80 headless assertions. A separately prepared full runtime was manually
-tested and reported to behave normally, close to the original package. No exhaustive
+The build runs 131 headless assertions; real probes against two game builds cover native campaign save/recovery.
+Manual successful-launch feedback covers **dev.1 and dev.2**, not the new dev.3 persistence. No exhaustive
 scenario/mod list was supplied; save, multiplayer and third-party mod compatibility
 still require their own checks.
 
@@ -119,7 +121,7 @@ See [unreleased changes](CHANGELOG.md) for behavior changes and remaining limita
 For resource conflicts, backups and old-directory migration, see [bundled resources](BUNDLED_RESOURCES.md).
 
 New UI events, cancellation/order and legacy migration: [event contract](EVENTS.md).
-The unreleased API is `0.3.3-dev.1`; new templates require this version or newer.
+The unreleased API build and the updated template require `0.3.3-dev.3`; the template includes an opt-in campaign-data example.
 
 ## 4. Project layout
 
@@ -140,7 +142,7 @@ Acbric/
 | Layer | Location | Responsibility |
 |---|---|---|
 | Launch | `src/main` | `AirshipsGameProvider` pushes the game into Fabric: it parses `game/Airships.json`, assembles the classpath and reflectively calls `Main.main`. Depends on Fabric Loader, not game classes or the Acbric API. |
-| API | `src/apiMod` | `acbric_api` — the event system, the entrypoint bridge, native-mod UI integration and 13 hook mixins. |
+| API | `src/apiMod` | `acbric_api` — events, entrypoint bridge, native-mod UI integration, campaign data and 14 hook mixins. |
 
 **Launch chain**: `KnotClient.main` → ServiceLoader discovers `AirshipsGameProvider` →
 classpath assembled → Fabric runs `preLaunch` → `AcbricApiPreLaunch` walks every `acbric`
