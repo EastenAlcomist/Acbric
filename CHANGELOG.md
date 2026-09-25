@@ -2,7 +2,15 @@
 
 [中文改动记录](CHANGELOG.zh-CN.md) | [API guide](API.md) ([中文](API.zh-CN.md))
 
-## Unreleased — API build 0.3.3-dev.5
+## Unreleased — API build 0.3.3-dev.6
+
+- Add EventScope/context.eventScope(name): grouped cleanup, one-shot consumption, stale-snapshot deactivation and listener-reference release. MODs explicitly manage application/campaign lifetimes.
+- Name all 34 built-in events. Managed failures report MOD/event/scope/thread context in the current startup session runtime-events.jsonl, with occurrence/count/byte limits and best-effort logging that preserves original exceptions.
+- Preserve legacy registration, order, cancellation and exception behavior; legacy listeners are not automatically wrapped. Update the template and independent demo v3.1 (F12 probe; campaign schema 3/config schema 2 unchanged). See bilingual [contracts](EVENT_SCOPES.md).
+
+Validation: 311 standard checks (81 new scope checks and 27 diagnostic checks). Games 1.2.15.2 and 1.2.14 each pass 5 transformed-event diagnostic, 10 campaign-storage and 31 lifecycle/demo checks. The former loads the new template, the latter legacy mods. All 31 original public types/125 members and dev.5's 45 public types/174 members remain. Probes use minimal fixtures, with explicit event dispatch for some policies. Full GUI/live multiplayer acceptance remains manual.
+
+## Previous development build — API 0.3.3-dev.5
 
 - Add `AcbricModContext.config` and `ModConfig`/`ConfigSnapshot`/`ConfigException`: strict namespaced JSON, missing defaults, validation, explicit migration/reload and defensive snapshots.
 - Save through a locked, conflict-checked, same-directory atomic replacement with a one-generation raw backup. Corrupt/future files and failed migrations are not silently reset. See the bilingual [configuration contract](CONFIG.md), included in distributions.

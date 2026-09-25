@@ -32,6 +32,7 @@ final class StartupDiagnostics {
         // 防止外部属性意外变成路径；正常会话由 Provider 在每次启动时重新生成。
         if (!session.matches("[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}")) session = UUID.randomUUID().toString();
         directory = gameDir.resolve("logs/acbric").resolve(session);
+        RuntimeEventDiagnostics.initialize(directory);
         report.put("schema", 1);
         report.put("session", session);
         report.put("startedAt", Instant.now().toString());

@@ -10,7 +10,9 @@ native JSON data-mod system.
 
 ## Current development API and documentation
 
-The current API build is **0.3.3-dev.5**. This revision adds namespaced JSON configuration with validation, explicit migration/reload and backed-up atomic saves. Campaign lifecycle and native save/recovery integration remain available. Existing public members and event semantics remain compatible.
+- [Runtime diagnostics and event scopes](EVENT_SCOPES.md): MOD attribution, grouped cleanup and error reporting.
+
+The current API build is **0.3.3-dev.6**. This revision adds attributed runtime event diagnostics and explicitly managed subscription scopes. Campaign lifecycle and native save/recovery integration remain available. Existing public members and event semantics remain compatible.
 
 - [Complete API guide](API.md) / [中文](API.zh-CN.md): entrypoints, context, paths, events and resources.
 - [Change record (Chinese)](CHANGELOG.zh-CN.md) / [English changelog](CHANGELOG.md).
@@ -20,7 +22,7 @@ The current API build is **0.3.3-dev.5**. This revision adds namespaced JSON con
 - [Campaign lifecycle events](CAMPAIGN_LIFECYCLE.md): creation, loading, restoration and exit.
 - [Campaign data API](CAMPAIGN_DATA.md): persistence, schema migration and multiplayer boundaries.
 
-The build runs 203 headless assertions, including 62 configuration checks. User feedback for dev.4 reports no issues so far; no complete checklist was supplied. dev.5 GUI and live multiplayer acceptance remain manual.
+The build runs 311 headless assertions, including 81 scope checks, 27 runtime diagnostic checks and 62 configuration checks. User feedback for dev.4 reports no issues so far; no complete checklist was supplied. dev.6 GUI and live multiplayer acceptance remain manual.
 
 - [Configuration API](CONFIG.md): local preferences, explicit reload and frozen campaign rules.
 
@@ -120,7 +122,7 @@ See [unreleased changes](CHANGELOG.md) for behavior changes and remaining limita
 For resource conflicts, backups and old-directory migration, see [bundled resources](BUNDLED_RESOURCES.md).
 
 New UI events, cancellation/order and legacy migration: [event contract](EVENTS.md).
-The current API build is `0.3.3-dev.5`; the template requires `>=0.3.3-dev.3`; the template includes an opt-in campaign-data example.
+The current API build is `0.3.3-dev.6`; the template requires `>=0.3.3-dev.3`; the template includes an opt-in campaign-data example.
 
 ## 4. Project layout
 

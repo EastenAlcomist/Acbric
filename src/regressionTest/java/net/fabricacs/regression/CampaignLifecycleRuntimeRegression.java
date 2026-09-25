@@ -124,6 +124,14 @@ public final class CampaignLifecycleRuntimeRegression {
             check(result.dataVersion() == schema && result.data().getInt("value") == 7 && !result.data().has("counter"), "real demo migrates v1 save via LOADED exactly preserving value");
         }
         if (schema == 3) configDemo(world, action, demo);
+        if (net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("acbric_campaign_demo").orElseThrow().getMetadata().getVersion().getFriendlyString().equals("3.1.0")) {
+            action.invoke(null, world, "SCOPE");
+            check(demo.getMethod("status").invoke(null).toString().startsWith("SCOPE_PROBE_PASS"), "real demo validates scope cleanup and diagnostics without mutating save");
+            check(demo.getMethod("scopeState").invoke(null).equals("application=4 campaign=1 probeListeners=1"), "repeated binding retains one campaign scope");
+            AirshipsCampaignEvents.EXITED.invoker().onExited(world);
+            check(demo.getMethod("scopeState").invoke(null).equals("application=4 campaign=0 probeListeners=0"), "campaign exit releases local listeners but retains application lifecycle observers");
+        }
+
     }
 
     /** 真实入口生成配置，重新加载仅改变本地偏好，新建单机战役才采用新参数。 */

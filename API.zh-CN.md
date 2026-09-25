@@ -2,7 +2,7 @@
 
 [English](API.md) | **中文**
 
-适用版本：**`acbric_api 0.3.3-dev.5`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
+适用版本：**`acbric_api 0.3.3-dev.6`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
 
 - 安装、编译和启动：[README.zh-CN.md](README.zh-CN.md)。
 - 本次兼容性调整：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。
@@ -100,6 +100,7 @@ public final class ExampleMod implements AcbricInitializer {
 | `logger()` | 带当前 MOD ID 的 `AcbricLogger` |
 | `campaignData(Object worldMap)` | 绑定当前 MOD 和指定地图的 `CampaignData`（dev.3 新增） |
 | `config(name, dataVersion, defaults, validator)` | 创建配置句柄；显式读写/迁移/重载（dev.5），见 [CONFIG](CONFIG.zh-CN.md) |
+| `eventScope(name)` | 创建独立的受管理订阅范围（dev.6），见 [契约](EVENT_SCOPES.zh-CN.md) |
 
 `AcbricLogger` 也可通过 `new AcbricLogger(modId)` 创建。支持 `info(String)`、`warn(String)`、`error(String)`、`error(String, Throwable)`。日志格式为 `[Acbric/<modId>/<level>] ...`；INFO 输出到 stdout，WARN/ERROR 输出到 stderr，Throwable 追加堆栈。它不负责独立日志文件的轮转。
 
@@ -253,7 +254,7 @@ Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/�
 
 ## 10. 验证范围
 
-当前标准构建通过 203 项无界面回归（含 62 项配置检查）。游戏 1.2.15.2 / 1.2.14 真实 Fabric 探针各通过 10 项战役存储和 28 项生命周期/v3 示例检查，配置策略部分使用显式事件派发；不能替代 GUI 与真实联机验收。用户对 dev.4 反馈暂未发现问题，dev.5 仍待人工验收。
+当前标准构建通过 311 项无界面回归（含 62 项配置检查）。游戏 1.2.15.2 / 1.2.14 真实 Fabric 探针各通过 10 项战役存储和 31 项生命周期/v3.1 示例和 5 项受管理事件检查，配置策略部分使用显式事件派发；不能替代 GUI 与真实联机验收。用户对 dev.4 反馈暂未发现问题，dev.6 仍待人工验收。
 
 ## 11. 战役数据
 
@@ -268,3 +269,7 @@ Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/�
 ## 13. MOD 配置（dev.5）
 
 使用 `context.config(...)`，再显式 `load/migrate/save/reload`。默认值只补缺失字段，失败保留旧快照；磁盘更新有备份和冲突检查。本地偏好可重载，共享玩法值应固化到战役，详见 [配置接口手册](CONFIG.zh-CN.md)。
+
+## 14. 运行期诊断与订阅范围（dev.6）
+
+`context.eventScope(name)` 提供 register/registerOnce/close。受管理回调记录 MOD、事件和异常；旧注册语义保持。见 [完整契约](EVENT_SCOPES.zh-CN.md)。新增 81 项范围与 27 项诊断检查；真实加载检查详见本轮变更记录，GUI/联机仍待人工验收。

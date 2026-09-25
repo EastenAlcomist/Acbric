@@ -2,7 +2,7 @@
 
 **English** | [中文](API.zh-CN.md)
 
-Applies to **`acbric_api 0.3.3-dev.5`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
+Applies to **`acbric_api 0.3.3-dev.6`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
 
 - Installation, building and launching: [README.md](README.md).
 - Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
@@ -102,6 +102,7 @@ Game data and UI objects may not yet exist during pre-launch. Register the appro
 | `logger()` | `AcbricLogger` tagged with this mod's ID |
 | `campaignData(Object worldMap)` | `CampaignData` scoped to this mod and the given map (since dev.3) |
 | `config(name, dataVersion, defaults, validator)` | Create a configuration handle; explicit I/O, migration and reload (dev.5), see [CONFIG](CONFIG.md) |
+| `eventScope(name)` | Create an independent managed subscription scope (dev.6), see [contracts](EVENT_SCOPES.md) |
 
 You can also construct a logger with `new AcbricLogger(modId)`. It supports `info(String)`, `warn(String)`, `error(String)` and `error(String, Throwable)`. Messages use the format `[Acbric/<modId>/<level>] ...`. INFO goes to stdout; WARN and ERROR go to stderr. A supplied Throwable adds its stack trace. The logger does not manage rotation of separate log files.
 
@@ -256,7 +257,7 @@ Since `0.3.3-dev.2`, GameProvider reads `AGame.VERSION` from bytecode before dep
 
 ## 10. Validation scope
 
-The standard build passes 203 headless assertions, including 62 config checks. Real Fabric probes on games 1.2.15.2 and 1.2.14 each pass 10 campaign-data and 28 lifecycle/demo-v3 checks. The latter include explicit event dispatch for configuration policies; they do not replace GUI or live multiplayer acceptance. User feedback for dev.4 reports no issues so far; dev.5 remains pending manual acceptance.
+The standard build passes 311 headless assertions, including 62 config checks. Real Fabric probes on games 1.2.15.2 and 1.2.14 each pass 10 campaign-data and 31 lifecycle/demo-v3.1 checks plus 5 managed-event runtime checks. The latter include explicit event dispatch for configuration policies; they do not replace GUI or live multiplayer acceptance. User feedback for dev.4 reports no issues so far; dev.6 remains pending manual acceptance.
 
 ## 11. Campaign data
 
@@ -271,3 +272,7 @@ Since dev.4, `AirshipsCampaignEvents` exposes `CREATED`, `LOADED`, `RESTORED` an
 ## 13. MOD configuration (dev.5)
 
 Use `context.config(...)` followed by explicit `load/migrate/save/reload`. Defaults fill missing fields only; failures retain the previous snapshot. Disk commits use backups and conflict checks. Local preferences may reload, while shared gameplay rules belong in campaign data. See [the configuration guide](CONFIG.md).
+
+## 14. Runtime diagnostics and event scopes (dev.6)
+
+`context.eventScope(name)` provides register/registerOnce/close. Managed failures report MOD/event/exception context; legacy semantics remain. See [full contracts](EVENT_SCOPES.md). Adds 81 scope and 27 diagnostic checks; see the changelog for real-loader coverage. GUI/live multiplayer acceptance remains manual.

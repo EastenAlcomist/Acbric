@@ -30,3 +30,7 @@ See the framework [API guide](../API.md) ([中文](../API.zh-CN.md)) and [change
 ## Campaign data example
 
 `CampaignDataExample.prepare(context, worldMap)` demonstrates initialization and schema migration. It is not invoked by the template: call it from your mod only after obtaining the actual map, on the simulation thread, with matching execution on peers. Obtain a new handle when the map is replaced. Data writes do not broadcast messages. See [campaign data](../CAMPAIGN_DATA.md).
+
+## Managed subscriptions (dev.6)
+
+The template now requires API >=0.3.3-dev.6 and registers through `context.eventScope("application")`. One-shot listeners leave the scope when consumed. Keep application scopes across campaigns; do not close them when initialization returns. Close local scopes explicitly. Initialization failure cleanup is demonstrated. See the framework EVENT_SCOPES.md.

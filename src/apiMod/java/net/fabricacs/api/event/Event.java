@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 阻止旧快照重复回调。监听器异常向调用方传播，中止该次后续分发。</p>
  */
 public final class Event<T> {
+    private final String name;
     private final List<Registration<T>> listeners;
     private final InvokerFactory<T> invokerFactory;
     private final T emptyInvoker;
@@ -27,10 +28,35 @@ public final class Event<T> {
 
     /** 创建事件时立即用空列表调用工厂；工厂需能处理空列表。 */
     public Event(InvokerFactory<T> invokerFactory) {
+        this("custom", invokerFactory);
+    }
+
+    /** 为诊断声明事件名称；旧构造器仍使用 custom。 */
+    public Event(String name, InvokerFactory<T> invokerFactory) {
+        this.name = Objects.requireNonNull(name, "name");
+        if (name.isBlank() || name.length() > 256) throw new IllegalArgumentException("Event name must contain 1..256 characters");
         this.invokerFactory = Objects.requireNonNull(invokerFactory);
         this.listeners = new ArrayList<>();
         this.emptyInvoker = invokerFactory.create(snapshot());
         this.invoker = emptyInvoker;
+    }
+
+    public String name() { return name; }
+    T emptyInvoker() { return emptyInvoker; }
+
+    /** 受管理订阅先绑定注销句柄再发布快照，避免并发首次分发早于句柄赋值。 */
+    synchronized EventHandle registerScoped(EventScope.ScopedListener<T> listener) {
+        Registration<T> registration = new Registration<>(listener.proxy(), listener::released);
+        listener.handle = () -> remove(registration);
+        listeners.add(registration);
+        try { invoker = invokerFactory.create(snapshot()); }
+        catch (RuntimeException | Error failure) {
+            listeners.remove(registration);
+            registration.active.set(false);
+            listener.released();
+            throw failure;
+        }
+        return listener;
     }
 
     /** 追加普通订阅，允许重复注册同一对象。 */
@@ -79,6 +105,7 @@ public final class Event<T> {
     private synchronized boolean remove(Registration<T> registration) {
         registration.active.set(false);
         if (!listeners.remove(registration)) return false;
+        if (registration.cleanup != null) registration.cleanup.run();
         invoker = invokerFactory.create(snapshot());
         return true;
     }
@@ -86,7 +113,10 @@ public final class Event<T> {
     /** 清空共享事件全部订阅；MOD 通常应只注销自己持有的句柄。 */
     public synchronized void clearListeners() {
         if (!listeners.isEmpty()) {
-            for (Registration<T> registration : listeners) registration.active.set(false);
+            for (Registration<T> registration : listeners) {
+                registration.active.set(false);
+                if (registration.cleanup != null) registration.cleanup.run();
+            }
             listeners.clear();
             invoker = invokerFactory.create(snapshot());
         }
@@ -115,7 +145,9 @@ public final class Event<T> {
     private static final class Registration<T> {
         final T listener;
         final AtomicBoolean active = new AtomicBoolean(true);
-        Registration(T listener) { this.listener = listener; }
+        final Runnable cleanup;
+        Registration(T listener) { this(listener, null); }
+        Registration(T listener, Runnable cleanup) { this.listener = listener; this.cleanup = cleanup; }
     }
 
     @FunctionalInterface

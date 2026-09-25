@@ -98,3 +98,7 @@ public final class TemplateMod implements AcbricInitializer {
 ## 战役数据示例
 
 `CampaignDataExample.prepare(context, worldMap)` 展示初始化与格式迁移，不由模板自动执行。取得实际地图后，在游戏模拟线程的适当时机调用，联机要求各端一致执行。地图替换后重新获取句柄，写入不广播消息。详见[战役数据接口](../CAMPAIGN_DATA.zh-CN.md)。
+
+## 受管理订阅（dev.6）
+
+当前模板要求 API >=0.3.3-dev.6，用 `context.eventScope("application")` 管理注册；一次性监听执行后自动移出范围。应用范围跨战役保留，不在入口返回时关闭。局部范围由 MOD 显式关闭，初始化失败示例会清理已注册条目。完整契约见框架 EVENT_SCOPES.zh-CN.md。

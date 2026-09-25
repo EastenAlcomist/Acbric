@@ -7,6 +7,7 @@ import net.fabricacs.api.util.AcbricLogger;
 import net.fabricacs.api.save.CampaignData;
 import net.fabricacs.api.config.ModConfig;
 import net.fabricacs.api.config.ConfigException;
+import net.fabricacs.api.event.EventScope;
 import org.json.JSONObject;
 import net.fabricacs.api.util.AirshipsPaths;
 import net.fabricmc.loader.api.ModContainer;
@@ -78,6 +79,9 @@ public final class AcbricModContext {
     public AcbricLogger logger() {
         return logger;
     }
+
+    /** 创建独立订阅范围；同名也不会复用，关闭时机由 MOD 显式管理。 */
+    public EventScope eventScope(String name) { return new EventScope(modId(), name); }
 
     /** 获取指定 WorldMap 的本 MOD 数据；写入不广播，须在模拟线程按同步规则调用。 */
     public CampaignData campaignData(Object worldMap) {

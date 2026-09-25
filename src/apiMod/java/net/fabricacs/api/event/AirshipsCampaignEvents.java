@@ -6,19 +6,19 @@ package net.fabricacs.api.event;
 
 public final class AirshipsCampaignEvents {
     /** 新地图内容及玩家准备完毕，首次自动保存/联机快照之前；每个生成实例一次。 */
-    public static final Event<Created> CREATED = new Event<>(listeners -> world -> {
+    public static final Event<Created> CREATED = new Event<>("AirshipsCampaignEvents.CREATED", listeners -> world -> {
         for (Created listener : listeners) listener.onCreated(world);
     });
     /** 战役 JSON 构造成功；包括单机存档及联机大厅传入的存档，不代表已进入地图界面。 */
-    public static final Event<Loaded> LOADED = new Event<>(listeners -> (world, multiplayerLoad) -> {
+    public static final Event<Loaded> LOADED = new Event<>("AirshipsCampaignEvents.LOADED", listeners -> (world, multiplayerLoad) -> {
         for (Loaded listener : listeners) listener.onLoaded(world, multiplayerLoad);
     });
     /** ResumeScreen 成功安装恢复后的战役/界面；不发送 CREATED、LOADED 或旧实例 EXITED。 */
-    public static final Event<Restored> RESTORED = new Event<>(listeners -> (previous, current) -> {
+    public static final Event<Restored> RESTORED = new Event<>("AirshipsCampaignEvents.RESTORED", listeners -> (previous, current) -> {
         for (Restored listener : listeners) listener.onRestored(previous, current);
     });
     /** 已观察到的活动战役离开至菜单/大厅、被另一战役替换或正常退出程序；不是保存回调。 */
-    public static final Event<Exited> EXITED = new Event<>(listeners -> world -> {
+    public static final Event<Exited> EXITED = new Event<>("AirshipsCampaignEvents.EXITED", listeners -> world -> {
         for (Exited listener : listeners) listener.onExited(world);
     });
 

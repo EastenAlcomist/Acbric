@@ -12,6 +12,6 @@
     ]
   },
   "depends": {
-    "acbric_api": ">=0.3.3-dev.3"
+    "acbric_api": ">=0.3.3-dev.6"
   }
 }

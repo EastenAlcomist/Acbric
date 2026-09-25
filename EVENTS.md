@@ -76,3 +76,7 @@ New hooks must document the exact game class/method, supported game build eviden
 before/after timing, argument meaning, cancellation, exception handling and ordering.
 Keep compatibility hooks stable; use accurate names in new templates and examples.
 Add a regression against the transformed game method when changing injection points.
+
+## Opt-in managed subscriptions (dev.6)
+
+EventScope adds ownership diagnostics and grouped cleanup without changing the existing UI ordering/cancellation rules. Legacy registrations retain their semantics; scoped registrations deactivate retained snapshots when closed. See [the scope contract](EVENT_SCOPES.md).

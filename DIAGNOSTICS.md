@@ -60,3 +60,7 @@ The report phase distinguishes resource preparation, entrypoint initialization, 
 - Report write failures emit a warning and do not change initialization or launch results. Existing blocking files are not deleted. With a failed write, the last persisted phase may be stale or no report may exist.
 
 Reports use temporary files and atomic replacement where supported, with a replacement fallback. They are diagnostic snapshots, not a crash-proof transaction log. Errors before the provider locates game inputs, early Loader failures, unrelated pre-launch callbacks, background-thread errors and forced termination are not all captured. Preserve the normal console/Fabric log alongside these reports. Stack traces may contain local paths or mod-provided messages; review them before sharing.
+
+## Runtime event diagnostics (dev.6)
+
+Managed EventScope callback failures use runtime-events.jsonl in the same startup session. Legacy registrations are unchanged. See [ownership, limits and exception contracts](EVENT_SCOPES.md).
