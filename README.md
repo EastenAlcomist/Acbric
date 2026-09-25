@@ -10,6 +10,8 @@ native JSON data-mod system.
 
 ## Current development API and documentation
 
+- [Shared campaign rules](SHARED_RULES.md): declarations, peer checks, frozen new-campaign values and saved rules.
+
 - [Campaign lobby code check](LOBBY_HANDSHAKE.md): automatic checking, preparation invalidation and start guards.
 
 - [Internal code handshake](CODE_HANDSHAKE.md): bounded requests, fresh sessions, retries, timeouts and explicit results.
@@ -18,7 +20,7 @@ native JSON data-mod system.
 
 - [Runtime diagnostics and event scopes](EVENT_SCOPES.md): MOD attribution, grouped cleanup and error reporting.
 
-The current API build is **0.3.3-dev.9**. Campaign lobbies now automatically check startup code and gate preparation/start. Peers need matching framework/game/MOD code; this is not state synchronization or support for mixed framework versions. Runtime event diagnostics and managed subscription scopes remain available. Campaign lifecycle and native save/recovery integration remain available. Existing public members and event semantics remain compatible.
+The current API build is **0.3.3-dev.10**. Campaign lobbies check startup code and declared gameplay rules before preparation/start. New campaigns freeze the confirmed rules; resumed campaigns read saved values. Peers need matching framework/game/MOD code; this is not state synchronization or support for mixed framework versions. Runtime event diagnostics and managed subscription scopes remain available. Campaign lifecycle and native save/recovery integration remain available. Existing public members and event semantics remain compatible.
 
 - [Complete API guide](API.md) / [中文](API.zh-CN.md): entrypoints, context, paths, events and resources.
 - [Change record (Chinese)](CHANGELOG.zh-CN.md) / [English changelog](CHANGELOG.md).
@@ -28,7 +30,7 @@ The current API build is **0.3.3-dev.9**. Campaign lobbies now automatically che
 - [Campaign lifecycle events](CAMPAIGN_LIFECYCLE.md): creation, loading, restoration and exit.
 - [Campaign data API](CAMPAIGN_DATA.md): persistence, schema migration and multiplayer boundaries.
 
-The build runs 477 headless assertions, including 44 lobby and 77 handshake checks, 45 manifest checks, 81 scope checks, 27 runtime diagnostic checks and 62 configuration checks. User feedback for dev.4 reports no issues so far; no complete checklist was supplied. Ten isolated native Server/dual Fabric Client experiments pass 104 top-level checks across games 1.2.15.2 and 1.2.14. Full dev.9 GUI, successful world start and cross-machine/official-server acceptance remain manual.
+The build passes 541 headless assertions, including 64 new rule checks. Fourteen isolated native Server/dual Fabric Client experiments pass 204 top-level checks across games 1.2.15.2 and 1.2.14. Public API compatibility, original samples and the current template also pass targeted real-loader/storage probes. Full GUI, successful world generation and cross-machine/official-server acceptance remain manual.
 
 - [Configuration API](CONFIG.md): local preferences, explicit reload and frozen campaign rules.
 
@@ -128,7 +130,7 @@ See [unreleased changes](CHANGELOG.md) for behavior changes and remaining limita
 For resource conflicts, backups and old-directory migration, see [bundled resources](BUNDLED_RESOURCES.md).
 
 New UI events, cancellation/order and legacy migration: [event contract](EVENTS.md).
-The current API build is `0.3.3-dev.9`; the template requires `>=0.3.3-dev.6`; the template includes an opt-in campaign-data example.
+The current API build is `0.3.3-dev.10`; the template requires `>=0.3.3-dev.10`; the template includes an opt-in campaign-data example.
 
 ## 4. Project layout
 
@@ -149,7 +151,7 @@ Acbric/
 | Layer | Location | Responsibility |
 |---|---|---|
 | Launch | `src/main` | `AirshipsGameProvider` pushes the game into Fabric: it parses `game/Airships.json`, assembles the classpath and reflectively calls `Main.main`. Depends on Fabric Loader, not game classes or the Acbric API. |
-| API | `src/apiMod` | `acbric_api` — events, entrypoint bridge, native-mod UI integration, campaign data, lobby checks and 19 hook mixins. |
+| API | `src/apiMod` | `acbric_api` — events, entrypoint bridge, native-mod UI integration, campaign data, lobby checks and 20 hook mixins. |
 
 **Launch chain**: `KnotClient.main` → ServiceLoader discovers `AirshipsGameProvider` →
 classpath assembled → Fabric runs `preLaunch` → `AcbricApiPreLaunch` walks every `acbric`

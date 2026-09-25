@@ -1,5 +1,7 @@
 # Local code manifests and offline comparison (dev.7)
 
+> dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
+
 **English** | [中文](CODE_MANIFEST.zh-CN.md)
 
 This is the first stage of consistency checking: export a local startup code manifest and compare two files. dev.8 adds the [internal handshake core](CODE_HANDSHAKE.md); dev.9 connects [campaign lobby ready/start gates](LOBBY_HANDSHAKE.md). Automatic state synchronization is not implemented. The classes and JSON format are internal diagnostic tooling, not a new stable mod API.

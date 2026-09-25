@@ -1,5 +1,7 @@
 # Code handshake protocol and state machine (dev.8 core, dev.9 integration)
 
+> dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
+
 **English** | [中文](CODE_HANDSHAKE.zh-CN.md)
 
 The dev.8 core implements internal packets and state management. dev.9 adds automatic [campaign lobby integration](LOBBY_HANDSHAKE.md), including UI and ready/start guards. The following describes core semantics separately from coordinated preparation. `CodeHandshakeProtocol` and `CodeHandshakeSession` are package-private implementation details, not public mod APIs.

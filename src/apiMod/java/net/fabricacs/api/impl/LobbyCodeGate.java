@@ -17,6 +17,7 @@ final class LobbyCodeGate implements AutoCloseable {
     private String ownProof = "", localSession = "", hostSession = "";
     private long revision, observedRevision, invalidation, grantedAt = -1;
     private boolean bound;
+    private String rulesDigest = "";
 
     LobbyCodeGate(CodeManifest manifest) { handshake = new CodeHandshakeSession(manifest); }
 
@@ -55,6 +56,10 @@ final class LobbyCodeGate implements AutoCloseable {
     long invalidation() { return invalidation; }
     long revision() { return revision; }
     boolean isHost() { return bound && self == host; }
+    Map<Integer,String> codeView(long now) { return currentView(now); }
+    void rulesDigest(String digest,long now) {
+        if (!rulesDigest.equals(digest)) { rulesDigest=digest; restart(now); }
+    }
 
     private Map<Integer, String> currentView(long now) {
         var snapshot = handshake.snapshot(now);
@@ -91,7 +96,7 @@ final class LobbyCodeGate implements AutoCloseable {
     boolean acceptReady(int player, JSONObject proof, long now) {
         if (!isHost() || !canReady(now) || !members.contains(player)) return false;
         try {
-            checkHeader(proof, Set.of("v", "channel", "host", "hostSession", "round", "sessions", "proof"));
+            checkHeader(proof, Set.of("v", "channel", "host", "hostSession", "round", "sessions", "rulesDigest", "proof"));
             if (number(proof, "round") != revision || !view(proof.getJSONObject("sessions")).equals(roundView)) return false;
             String token = token(proof.get("proof"));
             if (player == self && !token.equals(ownProof)) return false;
@@ -109,8 +114,8 @@ final class LobbyCodeGate implements AutoCloseable {
     }
     private JSONObject header() {
         JSONObject sessions = new JSONObject(); roundView.forEach((id, session) -> sessions.put(id.toString(), session));
-        return new JSONObject().put("v", 1).put("channel", room).put("host", host).put("hostSession", hostSession)
-                .put("round", revision).put("sessions", sessions);
+        return new JSONObject().put("v", 2).put("channel", room).put("host", host).put("hostSession", hostSession)
+                .put("round", revision).put("sessions", sessions).put("rulesDigest",rulesDigest);
     }
 
     /** 返回可展示为已准备的成员；收齐全员凭据后，在短窗口内执行已经确认的开局决定。 */
@@ -119,7 +124,7 @@ final class LobbyCodeGate implements AutoCloseable {
         // 后续房主更新必须独立通过校验，失败时不能继续沿用先前的短期开局许可。
         grantedAt = -1;
         try {
-            checkHeader(update, Set.of("v", "channel", "host", "hostSession", "round", "sessions", "ready"));
+            checkHeader(update, Set.of("v", "channel", "host", "hostSession", "round", "sessions", "rulesDigest", "ready"));
             Map<Integer, String> view = view(update.getJSONObject("sessions"));
             if (!view.equals(currentView(now))) return Set.of();
             long next = number(update, "round");
@@ -148,7 +153,8 @@ final class LobbyCodeGate implements AutoCloseable {
     private void checkHeader(JSONObject value, Set<String> fields) {
         if (value == null) throw new IllegalArgumentException("Missing lobby proof");
         Set<String> keys = new HashSet<>(); var it = value.keys(); while (it.hasNext()) keys.add((String) it.next());
-        if (!keys.equals(fields) || number(value, "v") != 1 || number(value, "channel") != room || number(value, "host") != host
+        if (!keys.equals(fields) || number(value, "v") != 2 || number(value, "channel") != room || number(value, "host") != host
+                || !rulesDigest.equals(value.get("rulesDigest"))
                 || !token(value.get("hostSession")).equals(hostSession)) throw new IllegalArgumentException("Wrong lobby proof context");
     }
     private Map<Integer, String> view(JSONObject object) {

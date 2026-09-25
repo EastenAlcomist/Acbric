@@ -1,5 +1,7 @@
 # MOD 配置 API
 
+> dev.10：显式声明共享规则、生成前固化及续局检查见 [共享规则](SHARED_RULES.zh-CN.md)。原有本地配置/存储写入仍不自动广播；下文分版本验证记录保留为历史。
+
 [English](CONFIG.md) | **中文**
 
 要求 `acbric_api >=0.3.3-dev.5`、JDK 21。配置文件位于 Fabric 游戏目录的 `config/<modId>/<name>.json`，与原生存档、原生 MOD 目录分开。通常即分发包的 `game/config/`。已有手工读写配置代码不受影响；框架不会扫描或接管它们。

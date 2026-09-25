@@ -2,7 +2,7 @@
 
 **English** | [中文](API.zh-CN.md)
 
-Applies to **`acbric_api 0.3.3-dev.9`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
+Applies to **`acbric_api 0.3.3-dev.10`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
 
 - Installation, building and launching: [README.md](README.md).
 - Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
@@ -100,6 +100,7 @@ Game data and UI objects may not yet exist during pre-launch. Register the appro
 | `configDir()` / `ensureConfigDir()` | Get / create this mod's configuration directory |
 | `dataDir()` / `ensureDataDir()` | Get / create this mod's data directory |
 | `logger()` | `AcbricLogger` tagged with this mod's ID |
+| `sharedRules(int version, JSONObject values, SharedRules.Validator validator)` | Declare gameplay rules for this MOD (dev.10); see [contract](SHARED_RULES.md) |
 | `campaignData(Object worldMap)` | `CampaignData` scoped to this mod and the given map (since dev.3) |
 | `config(name, dataVersion, defaults, validator)` | Create a configuration handle; explicit I/O, migration and reload (dev.5), see [CONFIG](CONFIG.md) |
 | `eventScope(name)` | Create an independent managed subscription scope (dev.6), see [contracts](EVENT_SCOPES.md) |
@@ -257,7 +258,7 @@ Since `0.3.3-dev.2`, GameProvider reads `AGame.VERSION` from bytecode before dep
 
 ## 10. Validation scope
 
-The standard build passes 477 headless assertions, including 62 config checks. Real Fabric probes on games 1.2.15.2 and 1.2.14 each pass 10 campaign-data and 31 lifecycle/demo-v3.1 checks plus 5 managed-event runtime checks. The latter include explicit event dispatch for configuration policies; they do not replace GUI or live multiplayer acceptance. User feedback for dev.4 reports no issues so far; dev.9 remains pending manual acceptance.
+The standard build passes 541 headless assertions, including 62 config checks. Real Fabric probes on games 1.2.15.2 and 1.2.14 each pass 10 campaign-data and 31 lifecycle/demo-v3.1 checks plus 5 managed-event runtime checks. The latter include explicit event dispatch for configuration policies; they do not replace GUI or live multiplayer acceptance. User feedback for dev.4 reports no issues so far; dev.10 remains pending full manual acceptance.
 
 ## 11. Campaign data
 
@@ -279,7 +280,7 @@ Use `context.config(...)` followed by explicit `load/migrate/save/reload`. Defau
 
 ## 15. Local code manifests (dev.7)
 
-[Export and offline comparison](CODE_MANIFEST.md) are internal diagnostic tools, not a new public MOD API. The 477 standard checks include 45 new manifest checks. A CODE_MATCH result covers startup code identity only; lobby integration is available in dev.9, but shared-settings checks and automatic synchronization are not implemented. The internal handshake core is described below.
+[Export and offline comparison](CODE_MANIFEST.md) are internal diagnostic tools, not a new public MOD API. The 541 standard checks include 45 new manifest checks. A CODE_MATCH result covers startup code identity only; lobby integration is available in dev.9, and dev.10 adds declared-rule checks; automatic state synchronization is not implemented. The internal handshake core is described below.
 
 ## 16. Internal code handshake (dev.8)
 
@@ -288,3 +289,7 @@ See [protocol and state contract](CODE_HANDSHAKE.md). This is package-private fr
 ## 17. Campaign lobby integration (dev.9)
 
 See [player behavior and integration contract](LOBBY_HANDSHAKE.md). Code failure blocks ready/start; changing context revokes preparation. All participants need matching code and a supporting framework. Existing MOD interfaces remain compatible, but this does not permit mixed old/new frameworks in a room. There is no new public networking API or automatic state/configuration synchronization.
+
+## 18. Shared gameplay rules (dev.10)
+
+Declare with `context.sharedRules`, retain a `SharedRules` handle for candidates, and read frozen values through `forCampaign(world.map)`. See the [complete contract and example](SHARED_RULES.md). Validators must be pure; missing/incompatible saved rules never silently adopt local defaults. All peers must match before preparation; changed candidates revoke preparation without overwriting configuration. Adds the public `rules` package and one mixin, for 20 in total.

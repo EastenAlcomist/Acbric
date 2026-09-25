@@ -29,7 +29,8 @@ public abstract class CampaignWorldMixin {
     }
 
     @Inject(method = "<init>(Lorg/json/JSONObject;Lcom/zarkonnen/airships/AirshipGame;ZLcom/zarkonnen/airships/InPipe;)V", at = @At("RETURN"))
-    private void acbric$loaded(JSONObject data, AirshipGame game, boolean multiplayer, InPipe input, CallbackInfo ci) {
+    private void acbric$loaded(JSONObject data, AirshipGame game, boolean multiplayer, InPipe input, CallbackInfo ci) throws java.io.IOException {
+        net.fabricacs.api.impl.SharedRulesRegistry.validateLoaded(((CampaignWorld)(Object)this).map);
         AirshipsCampaignEvents.LOADED.invoker().onLoaded(this, multiplayer);
     }
 }

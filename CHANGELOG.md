@@ -1,5 +1,14 @@
 # Changelog
 
+## Development build — API 0.3.3-dev.10
+
+- Add `context.sharedRules`, immutable snapshots and explicit candidate updates; see [shared rules](SHARED_RULES.md). New campaigns freeze confirmed values before generation; resume reads saved values without changing local config.
+- Extend lobby checks with declared rules and field paths; changed candidates revoke preparation. Internal ready metadata v2 binds the rule digest. Adds `WorldGenScreenMixin` (20 mixins total).
+- Persist the reserved rule set through existing campaign data. Reject missing/incompatible declared rules before LOADED; retain absent MOD entries and do not silently migrate old saves. Existing nonparticipating MOD APIs remain.
+- Add 64 checks (541 total), a disabled-by-default template example and bilingual guides. Two game snapshots pass 14 real local-network experiments (204 top-level checks). Public baseline signatures remain: 31 types/125 members and dev.6's 46 types/185 members.
+- Real-loader checks pass with original sample/template and current template. An exploratory mixed fixture failed on a separate shot-target MOD's Steam-incompatible Redirect; it is not claimed compatible or changed here. Full GUI/world generation/cross-machine acceptance remains pending.
+
+
 [中文改动记录](CHANGELOG.zh-CN.md) | [API guide](API.md) ([中文](API.zh-CN.md))
 
 ## Unreleased — API build 0.3.3-dev.9

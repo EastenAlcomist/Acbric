@@ -19,7 +19,7 @@ from the workspace root to repopulate this template's `libs/` directory.
 
 ## UI event version
 
-This template targets the unreleased Acbric API `0.3.3-dev.3` or newer and Java 21.
+This template targets the unreleased Acbric API `0.3.3-dev.10` or newer and Java 21.
 Sync its dependencies from the matching framework checkout before compiling. Its
 `RENAME_SHIP_AFTER_TICK` example logs once after a panel tick; it does not report
 rename confirmation. The old `ONE_SHOT_*` names are deprecated compatibility hooks.
@@ -33,4 +33,8 @@ See the framework [API guide](../API.md) ([中文](../API.zh-CN.md)) and [change
 
 ## Managed subscriptions (dev.6)
 
-The template now requires API >=0.3.3-dev.6 and registers through `context.eventScope("application")`. One-shot listeners leave the scope when consumed. Keep application scopes across campaigns; do not close them when initialization returns. Close local scopes explicitly. Initialization failure cleanup is demonstrated. See the framework EVENT_SCOPES.md.
+The template now requires API >=0.3.3-dev.10 and registers through `context.eventScope("application")`. One-shot listeners leave the scope when consumed. Keep application scopes across campaigns; do not close them when initialization returns. Close local scopes explicitly. Initialization failure cleanup is demonstrated. See the framework EVENT_SCOPES.md.
+
+## Shared rules example (dev.10)
+
+Optionally call `SharedRulesExample.declare(context, damagePercent)` once at entrypoint initialization. Gameplay reads `multiplier(handle, world)`; explicit config reload may call `changeNextCampaign` to update candidates. The default entrypoint does not enable this example or change damage. Read [shared rules](../SHARED_RULES.md), especially the rule-missing old-save restrictions, before adopting it.

@@ -83,6 +83,11 @@ public final class AcbricModContext {
     /** 创建独立订阅范围；同名也不会复用，关闭时机由 MOD 显式管理。 */
     public EventScope eventScope(String name) { return new EventScope(modId(), name); }
 
+    /** 在 acbric 入口显式声明本 MOD 的玩法规则；本地 UI 偏好不应加入。 */
+    public net.fabricacs.api.rules.SharedRules sharedRules(int version, JSONObject values, net.fabricacs.api.rules.SharedRules.Validator validator) {
+        return net.fabricacs.api.impl.SharedRulesRegistry.register(modId(), version, values, validator);
+    }
+
     /** 获取指定 WorldMap 的本 MOD 数据；写入不广播，须在模拟线程按同步规则调用。 */
     public CampaignData campaignData(Object worldMap) {
         return new CampaignData(worldMap, modId());

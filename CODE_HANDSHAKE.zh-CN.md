@@ -1,5 +1,7 @@
 # 代码握手协议与状态机（dev.8 核心，dev.9 接入）
 
+> dev.10：显式声明共享规则、生成前固化及续局检查见 [共享规则](SHARED_RULES.zh-CN.md)。原有本地配置/存储写入仍不自动广播；下文分版本验证记录保留为历史。
+
 [English](CODE_HANDSHAKE.md) | **中文**
 
 dev.8 提供内部报文和状态管理，dev.9 已自动接入[战役大厅](LOBBY_HANDSHAKE.zh-CN.md)，包括状态按钮与准备/开局门禁。下文分别说明核心语义和适配层责任。`CodeHandshakeProtocol`、`CodeHandshakeSession` 是包内实现，不是公开 MOD API。

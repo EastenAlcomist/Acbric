@@ -1,5 +1,7 @@
 # Campaign lifecycle events
 
+> dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
+
 **English** | [中文](CAMPAIGN_LIFECYCLE.zh-CN.md)
 
 Available since `acbric_api 0.3.3-dev.4` in `net.fabricacs.api.event.AirshipsCampaignEvents`. Existing events and campaign-data APIs remain available; storage still uses dev.3 format 1.

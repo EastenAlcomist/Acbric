@@ -1,5 +1,7 @@
 # Campaign mod data
 
+> dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
+
 **English** | [中文](CAMPAIGN_DATA.zh-CN.md)
 
 Requires `acbric_api >=0.3.3-dev.3` (unreleased). This API stores shared, campaign-level JSON data per mod ID. It does not discover arbitrary Java fields, send network messages, or provide per-ship/city storage automatically.

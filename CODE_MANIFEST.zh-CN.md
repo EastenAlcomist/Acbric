@@ -1,5 +1,7 @@
 # 本地代码清单与离线比较（dev.7）
 
+> dev.10：显式声明共享规则、生成前固化及续局检查见 [共享规则](SHARED_RULES.zh-CN.md)。原有本地配置/存储写入仍不自动广播；下文分版本验证记录保留为历史。
+
 [English](CODE_MANIFEST.md) | **中文**
 
 这是联机一致性检查的第一阶段：导出本地启动代码清单，并比较两份文件。dev.8 新增[内部握手核心](CODE_HANDSHAKE.zh-CN.md)，dev.9 接入[战役大厅准备/开局门禁](LOBBY_HANDSHAKE.zh-CN.md)，尚未实现自动状态同步。类与 JSON 格式属于框架内部诊断工具，不是新增的稳定 MOD API。

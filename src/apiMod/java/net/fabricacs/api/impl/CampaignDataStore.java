@@ -14,6 +14,9 @@ import java.util.Optional;
 public final class CampaignDataStore {
     private JSONObject envelope = new JSONObject().put("format", 1).put("mods", new JSONObject());
     private boolean migrating;
+    private long revision;
+    /** 内部缓存失效代次；不是存档字段，也不是网络序列。 */
+    public synchronized long revision() { return revision; }
 
     public static void validateModId(String id) {
         if (id == null || !id.matches("[a-z][a-z0-9_-]{1,63}")) throw new IllegalArgumentException("Invalid campaign mod ID: " + id);
@@ -41,7 +44,9 @@ public final class CampaignDataStore {
     public synchronized boolean remove(String id) {
         writable();
         validateModId(id);
-        return mods().remove(id) != null;
+        boolean removed = mods().remove(id) != null;
+        if (removed) revision++;
+        return removed;
     }
 
     public synchronized boolean migrate(String id, int target, CampaignData.Migration migration) {
@@ -68,6 +73,7 @@ public final class CampaignDataStore {
 
     private void put(String id, CampaignDataSnapshot snapshot) {
         mods().put(id, new JSONObject().put("version", snapshot.dataVersion()).put("data", snapshot.data()));
+        revision++;
     }
 
     private void writable() {
@@ -91,6 +97,7 @@ public final class CampaignDataStore {
             new CampaignDataSnapshot(version(entry, "version"), entry.getJSONObject("data"));
         }
         envelope = candidate;
+        revision++;
     }
 
     public static int version(JSONObject object, String key) {

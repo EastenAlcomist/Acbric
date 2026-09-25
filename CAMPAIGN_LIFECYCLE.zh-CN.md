@@ -1,5 +1,7 @@
 # 战役生命周期事件
 
+> dev.10：显式声明共享规则、生成前固化及续局检查见 [共享规则](SHARED_RULES.zh-CN.md)。原有本地配置/存储写入仍不自动广播；下文分版本验证记录保留为历史。
+
 [English](CAMPAIGN_LIFECYCLE.md) | **中文**
 
 从 `acbric_api 0.3.3-dev.4` 起提供 `net.fabricacs.api.event.AirshipsCampaignEvents`。原有事件和战役数据 API 保持；存储格式仍为 dev.3 的格式 1。

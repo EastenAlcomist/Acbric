@@ -89,7 +89,7 @@ public final class TemplateMod implements AcbricInitializer {
 
 ## UI 事件版本
 
-本模板需要开发版 Acbric API `0.3.3-dev.3` 或更新版本及 Java 21，请先从匹配框架源码同步编译依赖。
+本模板需要开发版 Acbric API `0.3.3-dev.10` 或更新版本及 Java 21，请先从匹配框架源码同步编译依赖。
 入口的 `RENAME_SHIP_AFTER_TICK` 示例只在面板 tick 后输出一次日志，不表示改名已确认。
 旧 `ONE_SHOT_*` 属于已弃用的兼容接口，新代码使用准确命名的新事件；复制模板时保留 metadata 中的最低 API 版本。
 
@@ -101,4 +101,8 @@ public final class TemplateMod implements AcbricInitializer {
 
 ## 受管理订阅（dev.6）
 
-当前模板要求 API >=0.3.3-dev.6，用 `context.eventScope("application")` 管理注册；一次性监听执行后自动移出范围。应用范围跨战役保留，不在入口返回时关闭。局部范围由 MOD 显式关闭，初始化失败示例会清理已注册条目。完整契约见框架 EVENT_SCOPES.zh-CN.md。
+当前模板要求 API >=0.3.3-dev.10，用 `context.eventScope("application")` 管理注册；一次性监听执行后自动移出范围。应用范围跨战役保留，不在入口返回时关闭。局部范围由 MOD 显式关闭，初始化失败示例会清理已注册条目。完整契约见框架 EVENT_SCOPES.zh-CN.md。
+
+## 共享规则示例（dev.10）
+
+`SharedRulesExample.declare(context, damagePercent)` 可在入口显式调用一次；玩法读取 `multiplier(handle, world)`，配置重载后用 `changeNextCampaign` 更新候选值。默认入口未启用此示例，不改变伤害。采用前阅读 [共享规则](../SHARED_RULES.zh-CN.md)，尤其是缺少规则的旧存档不能自动接纳。

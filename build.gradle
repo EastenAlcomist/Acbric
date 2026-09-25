@@ -209,6 +209,7 @@ tasks.register('distDir', Sync) {
     from 'CODE_MANIFEST.md', 'CODE_MANIFEST.zh-CN.md'
     from 'CODE_HANDSHAKE.md', 'CODE_HANDSHAKE.zh-CN.md'
     from 'LOBBY_HANDSHAKE.md', 'LOBBY_HANDSHAKE.zh-CN.md'
+    from 'SHARED_RULES.md', 'SHARED_RULES.zh-CN.md'
     from 'CONFIG.md', 'CONFIG.zh-CN.md'
     from 'CAMPAIGN_DATA.md', 'CAMPAIGN_DATA.zh-CN.md'
     from 'CAMPAIGN_LIFECYCLE.md', 'CAMPAIGN_LIFECYCLE.zh-CN.md'

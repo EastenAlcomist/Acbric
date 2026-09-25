@@ -1,5 +1,7 @@
 # MOD configuration API
 
+> dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
+
 **English** | [中文](CONFIG.zh-CN.md)
 
 Requires `acbric_api >=0.3.3-dev.5` and JDK 21. Files live under the Fabric game directory at `config/<modId>/<name>.json`, normally `game/config/` in a distribution. This is separate from native saves and native mods. Existing manually managed configuration files are neither scanned nor adopted.

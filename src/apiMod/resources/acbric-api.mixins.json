@@ -21,6 +21,7 @@
     "DirectControlPanelMixin",
     "RenameShipPanelMixin",
     "WorldMapMixin",
+    "WorldGenScreenMixin",
     "CampaignWorldMixin",
     "ResumeScreenMixin"
   ],

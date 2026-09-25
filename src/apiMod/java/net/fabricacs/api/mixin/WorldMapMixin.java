@@ -32,6 +32,7 @@ public abstract class WorldMapMixin implements CampaignDataAccess {
     @Inject(method = "<init>(Lorg/json/JSONObject;Lcom/zarkonnen/airships/AirshipGame;Lcom/zarkonnen/airships/InPipe;)V", at = @At("RETURN"))
     private void acbric$readCampaignData(JSONObject data, AirshipGame game, InPipe input, CallbackInfo ci) throws IOException {
         CampaignDataHooks.read(acbric$campaignData, data, input);
+        net.fabricacs.api.impl.SharedRulesRegistry.validateStored(this);
     }
 
     @Inject(method = "toJSON(Lcom/zarkonnen/airships/OutPipe;)Lorg/json/JSONObject;", at = @At("RETURN"))

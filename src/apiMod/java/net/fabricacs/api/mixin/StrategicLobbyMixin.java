@@ -44,7 +44,7 @@ public abstract class StrategicLobbyMixin implements LobbyHandshakeAccess {
     @Inject(method = "sendReady()V", at = @At("HEAD"), cancellable = true, remap = false)
     private void acbric$guardReady(CallbackInfo ci) { if (!canSendReady()) ci.cancel(); }
     @Inject(method = "startGame()V", at = @At("HEAD"), cancellable = true, remap = false)
-    private void acbric$guardStart(CallbackInfo ci) { if (!canStart()) ci.cancel(); }
+    private void acbric$guardStart(CallbackInfo ci) { if (!canStart() || !acbric$lobbyHandshake().beginStart()) ci.cancel(); }
     @Inject(method = "leave(Z)V", at = @At("HEAD"), remap = false)
     private void acbric$leave(CallbackInfo ci) { acbric$lobbyHandshake().close(); }
     @Inject(method = "startGame()V", at = @At("RETURN"), remap = false)
