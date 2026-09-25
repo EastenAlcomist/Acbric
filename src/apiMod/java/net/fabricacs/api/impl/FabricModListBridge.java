@@ -44,6 +44,7 @@ public final class FabricModListBridge {
     public static void appendFabricMods() {
         try {
             removeSyntheticFabricMods();
+            JavaModManager.refresh();
 
             ArrayList<ModContainer> fabricMods = FabricLoader.getInstance().getAllMods().stream()
                     .filter(FabricModListBridge::shouldDisplay)
@@ -61,6 +62,18 @@ public final class FabricModListBridge {
                 }
             }
 
+            JavaModManager manager = JavaModManager.current();
+            if (manager != null) for (JavaModManager.Entry entry : manager.entries()) {
+                if (!entry.loaded() && entry.archive() != null && !HIDDEN_MOD_IDS.contains(entry.id())) {
+                    Mod mod = newSyntheticMod(entry.id());
+                    mod.id = SYNTHETIC_ID_PREFIX + entry.id();
+                    mod.name.put(Locale.ENGLISH, displayName(entry.metadata()));
+                    mod.description.put(Locale.ENGLISH, entry.metadata().getDescription() + "\n\nFabric mod ID: " + entry.id()
+                            + "\nVersion: " + entry.metadata().getVersion().getFriendlyString() + "\nSource: " + entry.archive());
+                    mod.preemptedBy = mod;
+                    Mod.mods.add(mod);
+                }
+            }
             if (!fabricMods.isEmpty()) {
                 System.out.println("[Acbric API] Added " + added + " Fabric mods to the vanilla mod list.");
             }
@@ -80,7 +93,40 @@ public final class FabricModListBridge {
     }
 
     public static String rowStatus(Mod mod) {
-        return "Loaded by Fabric";
+        JavaModManager manager = JavaModManager.current();
+        if (manager == null || manager.entry(fabricId(mod)) == null)
+            return chinese() ? "已加载 · 管理不可用（查看日志）" : "Loaded · manager unavailable (see log)";
+        return manager.status(fabricId(mod), chinese());
+    }
+
+    public static String fabricId(Mod mod) { return mod.id.substring(SYNTHETIC_ID_PREFIX.length()); }
+
+    public static boolean chinese() {
+        return com.zarkonnen.airships.Lang.currentLocale != null && com.zarkonnen.airships.Lang.currentLocale.getLanguage().equals("zh");
+    }
+
+    /** 原版按钮只控制数据 MOD；Fabric 行使用独立的持久化选择，不进入原版热重载集合。 */
+    public static void drawManagerButton(Mod mod, com.zarkonnen.airships.MyDraw draw, int x, int y, int width,
+                                         java.util.function.Consumer<String> report) {
+        JavaModManager manager = JavaModManager.current();
+        if (manager == null) return;
+        String id = fabricId(mod);
+        JavaModManager.Entry entry = manager.entry(id);
+        if (entry == null) return;
+        String reason = manager.reason(id);
+        boolean enabled = entry.manageable() && reason.isEmpty();
+        String label = enabled ? (manager.enabledNext(id) ? (chinese() ? "停用" : "Disable")
+                : (chinese() ? "启用" : "Enable")) : (chinese() ? "只读" : "Read only");
+        int bw = draw.bw(label);
+        draw.tooltip(x + width - bw, y, bw, com.zarkonnen.airships.MyDraw.BUTTON_H, enabled
+                ? (chinese() ? "下次启动生效；再次点击可撤销" : "Applies on restart; click again to undo") : reason);
+        draw.button(x + width - bw, y, bw, label, null, new com.zarkonnen.airships.InputRunnable() {
+            @Override public void run(com.zarkonnen.catengine.Input input) {
+                if (!enabled) { report.accept(reason); return; }
+                try { manager.toggle(id); }
+                catch (java.io.IOException ex) { report.accept(ex.getMessage()); }
+            }
+        });
     }
 
     private static boolean shouldDisplay(ModContainer container) {

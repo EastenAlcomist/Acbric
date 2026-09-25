@@ -233,6 +233,11 @@ final class BundledResourceStore {
         }
     }
 
+    static boolean hasOwnership(Path target, String id) throws IOException {
+        rejectLinks(target);
+        return readState(target, id) != null;
+    }
+
     private static State readState(Path target, String id) throws IOException {
         Path path = target.resolve(MANIFEST);
         if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) return null;

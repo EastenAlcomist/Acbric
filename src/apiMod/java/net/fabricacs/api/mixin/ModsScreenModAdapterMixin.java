@@ -30,6 +30,18 @@ public abstract class ModsScreenModAdapterMixin {
     private void acbric$statusFabricMod(Mod mod, CallbackInfoReturnable<String> cir) {
         if (FabricModListBridge.isSyntheticFabricMod(mod)) {
             cir.setReturnValue(FabricModListBridge.rowStatus(mod));
+        } else if (net.fabricacs.api.impl.DisabledBundledMods.blocked(mod)) {
+            cir.setReturnValue(FabricModListBridge.chinese() ? "配套 Java MOD 已停用" : "Owning Java MOD is disabled");
         }
     }
+    @Inject(method = "draw(Lcom/zarkonnen/airships/Mod;Lcom/zarkonnen/airships/MyDraw;III)V",
+            at = @At("RETURN"), remap = false)
+    private void acbric$drawManagerButton(Mod mod, com.zarkonnen.airships.MyDraw draw, int x, int y, int width,
+                                          org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        if (FabricModListBridge.isSyntheticFabricMod(mod)) {
+            FabricModListBridge.drawManagerButton(mod, draw, x, y, width,
+                    ((net.fabricacs.api.impl.ModManagerScreenAccess) this.this$0)::acbric$managerMessage);
+        }
+    }
+
 }

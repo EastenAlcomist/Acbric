@@ -18,7 +18,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.io.File;
 
 @Mixin(value = ModsScreen.class, remap = false)
-public abstract class ModsScreenMixin {
+public abstract class ModsScreenMixin implements net.fabricacs.api.impl.ModManagerScreenAccess {
+    @Shadow private AirshipGame g;
+
+    @Override public void acbric$managerMessage(String message) { g.showError(message); }
     @Shadow
     public Mod selected;
 
@@ -41,6 +44,7 @@ public abstract class ModsScreenMixin {
         }
 
         this.installError = result.getMessage();
+        if (result.isInstalled()) FabricModListBridge.appendFabricMods();
         ci.cancel();
     }
 }

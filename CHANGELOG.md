@@ -1,5 +1,15 @@
 # Changelog
 
+## Development build — API 0.3.3-dev.12
+
+- Add Java MOD enable/disable controls, disk inventory including disabled archives, initialization failure and pending restart states; see [contract](MOD_MANAGEMENT.md). Changes save immediately and apply on the next restart.
+- Merge persisted and external disabled IDs in the launcher before dependency resolution, entrypoints and Mixin application. Protect core mods; precheck dependencies, versions, aliases, hard conflicts and nested metadata. Use config locks, snapshot conflict checks and atomic replacement; keep JAR files intact.
+- Block owned bundled native resources according to the startup snapshot, preserving preferences and files. Legacy unowned directories require explicit migration. Update launcher and API together; an older launcher makes UI management read-only.
+- Add 55 checks (652 total) and real restart-chain tests for both game builds covering entrypoints, Mixin execution, nested libraries, inventory and native resources. Still 21 mixins; no new stable public API. Rendered GUI/mouse interaction and full campaigns remain outside headless validation.
+
+
+- Both builds pass 114 restart checks, 56 old-launcher/failed-entry/button-callback checks and six expected startup failures. All 57 public types/237 member signatures from dev.11 remain.
+
 ## Development build — API 0.3.3-dev.11
 
 - Add read-only saved-rule reports, registered direct schema upgrades, explicit missing-rule adoption and immutable conversion previews. Publish a separate native directory save; never overwrite the source or an existing destination. See [contract](RULE_SAVE_MIGRATION.md).

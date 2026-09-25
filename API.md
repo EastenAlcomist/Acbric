@@ -2,7 +2,7 @@
 
 **English** | [中文](API.zh-CN.md)
 
-Applies to **`acbric_api 0.3.3-dev.11`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
+Applies to **`acbric_api 0.3.3-dev.12`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
 
 - Installation, building and launching: [README.md](README.md).
 - Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
@@ -252,7 +252,7 @@ The public extension surface is `net.fabricacs.api` and its `event`, `util` and 
 
 For capabilities not yet covered by the API, declare mixins in your own mod and use the actual game bytecode to determine signatures, invocation owners and injection points. There are currently no mappings; use `remap=false`. Public API compatibility does not automatically make custom mixins compatible across game versions.
 
-The Fabric mod installation UI stages JARs, validates the schema/ID/version/structure of `fabric.mod.json`, and rejects overwriting an existing file with the same name. It does not preflight all dependencies, nested contents or mixin execution. Restart after installation. The synthetic mod list only displays loaded mods; `disabledMods` is not implemented and cannot be relied on to disable a mod. To disable one, close the game and move its JAR out of the scanned directory.
+The Fabric mod installation UI stages JARs, validates the schema/ID/version/structure of `fabric.mod.json`, and rejects overwriting an existing file with the same name. It does not preflight all dependencies, nested contents or mixin execution. Restart after installation. Since dev.12, the list also shows disabled archives in the scanned mod directory and supports enable/disable on the next full restart; see [MOD management](MOD_MANAGEMENT.md). Update both launcher and API; no hot unloading or archive removal.
 
 Since `0.3.3-dev.2`, GameProvider reads `AGame.VERSION` from bytecode before dependency resolution and reports recognized versions to Fabric. If unavailable or unrecognized, the normalized version falls back to `0.0.0` with a warning. Mods pinned to the former `0.0.0` placeholder may now fail dependency checks. Ordered game archive hashes distinguish different builds sharing a version number; they do not guarantee compatibility. Local session reports distinguish loaded mods from successful `acbric` entrypoints. See [diagnostics and compatibility details](DIAGNOSTICS.md); these reports introduce no new public mod API.
 

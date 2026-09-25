@@ -12,8 +12,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = Mod.class, remap = false)
 public abstract class ModMixin {
+    @Inject(method = "refreshMods", at = @At("HEAD"), remap = false)
+    private static void acbric$refreshBundleState(CallbackInfo ci) {
+        net.fabricacs.api.impl.DisabledBundledMods.invalidate();
+    }
+
     @Inject(method = "refreshMods", at = @At("RETURN"), remap = false)
     private static void acbric$appendFabricMods(CallbackInfo ci) {
+        for (Mod mod : Mod.mods) {
+            if (mod.preemptedBy == null && net.fabricacs.api.impl.DisabledBundledMods.blocked(mod)) mod.preemptedBy = mod;
+        }
         FabricModListBridge.appendFabricMods();
     }
+    @Inject(method = {"isCurrentlyEnabled", "isAvailable"}, at = @At("HEAD"), cancellable = true, remap = false)
+    private void acbric$blockDisabledBundle(org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+        if (net.fabricacs.api.impl.DisabledBundledMods.blocked((Mod) (Object) this)) cir.setReturnValue(false);
+    }
+
 }

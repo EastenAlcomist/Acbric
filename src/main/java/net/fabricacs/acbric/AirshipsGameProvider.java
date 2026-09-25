@@ -121,6 +121,7 @@ public final class AirshipsGameProvider implements GameProvider {
             buildIdentity = GameBuildIdentity.inspect(gameClassPath);
             diagnostics = new LaunchDiagnostics(gameDirectory, buildIdentity);
             configureNativeLibraries();
+            net.fabricacs.management.ModSelection.applyAtStartup(gameDirectory.resolve("config"));
         } catch (IOException e) {
             throw new RuntimeException("Failed to locate Airships launch files", e);
         }

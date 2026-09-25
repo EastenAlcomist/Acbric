@@ -1,5 +1,7 @@
 # Acbric — Airships Fabric Mod Framework
 
+dev.12 adds [Java MOD management](MOD_MANAGEMENT.md): enable/disable on the next restart, protected core components, dependency prechecks and persistent disabled rows. **Update both launcher and API JARs.** Standard regression now covers 652 checks.
+
 **English** | [中文](README.zh-CN.md)
 
 A lightweight Fabric-style mod loading framework for *Airships: Conquer the Skies*.
@@ -22,7 +24,7 @@ native JSON data-mod system.
 
 - [Runtime diagnostics and event scopes](EVENT_SCOPES.md): MOD attribution, grouped cleanup and error reporting.
 
-The current API build is **0.3.3-dev.11**. Saved-rule preflight and explicit conversion now support previewing old-save adoption/migrations and writing a separate save. Campaign lobbies check startup code and declared gameplay rules before preparation/start. New campaigns freeze the confirmed rules; resumed campaigns read saved values. Peers need matching framework/game/MOD code; this is not state synchronization or support for mixed framework versions. Runtime event diagnostics and managed subscription scopes remain available. Campaign lifecycle and native save/recovery integration remain available. Existing public members and event semantics remain compatible.
+The current API build is **0.3.3-dev.12**. This release adds restart-based Java MOD management. Saved-rule preflight and explicit conversion continue to support previewing old-save adoption/migrations and writing a separate save. Campaign lobbies check startup code and declared gameplay rules before preparation/start. New campaigns freeze the confirmed rules; resumed campaigns read saved values. Peers need matching framework/game/MOD code; this is not state synchronization or support for mixed framework versions. Runtime event diagnostics and managed subscription scopes remain available. Campaign lifecycle and native save/recovery integration remain available. Existing public members and event semantics remain compatible.
 
 - [Complete API guide](API.md) / [中文](API.zh-CN.md): entrypoints, context, paths, events and resources.
 - [Change record (Chinese)](CHANGELOG.zh-CN.md) / [English changelog](CHANGELOG.md).
@@ -32,7 +34,7 @@ The current API build is **0.3.3-dev.11**. Saved-rule preflight and explicit con
 - [Campaign lifecycle events](CAMPAIGN_LIFECYCLE.md): creation, loading, restoration and exit.
 - [Campaign data API](CAMPAIGN_DATA.md): persistence, schema migration and multiplayer boundaries.
 
-The build passes 597 assertions, including 56 new conversion checks (two existing symlink scenarios skipped for host permissions). Six real Fabric processes across two game versions pass 136 rule/save/test-MOD checks; four two-client experiments pass 54 converted-rule network checks. Full procedural world generation, GUI, cross-machine and official-server acceptance remain manual.
+The build passes 652 assertions (two existing symlink scenarios skipped for host permissions). Both game builds pass 114 restart-chain checks, 56 old-launcher/failure-state/button-callback checks and six expected startup failures. dev.11 save/network evidence remains historical; full network checks were not rerun this round. Rendered GUI/mouse interaction and full campaigns remain manual.
 
 - [Configuration API](CONFIG.md): local preferences, explicit reload and frozen campaign rules.
 
@@ -132,7 +134,7 @@ See [unreleased changes](CHANGELOG.md) for behavior changes and remaining limita
 For resource conflicts, backups and old-directory migration, see [bundled resources](BUNDLED_RESOURCES.md).
 
 New UI events, cancellation/order and legacy migration: [event contract](EVENTS.md).
-The current API build is `0.3.3-dev.11`; the template requires `>=0.3.3-dev.10`; the template includes an opt-in campaign-data example.
+The current API build is `0.3.3-dev.12`; the template requires `>=0.3.3-dev.10`; the template includes an opt-in campaign-data example.
 
 ## 4. Project layout
 

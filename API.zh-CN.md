@@ -2,7 +2,7 @@
 
 [English](API.md) | **中文**
 
-适用版本：**`acbric_api 0.3.3-dev.11`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
+适用版本：**`acbric_api 0.3.3-dev.12`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
 
 - 安装、编译和启动：[README.zh-CN.md](README.zh-CN.md)。
 - 本次兼容性调整：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。
@@ -249,7 +249,7 @@ example-mod.jar
 
 需要 API 尚未覆盖的能力时，可以在自己的 MOD 声明 Mixin，并对照实际游戏字节码确定签名、调用 owner 和注入位置。当前无映射，使用 `remap=false`。自定义 Mixin 不会因为公开 API 兼容就自动获得跨游戏版本兼容。
 
-Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/版本/结构并拒绝同名覆盖；不预检全部依赖、嵌套内容或 Mixin 执行，安装后需重启。合成 MOD 列表只展示已加载内容，`disabledMods` 尚未实现，不能用它保证禁用 MOD；停用时关闭游戏并把 JAR 移出扫描目录。
+Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/版本/结构并拒绝同名覆盖；不预检全部依赖、嵌套内容或 Mixin 执行，安装后需重启。dev.12 的 MOD 列表同时展示已加载与扫描目录中的已停用 JAR，可选择下次启动启停，见 [MOD 管理](MOD_MANAGEMENT.zh-CN.md)。必须同时更新启动器和 API；不热卸载、不删除归档。
 
 从 `0.3.3-dev.2` 开始，GameProvider 在依赖解析前从字节码读取 `AGame.VERSION`，把可识别版本报告给 Fabric；无法取得或识别时告警并将规范版本回退到 `0.0.0`。精确依赖原占位值 `0.0.0` 的 MOD 现在可能无法通过依赖检查。有序游戏归档哈希用于区分相同版本号的不同构建，不代表兼容性保证。本地会话报告区分 Loader 已加载与 `acbric` 入口初始化成功；详见[诊断与兼容说明](DIAGNOSTICS.zh-CN.md)，报告没有引入新的公开 MOD API。
 
