@@ -1,3 +1,6 @@
+/*
+ * AcbricModContext.java — 封装当前 MOD 的元数据、配置/数据目录和日志；目录位置由 AirshipsPaths 定义。
+ */
 package net.fabricacs.api;
 
 import net.fabricacs.api.util.AcbricLogger;
@@ -48,18 +51,22 @@ public final class AcbricModContext {
         return metadata().getIconPath(size);
     }
 
+    /** 获取当前 MOD 的配置路径，不创建目录。 */
     public Path configDir() {
         return AirshipsPaths.modConfigDir(modId());
     }
 
+    /** 创建并返回配置目录；I/O 失败包装为 UncheckedIOException。 */
     public Path ensureConfigDir() {
         return AirshipsPaths.ensureModConfigDir(modId());
     }
 
+    /** 返回 game/data/acbric/modId；不是用户存档根目录。 */
     public Path dataDir() {
         return AirshipsPaths.modDataDir(modId());
     }
 
+    /** 创建当前 MOD 的数据目录，不会主动载入其中的数据。 */
     public Path ensureDataDir() {
         return AirshipsPaths.ensureModDataDir(modId());
     }

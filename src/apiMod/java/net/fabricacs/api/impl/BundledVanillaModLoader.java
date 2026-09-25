@@ -1,3 +1,6 @@
+/*
+ * BundledVanillaModLoader.java — 在预启动阶段扫描顶层 MOD 归档，将内嵌原版资源交给归属存储器管理。
+ */
 package net.fabricacs.api.impl;
 
 import com.zarkonnen.airships.AGame;
@@ -5,43 +8,26 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Enumeration;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import java.util.Locale;
 
-/**
- * Scans each Fabric mod JAR for a bundled vanilla-data folder
- * ({@code acbric_vanilla/}) and extracts it into the game's
- * {@code mods/<fabric-mod-id>/} directory so the vanilla mod
- * system picks it up automatically.
- */
+/** 扫描顶层 JAR/ZIP 的 acbric_vanilla 目录，安装到原版用户数据的 mods/modId。 */
 public final class BundledVanillaModLoader {
-
-    /** Name of the folder inside a Fabric mod JAR that holds vanilla data. */
-    private static final String BUNDLED_DIR = "acbric_vanilla/";
 
     private BundledVanillaModLoader() {}
 
     /**
-     * Extracts bundled vanilla mods for all loaded Fabric mods.
-     * Call during or after {@code preLaunch}.
+     * 为已加载的 Fabric MOD 准备内嵌资源；在 preLaunch 或之后调用。
      */
     public static void extractAll() {
-        // The game's native mod system (Mod.refreshMods) only scans
-        // AGame.getGameDirectory()/mods for directory mods (folders with an
-        // info.json). The Fabric game dir's "mods" folder holds Fabric .jar
-        // mods and is NOT scanned by the native system, so bundled vanilla
-        // data must be extracted under the game's own mods directory.
-        Path gameModsDir = AGame.getGameDirectory().toPath().resolve("mods");
+        // 原版只在 AGame 用户数据的 mods 下扫描 info.json，不能解包到 Fabric 的 game/mods。
+        Path gameModsDir = AGame.getGameDirectory().toPath().resolve("mods").toAbsolutePath().normalize();
         try {
+            BundledResourceStore.rejectLinks(gameModsDir);
             Files.createDirectories(gameModsDir);
+            BundledResourceStore.rejectLinks(gameModsDir);
         } catch (IOException e) {
-            System.err.println("[Acbric] Failed to create mods dir: " + gameModsDir);
+            System.err.println("[Acbric] Failed to prepare mods dir: " + gameModsDir + ": " + e);
             return;
         }
 
@@ -51,65 +37,19 @@ public final class BundledVanillaModLoader {
                     extractBundled(origin, gameModsDir, mc.getMetadata().getId());
                 }
             } catch (UnsupportedOperationException ignored) {
-                // Nested/built-in mods don't have file paths — skip.
+                // 嵌套/内置 MOD 没有直接文件来源，本轮不处理其内嵌原版资源。
             }
         }
     }
 
     private static void extractBundled(Path jarPath, Path gameModsDir, String modId) {
         if (!Files.isRegularFile(jarPath)) return;
-        String fn = jarPath.getFileName().toString().toLowerCase();
-        if (!fn.endsWith(".jar") && !fn.endsWith(".zip")) return;
-
-        try (ZipFile zip = new ZipFile(jarPath.toFile())) {
-            // Check if the bundled directory exists
-            boolean hasBundle = zip.stream().anyMatch(
-                    e -> e.getName().startsWith(BUNDLED_DIR) && !e.isDirectory());
-            if (!hasBundle) return;
-
-            Path targetDir = gameModsDir.resolve(modId);
-            // Skip if already up-to-date (simple check: target dir exists)
-            if (Files.isDirectory(targetDir)) return;
-
-            Files.createDirectories(targetDir);
-            System.out.println("[Acbric] Extracting bundled vanilla mod from "
-                    + jarPath.getFileName() + " → " + targetDir);
-
-            Enumeration<? extends ZipEntry> entries = zip.entries();
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                if (!entry.getName().startsWith(BUNDLED_DIR)) continue;
-
-                // Strip the prefix
-                String relative = entry.getName().substring(BUNDLED_DIR.length());
-                if (relative.isEmpty()) continue;
-
-                Path target = targetDir.resolve(relative);
-                if (entry.isDirectory()) {
-                    Files.createDirectories(target);
-                } else {
-                    Files.createDirectories(target.getParent());
-                    try (InputStream in = zip.getInputStream(entry)) {
-                        Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
-                    }
-                }
-            }
-
-            // Write an info.json so the vanilla mod system (Mod.refreshMods)
-            // discovers this extracted directory and Loadable.load() picks up
-            // its <DataType>/ subdirectories.
-            Path infoJson = targetDir.resolve("info.json");
-            if (!Files.exists(infoJson)) {
-                Files.writeString(infoJson,
-                        "{\n  \"id\": \"" + modId + "\",\n"
-                        + "  \"name\": { \"en\": \"" + modId + "\" },\n"
-                        + "  \"description\": { \"en\": \"Acbric bundled vanilla data.\" },\n"
-                        + "  \"tags\": [\"acbric\"]\n}\n",
-                        StandardCharsets.UTF_8);
-            }
-        } catch (IOException e) {
-            System.err.println("[Acbric] Failed to extract bundled mod from "
-                    + jarPath + ": " + e);
+        String name = jarPath.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (!name.endsWith(".jar") && !name.endsWith(".zip")) return;
+        try {
+            BundledResourceStore.install(jarPath, gameModsDir, modId, false);
+        } catch (IOException | InvalidPathException e) {
+            System.err.println("[Acbric] Failed to install bundled resources from " + jarPath + ": " + e);
         }
     }
 }

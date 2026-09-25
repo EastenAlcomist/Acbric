@@ -1,3 +1,6 @@
+/*
+ * DirectControlPanelMixin.java — 为直接控制面板转发 draw/tick 事件，使用 DIRECT_CONTROL 标签。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.DirectControlPanel;

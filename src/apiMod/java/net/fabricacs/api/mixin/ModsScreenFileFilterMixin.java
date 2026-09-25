@@ -1,3 +1,6 @@
+/*
+ * ModsScreenFileFilterMixin.java — 让安装文件选择器识别带 fabric.mod.json 的 JAR；完整校验在安装阶段进行。
+ */
 package net.fabricacs.api.mixin;
 
 import net.fabricacs.api.impl.FabricModInstallBridge;

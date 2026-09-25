@@ -1,3 +1,6 @@
+/*
+ * ShipStatusChromeMixin.java — 在舰船状态条绘制前后发事件；BEFORE 取消时跳过绘制及 AFTER。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.Airship;

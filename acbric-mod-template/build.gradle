@@ -1,3 +1,5 @@
+// 独立 MOD 模板构建：读取本地 libs，展开 metadata，按需安装到 gameDir/mods。
+// Java 17 是模板源代码/输出级别；所依赖的 Acbric API 编译与运行仍需要 JDK 21。
 plugins {
     id 'java'
 }
@@ -19,6 +21,7 @@ def airshipsJarA = new File(templateLibsDir, 'asplit-A.zip')
 def airshipsJarB = new File(templateLibsDir, 'asplit-B.zip')
 def gameDir = file(findProperty('gameDir') ?: '../game')
 
+// 编译前明确列出缺失依赖，便于复制模板后定位配置错误。
 tasks.register('verifyAcbricTemplateInputs') {
     doLast {
         def missing = [fabricLoaderJar, acbricApiJar, airshipsJarA, airshipsJarB].findAll { !it.isFile() }
@@ -32,6 +35,7 @@ tasks.register('verifyAcbricTemplateInputs') {
     }
 }
 
+// 依赖仅供编译，最终 MOD JAR 不包含游戏或框架类。
 dependencies {
     compileOnly files(fabricLoaderJar)
     compileOnly files(acbricApiJar)
@@ -49,6 +53,7 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+// 从 gradle.properties 展开 MOD 标识、名称与版本，保持入口资源可独立复制。
 processResources {
     inputs.property 'modId', findProperty('modId')
     inputs.property 'modName', findProperty('modName')

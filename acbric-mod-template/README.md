@@ -16,3 +16,13 @@ to `gameDir/mods`; set `gameDir` in `gradle.properties` if the template is moved
 
 When working inside the main Acbric workspace, run `.\gradlew.bat syncModTemplateLibs`
 from the workspace root to repopulate this template's `libs/` directory.
+
+## UI event version
+
+This template targets the unreleased Acbric API `0.3.3-dev.1` or newer and Java 21.
+Sync its dependencies from the matching framework checkout before compiling. Its
+`RENAME_SHIP_AFTER_TICK` example logs once after a panel tick; it does not report
+rename confirmation. The old `ONE_SHOT_*` names are deprecated compatibility hooks.
+When copied elsewhere, keep this API minimum in `fabric.mod.json`.
+
+See the framework [API guide (Chinese)](../API.zh-CN.md) and [change record](../CHANGELOG.md). After copying the template elsewhere, consult these documents on the upstream dev branch.

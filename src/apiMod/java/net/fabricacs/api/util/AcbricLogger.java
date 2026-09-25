@@ -1,3 +1,6 @@
+/*
+ * AcbricLogger.java — 输出带 MOD ID 的轻量日志；信息写 stdout，警告和错误写 stderr。
+ */
 package net.fabricacs.api.util;
 
 import java.io.PrintStream;

@@ -1,3 +1,6 @@
+/*
+ * ModsScreenMixin.java — 在 MOD 界面追加 Fabric 列表，并把 Fabric 安装请求交给安装桥处理。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.AirshipGame;

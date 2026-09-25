@@ -1,3 +1,6 @@
+/*
+ * LoadableMixin.java — 观察 Loadable.load 的开始和真实结果，不清理诊断，也不将失败改为成功。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.Loadable;
@@ -15,53 +18,9 @@ public abstract class LoadableMixin {
         LifecycleHooks.fireDataLoadStarting();
     }
 
-    /**
-     * The game's data loader treats cosmetic log warnings the same as fatal
-     * errors: {@code loadBase} copies {@code LoadResult.log} into
-     * {@code errorLogs}, and {@code load()} aborts the whole load when any
-     * class's log (or an expansion/mod's log) is non-empty.  This cascades
-     * into later loadable types (e.g. Charge, ModuleType) never loading.
-     *
-     * <p>This clears the log whenever there are no real parse failures, so
-     * warnings are downgraded to non-fatal and the full data set loads.</p>
-     */
-    @Inject(method = "loadDir",
-            at = @At("RETURN"),
-            cancellable = false,
-            remap = false)
-    private static void acbric$clearNonFatalLog(
-            java.lang.Class<?> c, java.io.File dir,
-            java.util.HashMap<String, org.json.JSONObject> baseEntries,
-            CallbackInfoReturnable<com.zarkonnen.airships.Loadable.LoadResult> cir) {
-        com.zarkonnen.airships.Loadable.LoadResult result = cir.getReturnValue();
-        if (result == null) return;
-        if (result.failures == null || result.failures.isEmpty()) {
-            if (result.log != null) {
-                result.log.clear();
-            }
-        }
-    }
-
-    /** Fallback: only override the return when there are no real failures. */
-    @Inject(method = "load", at = @At("RETURN"), cancellable = true, remap = false)
+    // 原样通知游戏结果；解析、I/O 和后处理错误不一定体现在 failures 集合中。
+    @Inject(method = "load", at = @At("RETURN"), remap = false)
     private static void acbric$onDataLoaded(CallbackInfoReturnable<Boolean> cir) {
-        boolean ok = cir.getReturnValueZ();
-        if (!ok) {
-            boolean anyErrors = false;
-            if (Loadable.LOADABLES != null) {
-                for (java.lang.Class<?> c : Loadable.LOADABLES) {
-                    java.util.ArrayList<String> errors = Loadable.getErrors(c);
-                    if (errors != null && !errors.isEmpty()) {
-                        anyErrors = true;
-                        break;
-                    }
-                }
-            }
-            if (!anyErrors) {
-                cir.setReturnValue(true);
-                ok = true;
-            }
-        }
-        LifecycleHooks.fireDataLoaded(ok);
+        LifecycleHooks.fireDataLoaded(cir.getReturnValueZ());
     }
 }

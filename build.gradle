@@ -1,16 +1,6 @@
-// Acbric — Fabric-style mod loading framework for Airships: Conquer the Skies.
-//
-// This repository ships the framework only:
-//   src/main   — the Fabric launch shim (AirshipsGameProvider + GameProvider service entry)
-//   src/apiMod — the runtime API (acbric_api: events, entrypoint bridge, native-mod UI
-//                integration, hook mixins)
-//
-// It does NOT ship any game content. Before building you must copy, from your own
-// Airships installation:
-//   libs/  — asplit-A.zip / asplit-B.zip (game classes), fabric-loader-0.19.3.jar,
-//            the game's library jars and libs/native/
-//   game/  — Airships.json, launch_settings.json, data/, lib/, ...
-// See README.md for the exact list.
+// Acbric 构建入口：启动层、API、回归检查与本地分发。
+// 游戏字节码、资源和 native 库需自行放入 libs/ 与 game/，详见 README.zh-CN.md。
+// Gradle 工程版本用于产物文件名；API 版本另由 src/apiMod/resources/fabric.mod.json 声明。
 
 plugins {
     id 'java'
@@ -18,6 +8,47 @@ plugins {
 
 group = 'net.fabricacs'
 version = '1.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// ---- 输入自检：把"游戏文件没准备好"变成一句人话 ----------------------------
+// 缺 libs/asplit-*.zip 时，compileApiModJava 会以 800+ 行 Gradle 原始输出失败，
+// 新协作者和新机器上完全看不出该怎么办。这里提前检查并给出可直接照做的指引。
+//
+// 只检查"编译必需"的文件；game/ 只有真正启动游戏时才需要，另由 verifyGameInputs 负责。
+// 文件对象在配置阶段就解析好，doLast 里不碰 project，保证配置缓存可用。
+def compileInputs = [
+        ['libs/asplit-A.zip',             '游戏内核 class，编译与运行都依赖'],
+        ['libs/asplit-B.zip',             '游戏内核 class，编译与运行都依赖'],
+        ['libs/fabric-loader-0.19.3.jar', 'Fabric Loader，compileOnly 依赖'],
+].collect { [it[0], layout.projectDirectory.file(it[0]).asFile, it[1]] }
+
+tasks.register('verifyFrameworkInputs') {
+    group = 'acbric'
+    description = 'Fails early with an actionable message when game files required for compilation are missing.'
+    doLast {
+        def missing = compileInputs.findAll { !it[1].isFile() }
+        if (!missing.isEmpty()) {
+            throw new GradleException(
+                    'Missing game files required for compilation:\n' +
+                    missing.collect { '  - ' + it[0] + '   (' + it[2] + ')' }.join('\n') +
+                    '\n\nThese files are NOT redistributed with this repository (copyright).' +
+                    '\nCopy them from your own Airships: Conquer the Skies installation into this project\'s libs/.' +
+                    '\nSee BUILDING.md / BUILDING.zh-CN.md for the exact list and one-line copy command.')
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    dependsOn tasks.named('verifyFrameworkInputs')
+}
 
 repositories {
     mavenCentral()
@@ -51,11 +82,57 @@ sourceSets {
         ) + fileTree(dir: 'libs', include: ['*.jar'], exclude: ['fabric-loader-*.jar'])
         runtimeClasspath += output + compileClasspath
     }
+    regressionTest {
+        compileClasspath += sourceSets.main.output + sourceSets.apiMod.output + sourceSets.apiMod.compileClasspath
+        runtimeClasspath += output + compileClasspath
+    }
 }
 
 tasks.register('apiModJar', Jar) {
     archiveClassifier = 'api-mod'
     from sourceSets.apiMod.output
+}
+
+tasks.named('assemble') {
+    dependsOn tasks.named('apiModJar')
+}
+
+// 回归夹具隔离在 build 下，不访问正常玩家的存档。
+tasks.register('regressionTest', JavaExec) {
+    group = 'verification'
+    description = 'Runs headless framework regression tests with isolated user data.'
+    dependsOn tasks.named('regressionTestClasses')
+    classpath = sourceSets.regressionTest.runtimeClasspath
+    mainClass = 'net.fabricacs.regression.FrameworkRegression'
+
+    // 套件选择，两种等价写法（不传 = 全部套件，即 check 与 CI 一直以来的行为，永远不会漏跑）：
+    //   -Pacbric.suites=event,rename   Gradle / IDE / CI 用
+    //   ACBRIC_SUITES=event,rename     启动脚本 test.cmd / test.sh 用
+    // 脚本走环境变量是因为 cmd.exe 会把参数里的 '=' 当分隔符拆开，
+    // "-Pacbric.suites=event" 到不了 Gradle；环境变量没有这个问题，且两端脚本写法一致。
+    // 套件名与覆盖范围见 BUILDING.zh-CN.md，或跑 regressionTest -Pacbric.suites=list。
+    def suiteSelection = (findProperty('acbric.suites') ?: System.getenv('ACBRIC_SUITES') ?: '').toString().trim()
+    if (!suiteSelection.isEmpty()) {
+        setArgs(suiteSelection.split(',')*.trim().findAll { !it.isEmpty() })
+    }
+
+    def sandbox = layout.buildDirectory.dir('regression-sandbox')
+    workingDir = sandbox
+    systemProperty 'java.awt.headless', 'true'
+    systemProperty 'file.encoding', 'UTF-8'
+    systemProperty 'stdout.encoding', 'UTF-8'
+    systemProperty 'stderr.encoding', 'UTF-8'
+    systemProperty 'user.home', sandbox.get().dir('home').asFile.absolutePath
+    environment 'APPDATA', sandbox.get().dir('appdata').asFile.absolutePath
+    doFirst {
+        sandbox.get().asFile.mkdirs()
+        sandbox.get().file('launch_settings.json').asFile.text = groovy.json.JsonOutput.toJson(
+                [customDataDirectoryLocation: sandbox.get().dir('userdata').asFile.absolutePath])
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('regressionTest')
 }
 
 tasks.register('installApiMod', Copy) {
@@ -65,7 +142,7 @@ tasks.register('installApiMod', Copy) {
     rename { 'acbric-api.jar' }
 }
 
-// ---- mod development template ---------------------------------------------
+// ---- 独立 MOD 模板：同步编译依赖，不把依赖打入功能 MOD ----
 def modTemplateDir = layout.projectDirectory.dir('acbric-mod-template')
 def modTemplateLibsDir = modTemplateDir.dir('libs')
 
@@ -85,6 +162,7 @@ tasks.register('syncModTemplateLibs', Copy) {
     from(tasks.named('apiModJar')) {
         rename { 'acbric-api.jar' }
     }
+    from configurations.fabricLoaderRuntime
 }
 
 tasks.register('installAirshipsNativeLibraries', Copy) {
@@ -92,9 +170,32 @@ tasks.register('installAirshipsNativeLibraries', Copy) {
     into layout.projectDirectory.dir('game/lib/native')
 }
 
+// 启动游戏需要完整的 game/ 目录；检查和编译一样要提前、要给人话。
+def gameInputs = [
+        ['game/Airships.json',      'GameProvider 靠它定位主类与内核 classPath'],
+        ['game/data/checksum',      '游戏静态数据是否已拷入的标志文件'],
+].collect { [it[0], layout.projectDirectory.file(it[0]).asFile, it[1]] }
+
+tasks.register('verifyGameInputs') {
+    group = 'acbric'
+    description = 'Fails early with an actionable message when the game directory required to launch is missing.'
+    doLast {
+        def missing = gameInputs.findAll { !it[1].isFile() }
+        if (!missing.isEmpty()) {
+            throw new GradleException(
+                    'Missing game files required to launch Airships:\n' +
+                    missing.collect { '  - ' + it[0] + '   (' + it[2] + ')' }.join('\n') +
+                    '\n\nCopy your Airships game directory (Airships.json, data/, lib/native, ...) into this project\'s game/.' +
+                    '\nRun without game files is still possible for library checks: gradlew assemble / gradlew regressionTest.' +
+                    '\nSee BUILDING.md / BUILDING.zh-CN.md.')
+        }
+    }
+}
+
 tasks.register('runAirshipsFabric', JavaExec) {
     group = 'application'
     description = 'Builds, installs the Acbric API, and starts Airships with Fabric Loader.'
+    dependsOn tasks.named('verifyGameInputs')
     dependsOn tasks.named('jar'), tasks.named('installApiMod'), tasks.named('installAirshipsNativeLibraries')
 
     workingDir = layout.projectDirectory.dir('game').asFile
@@ -118,7 +219,7 @@ tasks.register('startAirships') {
     dependsOn tasks.named('runAirshipsFabric')
 }
 
-// ---- bundled JRE via jlink ------------------------------------------------
+// ---- 通过 jlink 创建分发用 Java 21 运行时 ----
 def bundledJreDir = layout.buildDirectory.dir('jre')
 
 tasks.register('createBundledJre', Exec) {
@@ -137,7 +238,7 @@ tasks.register('createBundledJre', Exec) {
     outputs.dir bundledJreDir
 }
 
-// ---- distribution ----------------------------------------------------------
+// ---- 分发：启动依赖与游戏依赖分目录，避免重复类加载 ----
 def distributionName = 'Acbric'
 def distributionRoot = layout.buildDirectory.dir("dist/${distributionName}")
 
@@ -150,6 +251,14 @@ tasks.register('distDir', Sync) {
     from(layout.projectDirectory.dir('src/dist')) {
         include 'run.bat'
     }
+    from 'LICENSE'
+    from 'BUNDLED_RESOURCES.md', 'EVENTS.md', 'CHANGELOG.md', 'CHANGELOG.zh-CN.md', 'API.zh-CN.md',
+         'BUILDING.md', 'BUILDING.zh-CN.md'
+    doFirst {
+        if (!file('src/dist/run.bat').isFile()) {
+            throw new GradleException('Missing distribution launcher: src/dist/run.bat')
+        }
+    }
 
     into('acbric-mod-template') {
         from(modTemplateDir) {
@@ -158,12 +267,16 @@ tasks.register('distDir', Sync) {
         }
     }
 
-    into('libs') {
+    into('loader-libs') {
         from tasks.named('jar')
         from configurations.fabricLoaderRuntime
+    }
+
+    into('libs') {
         from(layout.projectDirectory.dir('libs')) {
             include '*.jar', '*.zip'
             exclude 'fabric-loader-*.jar'
+            exclude 'sponge-mixin-*.jar', 'asm-*.jar'
             exclude 'steamworks4j-1.3.0.jar'
         }
     }

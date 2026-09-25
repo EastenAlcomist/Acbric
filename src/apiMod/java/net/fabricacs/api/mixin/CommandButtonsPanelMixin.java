@@ -1,3 +1,6 @@
+/*
+ * CommandButtonsPanelMixin.java — 为命令按钮面板转发 draw/tick 事件，使用 COMMAND_BUTTONS 标签。
+ */
 package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.CommandButtonsPanel;

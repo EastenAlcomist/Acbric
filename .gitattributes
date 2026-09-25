@@ -2,11 +2,18 @@
 * text=auto
 
 # Gradle wrapper / shell scripts must stay LF so they work on Linux and macOS.
-gradlew text eol=lf
-*.sh    text eol=lf
+# A CRLF shell script dies with "bad interpreter: No such file or directory".
+#
+# NB: the POSIX launchers are deliberately named build.sh / test.sh rather than
+# the extension-less "build" / "test". An extension-less "build" collides with
+# Gradle's own build/ output directory on case-insensitive filesystems
+# (Windows, and macOS by default), which would break checkout for those users.
+gradlew  text eol=lf
+*.sh     text eol=lf
 
-# Windows batch files stay CRLF.
-*.bat   text eol=crlf
+# Windows launchers stay CRLF (.cmd is NOT covered by the *.bat rule).
+*.bat    text eol=crlf
+*.cmd    text eol=crlf
 
 # Binary assets never get line-ending translation.
 *.jar   binary

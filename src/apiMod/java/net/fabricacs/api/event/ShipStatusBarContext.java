@@ -1,6 +1,10 @@
+/*
+ * ShipStatusBarContext.java — 舰船状态条绘制上下文：包含舰船、阵营、绘制位置/尺寸及原始绘制参数。
+ */
 package net.fabricacs.api.event;
 
 public final class ShipStatusBarContext {
+    // 原方法传入的游戏对象引用；字段不可重新赋值，但对象自身仍可变化。
     private final Object statusBar;
     private final Object draw;
     private final Object mouse;

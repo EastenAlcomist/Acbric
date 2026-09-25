@@ -7,6 +7,17 @@
 框架把 Fabric Loader 的 `KnotClient` 启动器嫁接到游戏上，让 MOD 能用 Java 代码 + mixin
 扩展游戏逻辑，同时保留并整合游戏原生的 JSON 数据 MOD 系统。
 
+## 当前开发版与文档
+
+当前 API 为 **0.3.3-dev.1**。本次修复保留旧公共接口，同时新增准确命名的重命名面板事件。
+
+- [完整 API 开发手册](API.zh-CN.md)：入口、上下文、目录、事件、取消与资源管理。
+- [本次改动记录](CHANGELOG.zh-CN.md)：12 项修复、兼容变化、验证结果和当前限制。
+- [UI 事件契约](EVENTS.md) / [资源更新与迁移](BUNDLED_RESOURCES.md)。
+- [MOD 模板说明](acbric-mod-template/README.zh-CN.md)：创建独立功能 MOD。
+
+标准构建有 80 项无界面回归。独立运行包经本地人工测试反馈运行正常、表现与原包基本一致；没有完整场景/MOD 清单，存档、联机及所有第三方 MOD 仍需分别验证。
+
 ---
 
 ## ⚠️ 本仓库不含任何游戏内容
@@ -66,12 +77,32 @@ game/
 
 ## 2. 环境要求
 
-- **JDK 21** —— `gradle.properties` 已 pin `C:/Program Files/Java/jdk-21`，请按你的机器修改。
+- **JDK 21** —— 使用 `JAVA_HOME` 或 Gradle 参数 `-Dorg.gradle.java.home=<JDK 路径>` 指定；仓库不再固定某台机器的安装路径。
 - Gradle 8.13（通过仓库自带 wrapper 使用）。
 
 ## 3. 构建与运行
 
+快速入口（会自己找 JDK 21，再转发给 Gradle）：
+
 ```powershell
+build                 # Windows cmd；PowerShell 里写 .\build
+build full            # 编译 + 全部回归检查
+./build.sh            # Linux / macOS / Git Bash
+
+test all              # 全部回归套件（80 项断言）
+test event            # 只跑某个套件；test list 列出全部
+./test.sh bundle      # Linux / macOS / Git Bash
+```
+
+前置条件、实测依据、跨平台注意事项与排错见 **[BUILDING.zh-CN.md](BUILDING.zh-CN.md)**
+（[English](BUILDING.md)）。
+
+底层仍然是标准 Gradle：
+
+```powershell
+# 编译启动层与 API，并运行无界面回归检查
+.\gradlew.bat build --console=plain
+
 # 构建框架并启动游戏
 .\gradlew.bat startAirships --console=plain
 
@@ -82,14 +113,30 @@ game/
 .\gradlew.bat distZip --console=plain
 ```
 
+`build` 已包含 `apiModJar` 和 `regressionTest`。回归检查覆盖数据加载结果通知、内嵌资源解包和类路径边界，
+使用 `build/regression-sandbox/` 下的独立数据，需要本地编译依赖，不启动 GUI、不使用真实存档。
+操作系统不允许创建符号链接时，对应检查会明确报告跳过。这些检查不能替代对局、存档与联机验收。
+检查还覆盖受管理资源升级／恢复、事件订阅语义及 Fabric 元数据校验。
+
+分发入口为 `run.bat`；`loader-libs/` 保存启动垫片、Fabric Loader、Mixin 和 ASM，`libs/` 保存游戏依赖。
+两者与 `game/`、`jre/` 保持相邻。Provider 也会按归档内容排除旧式混合 `libs/` 中的启动基础设施，避免重复类身份。
+分发包包含框架 LICENSE。生成 ZIP 成功不代表已补齐完整游戏资源。
+
+行为变更和仍待处理的限制见 [未发布变更记录](CHANGELOG.md)。
+内嵌原版资源的哈希归属、冲突保留、备份和旧目录手动迁移见 [资源管理说明](BUNDLED_RESOURCES.md)。
+
+新增 UI 事件、触发顺序、取消规则与旧接口迁移见 [事件契约](EVENTS.md)。
+当前开发 API 为 `0.3.3-dev.1`（尚未发布），新模板已声明对应最低版本。
+
 ## 4. 项目结构
 
 ```
 Acbric/
 ├── src/
 │   ├── main/            # 启动垫片：AirshipsGameProvider + GameProvider 服务注册
-│   └── apiMod/          # 运行时 API（acbric_api）：事件系统、入口桥、
+│   ├── apiMod/          # 运行时 API（acbric_api）：事件系统、入口桥、
 │                        # 原生 MOD 界面集成、hook mixin
+│   └── regressionTest/  # 无界面回归及真实面板探针入口
 ├── acbric-mod-template/ # 独立 MOD 模板项目
 ├── gradle/              # Gradle wrapper
 └── build.gradle

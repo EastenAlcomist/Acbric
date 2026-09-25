@@ -1,7 +1,11 @@
+/*
+ * PlayerControlPanelTickContext.java — 面板输入更新上下文：保留输入对象、毫秒间隔及所在界面的引用。
+ */
 package net.fabricacs.api.event;
 
 public final class PlayerControlPanelTickContext {
     private final CombatUiPanelType panelType;
+    // 原方法传入的游戏对象引用；字段不可重新赋值，但对象自身仍可变化。
     private final Object panel;
     private final Object input;
     private final int elapsedMs;

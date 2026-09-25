@@ -1,3 +1,7 @@
+/*
+ * FabricModListBridge.java — 把已加载 Fabric MOD 映射为原版列表行；处理嵌套来源、图标和重复刷新。
+ * 列表展示不提供热加载、禁用或卸载能力。
+ */
 package net.fabricacs.api.impl;
 
 import com.zarkonnen.airships.Mod;
@@ -30,12 +34,13 @@ public final class FabricModListBridge {
             "mixinextras"
     );
 
-    // Cache mod metadata so repeated ModsScreen refreshes don't reload icons.
+    // 按 MOD 缓存图标；列表重复刷新时避免重复解码，缺失图标也缓存为空。
     private static final java.util.Map<String, Image> iconCache = new java.util.HashMap<>();
 
     private FabricModListBridge() {
     }
 
+    /** 移除旧合成行后重新追加；某个 MOD 失败不阻断其余行。 */
     public static void appendFabricMods() {
         try {
             removeSyntheticFabricMods();
@@ -45,12 +50,19 @@ public final class FabricModListBridge {
                     .sorted(Comparator.comparing(container -> displayName(container.getMetadata()), String.CASE_INSENSITIVE_ORDER))
                     .collect(Collectors.toCollection(ArrayList::new));
 
+            int added = 0;
             for (ModContainer container : fabricMods) {
-                Mod.mods.add(createSyntheticMod(container));
+                try {
+                    Mod.mods.add(createSyntheticMod(container));
+                    added++;
+                } catch (Exception | LinkageError e) {
+                    System.err.println("[Acbric API] Failed to display Fabric mod " + container.getMetadata().getId());
+                    e.printStackTrace();
+                }
             }
 
             if (!fabricMods.isEmpty()) {
-                System.out.println("[Acbric API] Added " + fabricMods.size() + " Fabric mods to the vanilla mod list.");
+                System.out.println("[Acbric API] Added " + added + " Fabric mods to the vanilla mod list.");
             }
         } catch (Throwable t) {
             System.err.println("[Acbric API] Failed to add Fabric mods to the vanilla mod list.");
@@ -87,7 +99,7 @@ public final class FabricModListBridge {
         mod.logo = icon(container);
         mod.tags.add("fabric");
 
-        // The vanilla row renderer skips enable/delete controls for preempted mods.
+        // 原版行渲染器会跳过被抢占 MOD 的启用/删除按钮，防止错误操作合成条目。
         mod.preemptedBy = mod;
 
         return mod;
@@ -143,9 +155,8 @@ public final class FabricModListBridge {
         ModMetadata metadata = container.getMetadata();
         String modId = metadata.getId();
 
-        // Return cached icon if already loaded.
-        Image cached = iconCache.get(modId);
-        if (cached != null) return cached;
+        // containsKey 区分尚未读取和已确认没有图标两种状态。
+        if (iconCache.containsKey(modId)) return iconCache.get(modId);
 
         Optional<String> iconPath = metadata.getIconPath(64)
                 .or(() -> metadata.getIconPath(128))
@@ -172,8 +183,15 @@ public final class FabricModListBridge {
         }
     }
 
+    /** 嵌套来源通过父 MOD 与包内位置表示，不能直接调用 getPaths。 */
     private static String sourcePaths(ModContainer container) {
         ModOrigin origin = container.getOrigin();
+        if (origin.getKind() == ModOrigin.Kind.NESTED) {
+            return origin.getParentModId() + "!/" + origin.getParentSubLocation();
+        }
+        if (origin.getKind() != ModOrigin.Kind.PATH) {
+            return container.getRootPaths().stream().map(Path::toString).collect(Collectors.joining(", "));
+        }
         ArrayList<Path> paths = new ArrayList<>(origin.getPaths());
         if (paths.isEmpty()) {
             paths.addAll(container.getRootPaths());

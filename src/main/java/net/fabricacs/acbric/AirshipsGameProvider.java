@@ -1,3 +1,7 @@
+/*
+ * AirshipsGameProvider.java — 启动层入口：定位 Airships 配置、组装游戏类路径并通过 Fabric 调用游戏主类。
+ * 启动库必须留在父加载器，避免 Loader、Mixin、ASM 在游戏加载器中产生第二份类身份。
+ */
 package net.fabricacs.acbric;
 
 import net.fabricmc.loader.api.metadata.ModMetadata;
@@ -19,9 +23,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipFile;
 
 public final class AirshipsGameProvider implements GameProvider {
     private static final String DEFAULT_MAIN_CLASS = "com.zarkonnen.airships.Main";
@@ -101,6 +107,7 @@ public final class AirshipsGameProvider implements GameProvider {
         }
 
         gameDirectory = candidateGameDir;
+        gameClassPath.clear();
         libsDirectory = findLibsDirectory(cwd, gameDirectory);
         if (libsDirectory == null) {
             return false;
@@ -203,6 +210,7 @@ public final class AirshipsGameProvider implements GameProvider {
         return null;
     }
 
+    /** 读取启动类及归档列表；当前为有限的正则提取，不是通用 JSON 解析器。 */
     private void readAirshipsConfig(Path configPath) throws IOException {
         String json = new String(Files.readAllBytes(configPath), StandardCharsets.UTF_8);
         Matcher mainClassMatcher = MAIN_CLASS_PATTERN.matcher(json);
@@ -218,7 +226,7 @@ public final class AirshipsGameProvider implements GameProvider {
         Matcher entryMatcher = STRING_PATTERN.matcher(classPathMatcher.group(1));
         while (entryMatcher.find()) {
             Path path = libsDirectory.resolve(entryMatcher.group(1)).toAbsolutePath().normalize();
-            if (Files.isRegularFile(path)) {
+            if (Files.isRegularFile(path) && isRuntimeLibrary(path)) {
                 gameClassPath.add(path);
             }
         }
@@ -226,22 +234,33 @@ public final class AirshipsGameProvider implements GameProvider {
 
     private void collectClassPath() throws IOException {
         try (java.util.stream.Stream<Path> paths = Files.list(libsDirectory)) {
-            paths
-                    .filter(Files::isRegularFile)
-                    .filter(this::isRuntimeLibrary)
-                    .map(path -> path.toAbsolutePath().normalize())
-                    .filter(path -> !gameClassPath.contains(path))
-                    .forEach(gameClassPath::add);
+            for (Path path : paths.filter(Files::isRegularFile).sorted().toList()) {
+                Path absolute = path.toAbsolutePath().normalize();
+                if (!gameClassPath.contains(absolute) && isRuntimeLibrary(absolute)) {
+                    gameClassPath.add(absolute);
+                }
+            }
         }
     }
 
-    private boolean isRuntimeLibrary(Path path) {
-        String fileName = path.getFileName().toString().toLowerCase();
-        return (fileName.endsWith(".jar") || fileName.endsWith(".zip"))
-                && !fileName.startsWith("fabric-loader-")
-                && !fileName.equals("steamworks4j-1.3.0.jar");
+    /** 按实际类内容识别基础设施库，重命名 JAR 也不能绕过类加载器隔离。 */
+    private boolean isRuntimeLibrary(Path path) throws IOException {
+        String fileName = path.getFileName().toString().toLowerCase(Locale.ROOT);
+        if ((!fileName.endsWith(".jar") && !fileName.endsWith(".zip"))
+                || fileName.equals("steamworks4j-1.3.0.jar")) return false;
+        // 兼容旧的混合 libs 布局，但基础设施类只能由启动加载器持有。
+        try (ZipFile zip = new ZipFile(path.toFile())) {
+            return zip.stream().noneMatch(entry -> {
+                String name = entry.getName();
+                return name.endsWith(".class") && (name.startsWith("org/objectweb/asm/")
+                        || name.startsWith("org/spongepowered/asm/")
+                        || name.startsWith("net/fabricmc/loader/")
+                        || name.startsWith("net/fabricacs/acbric/"));
+            });
+        }
     }
 
+    /** 开发目录有 libs/native 时设置本地库路径；分发脚本另指定 game/lib/native。 */
     private void configureNativeLibraries() {
         Path nativeDirectory = libsDirectory.resolve("native").toAbsolutePath().normalize();
         if (!Files.isDirectory(nativeDirectory)) {
