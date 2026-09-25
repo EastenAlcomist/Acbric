@@ -87,7 +87,9 @@ final class StartupDiagnostics {
         try {
             Map<String, String> states = new LinkedHashMap<>();
             mods.forEach((id, row) -> states.put(id, status(row)));
-            CodeManifestCollector.publish(directory, CodeManifestCollector.collect(loadedMods, states));
+            CodeManifest manifest = CodeManifestCollector.collect(loadedMods, states);
+            StartupCodeManifest.current = manifest;
+            CodeManifestCollector.publish(directory, manifest);
             System.out.println("[Acbric API] Local code manifest: " + directory.resolve("code-manifest.json"));
         } catch (IOException | RuntimeException failure) {
             System.err.println("[Acbric API] Cannot export local code manifest: " + failure.getClass().getSimpleName());

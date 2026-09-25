@@ -6,6 +6,9 @@
   "client": [
     "MainMixin",
     "AirshipGameMixin",
+    "ClientConnectionMixin",
+    "LobbyNetworkMixin",
+    "StrategicLobbyMixin",
     "LoadableMixin",
     "LoadingScreenMixin",
     "MainMenuMixin",

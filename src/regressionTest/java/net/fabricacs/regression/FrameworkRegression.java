@@ -43,6 +43,7 @@ public final class FrameworkRegression {
         checks += net.fabricacs.api.impl.RuntimeEventDiagnosticsRegression.run(root.resolve("runtime-events"));
         checks += net.fabricacs.api.impl.CodeManifestRegression.run(root.resolve("code-manifests"));
         checks += net.fabricacs.api.impl.CodeHandshakeRegression.run();
+        checks += net.fabricacs.api.impl.LobbyCodeGateRegression.run();
         System.out.println("REGRESSION PASS: " + checks + " checks; fixtures=" + root);
     }
 

@@ -98,7 +98,7 @@ public final class CodeHandshakeRegression {
         check(state(alone, 0) == CodeHandshakeSession.State.IDLE, "unbound session cannot match");
         alone.context(10, 1, List.of(1), 0);
         check(state(alone, 0) == CodeHandshakeSession.State.ALONE, "single member is explicit ALONE, not peer confirmation");
-        invalid(() -> alone.context(0, 1, MEMBERS, 0), "main chat is not a game room");
+        invalid(() -> alone.context(-1, 1, MEMBERS, 0), "negative room is invalid");
         invalid(() -> alone.context(10, 3, MEMBERS, 0), "self must be in authoritative roster");
         invalid(() -> alone.context(10, 1, List.of(1, 1), 0), "duplicate members rejected");
         invalid(() -> alone.context(10, 1, List.of(-1, 1), 0), "negative IDs rejected");

@@ -3,6 +3,7 @@ package net.fabricacs.api.mixin;
 
 import com.zarkonnen.airships.ResumeScreen;
 import net.fabricacs.api.impl.CampaignLifecycleHooks;
+import net.fabricacs.api.impl.LobbyHandshakeBridge;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -13,5 +14,6 @@ public abstract class ResumeScreenMixin {
     @Inject(method = "input", at = @At("RETURN"))
     private void acbric$restored(CallbackInfo ci) {
         CampaignLifecycleHooks.afterResume((ResumeScreen) (Object) this);
+        LobbyHandshakeBridge.afterResume((ResumeScreen) (Object) this);
     }
 }

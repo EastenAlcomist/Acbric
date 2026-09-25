@@ -2,7 +2,7 @@
 
 **English** | [中文](CODE_MANIFEST.zh-CN.md)
 
-This is the first stage of consistency checking: export a local startup code manifest and compare two files. dev.8 adds the [internal handshake core](CODE_HANDSHAKE.md); lobby integration, ready/start gates and automatic synchronization are **not implemented**. The classes and JSON format are internal diagnostic tooling, not a new stable mod API.
+This is the first stage of consistency checking: export a local startup code manifest and compare two files. dev.8 adds the [internal handshake core](CODE_HANDSHAKE.md); dev.9 connects [campaign lobby ready/start gates](LOBBY_HANDSHAKE.md). Automatic state synchronization is not implemented. The classes and JSON format are internal diagnostic tooling, not a new stable mod API.
 
 ## Export and compare
 
@@ -67,4 +67,4 @@ Hashing runs synchronously once during startup, outside render loops. Before/aft
 
 356 headless checks pass, including 45 new manifest checks. Symlink checks requiring unavailable Windows permissions are explicitly skipped. Isolated Fabric probes using games 1.2.15.2 and 1.2.14 export real nested mods, the new template and legacy mods; existing event, storage and lifecycle probes still pass. All four CLI exit outcomes and self-comparisons of both real exports were checked. GUI, live two-client communication and online servers remain untested.
 
-Subsequent validation: dev.8 brings the total to 433 checks and validates the internal handshake through both native local Server/Client builds. The dev.7 counts and untested scope above describe that earlier stage; product lobby integration remains pending.
+Subsequent validation: dev.8 brings the total to 433 checks and validates the internal handshake through both native local Server/Client builds. The dev.7 counts and untested scope above describe that earlier stage; dev.9 subsequently adds [lobby integration](LOBBY_HANDSHAKE.md), with 477 standard checks. Its coverage and remaining acceptance are documented separately.

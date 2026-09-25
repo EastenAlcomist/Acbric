@@ -2,7 +2,16 @@
 
 [中文改动记录](CHANGELOG.zh-CN.md) | [API guide](API.md) ([中文](API.zh-CN.md))
 
-## Unreleased — API build 0.3.3-dev.8
+## Unreleased — API build 0.3.3-dev.9
+
+- Connect campaign lobbies to automatic code checks, a bilingual status/retry button and native ready/start guards. Preserve native resource and player requirements; direct actions also recheck conditions. See [integration contract](LOBBY_HANDSHAKE.md).
+- Bind preparation and host updates to the complete current member/session batch. Revoke stale preparation after context/reconnect changes, native setup changes or retry. Preserve unchanged intent during routine renewal; complete host updates provide a bounded start window.
+- Track native socket/reconnect generations and transfer room context when ResumeScreen recreates a lobby without a new welcome. Support native LAN channel 0, preserve unrelated messages and filter reserved protocol tails before campaign interpretation.
+- Use the in-memory startup manifest. Add three mixins (19 total), extend the recovery hook, retain public MOD APIs and save formats. Legacy MODs need no rebuild; peers still need matching framework/code. Shared settings/state synchronization is not added.
+
+Validation: 477 standard assertions (44 new lobby checks), 104 top-level checks in ten final native Server/dual Fabric Client experiments on 1.2.15.2 and 1.2.14, and retained original 31 types/125 members plus dev.6's 46 types/185 members. Probes cover real lobby methods and transformed recovery hooks with minimal fixtures, not full GUI, successful world generation or official-server authentication. Full new/resumed campaign and cross-machine acceptance remains manual.
+
+## Previous development build — API 0.3.3-dev.8
 
 - Add a package-private code-handshake protocol and state machine: per-context/per-peer challenges, roster invalidation, bounded retries, explicit timeout, expiring confirmation and immutable diagnostic snapshots. See [contract](CODE_HANDSHAKE.md).
 - Bound wire messages and manifests below native transport limits; oversized manifests remain explicitly unverifiable. Reject stale/history/misaddressed messages and unsupported formats without falling back to success.

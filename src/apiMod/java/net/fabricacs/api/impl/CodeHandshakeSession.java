@@ -46,7 +46,7 @@ final class CodeHandshakeSession implements AutoCloseable {
     void context(int room, int player, Collection<Integer> roster, long now) {
         ensureOpen(); time(now);
         List<Integer> sorted = CodeHandshakeProtocol.roster(roster);
-        if (room <= 0 || !sorted.contains(player)) throw new IllegalArgumentException("Invalid handshake context");
+        if (room < 0 || !sorted.contains(player)) throw new IllegalArgumentException("Invalid handshake context");
         if (active && channel == room && self == player && members.equals(sorted)) return;
         channel = room; self = player; members = sorted; active = true;
         reset(now);

@@ -22,7 +22,7 @@ final class CodeHandshakeProtocol {
                   String session, String requestSession, String challenge, String status, CodeManifest manifest) {
         Packet {
             members = roster(members);
-            if (channel <= 0 || from == to || !members.contains(from) || !members.contains(to)) throw invalid("routing");
+            if (channel < 0 || from == to || !members.contains(from) || !members.contains(to)) throw invalid("routing");
             token(session); token(requestSession); token(challenge);
             if (request ? !status.equals("REQUEST") || !session.equals(requestSession)
                     : !Set.of("CODE_MATCH", "DIFFERENT", "UNVERIFIABLE").contains(status)) throw invalid("status");

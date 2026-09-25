@@ -1,8 +1,8 @@
-# Code handshake protocol and state machine (dev.8)
+# Code handshake protocol and state machine (dev.8 core, dev.9 integration)
 
 **English** | [中文](CODE_HANDSHAKE.zh-CN.md)
 
-This revision implements internal packets and state management, tested through a real native Server and two independent Fabric/Client processes. **Campaign lobby UI, ready buttons and game-start integration are not implemented.** Normal game launches do not automatically run the handshake. `CodeHandshakeProtocol` and `CodeHandshakeSession` are package-private implementation details, not public mod APIs.
+The dev.8 core implements internal packets and state management. dev.9 adds automatic [campaign lobby integration](LOBBY_HANDSHAKE.md), including UI and ready/start guards. The following describes core semantics separately from coordinated preparation. `CodeHandshakeProtocol` and `CodeHandshakeSession` are package-private implementation details, not public mod APIs.
 
 ## Meaning of confirmation
 
@@ -40,7 +40,7 @@ Use ordinary room messages with `type = acbric:code_handshake` and `protocol = 1
 | Field | Contract |
 | --- | --- |
 | `kind` | `request` or `response` |
-| `channel`, `from`, `to` | Positive room ID; distinct, nonnegative member IDs |
+| `channel`, `from`, `to` | Nonnegative room ID (LAN campaigns may use 0); distinct, nonnegative member IDs |
 | `members` | Full current member set, at most 32, no duplicates; must equal the receiver's current set |
 | `session` | Sender's context UUID |
 | `requestSession`, `challenge` | Requester's context UUID and per-peer challenge UUID; echoed in responses |
@@ -52,17 +52,17 @@ Serialized manifests are limited to **32,000 UTF-8 bytes** and complete protocol
 
 Parsing rejects unknown fields/versions, duplicate keys, wrong types, floating-point pseudo-integers, invalid UUIDs, unsupported manifests and exceeded limits. Numeric types are checked before invoking the game's floating-point serializer. Invalid, misaddressed, wrong-room/roster, stale-challenge and history-frame traffic cannot confirm a peer. Missing valid responses eventually time out; there is no compatibility-success fallback.
 
-## Obligations of a future adapter
+## Adapter obligations
 
 1. Call from one thread with a monotonic nonnegative millisecond clock. Tick and obtain fresh snapshots regularly; after a pause, advance time before considering any gate.
-2. Obtain context from the current connection's native welcome/member frames. Filter stale connections, rooms and out-of-order outer frames. Room 0 is public chat and excluded. Context errors such as oversized rosters must remain unconfirmed.
+2. Obtain context from the current connection's native welcome/member frames. Filter stale connections, rooms and out-of-order outer frames. Use welcome metadata to exclude public chat; native LAN campaigns also use room 0. Context errors such as oversized rosters must remain unconfirmed.
 3. Pass the actual outer frame's room/history metadata into `receive`, not values claimed inside the custom packet.
-4. Send returned texts as ordinary room messages and retain native send-failure results. Do not enable history storage or global broadcast.
+4. Send returned texts as ordinary room messages and treat native send failures as unconfirmed attempts, never successful checks. Do not enable history storage or global broadcast.
 5. Consume only the reserved framework message type. Preserve native message/member/room handling, avoid duplicate Client polling, and keep these packets out of the campaign command interpreter.
-6. Implement separate coordinated ready/start invalidation and final checks. Local `CODE_MATCH` is not room-wide agreement. Host changes, multiple start entry points and early construction of loaded worlds require separate integration work.
+6. Implement separate coordinated ready/start invalidation and final checks. Local `CODE_MATCH` is not room-wide agreement. Host changes, multiple start entry points and early construction of loaded worlds are addressed by the separate lobby adapter; see its scope and validation limits.
 
-This revision does not change `LOADED` timing, add gameplay APIs or automatically broadcast campaign data.
+Neither layer changes `LOADED` timing, add gameplay APIs or automatically broadcast campaign data.
 
 ## Validation
 
-`gradlew build` contains 433 assertions, including 77 new handshake checks for state, clocks, retries/timeouts, replay, membership, three-member rooms, limits and strict parsing. Isolated workspace experiments exercise the product engine through actual game 1.2.15.2 and 1.2.14 Server/Client bytecode. The experimental adapter is not lobby integration. 70 real communication assertions pass across both builds, covering matching/modified/missing code, failed entrypoints, timeout, room reentry and native reconnect. GUI, lobby starts, cross-machine/official-server play and sustained high load remain untested.
+The dev.8 core was introduced with 433 assertions, including 77 handshake checks for state, clocks, retries/timeouts, replay, membership, three-member rooms, limits and strict parsing. Isolated workspace experiments exercise the product engine through actual game 1.2.15.2 and 1.2.14 Server/Client bytecode. The experimental adapter is not lobby integration. 70 real communication assertions pass across both builds, covering matching/modified/missing code, failed entrypoints, timeout, room reentry and native reconnect. That describes the dev.8 experiment. Current dev.9 validation has 477 standard checks and 104 actual lobby integration checks; see [integration coverage](LOBBY_HANDSHAKE.md#validation-and-remaining-acceptance) for remaining manual acceptance.

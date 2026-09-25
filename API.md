@@ -2,7 +2,7 @@
 
 **English** | [中文](API.zh-CN.md)
 
-Applies to **`acbric_api 0.3.3-dev.8`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
+Applies to **`acbric_api 0.3.3-dev.9`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
 
 - Installation, building and launching: [README.md](README.md).
 - Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
@@ -257,7 +257,7 @@ Since `0.3.3-dev.2`, GameProvider reads `AGame.VERSION` from bytecode before dep
 
 ## 10. Validation scope
 
-The standard build passes 433 headless assertions, including 62 config checks. Real Fabric probes on games 1.2.15.2 and 1.2.14 each pass 10 campaign-data and 31 lifecycle/demo-v3.1 checks plus 5 managed-event runtime checks. The latter include explicit event dispatch for configuration policies; they do not replace GUI or live multiplayer acceptance. User feedback for dev.4 reports no issues so far; dev.8 remains pending manual acceptance.
+The standard build passes 477 headless assertions, including 62 config checks. Real Fabric probes on games 1.2.15.2 and 1.2.14 each pass 10 campaign-data and 31 lifecycle/demo-v3.1 checks plus 5 managed-event runtime checks. The latter include explicit event dispatch for configuration policies; they do not replace GUI or live multiplayer acceptance. User feedback for dev.4 reports no issues so far; dev.9 remains pending manual acceptance.
 
 ## 11. Campaign data
 
@@ -279,8 +279,12 @@ Use `context.config(...)` followed by explicit `load/migrate/save/reload`. Defau
 
 ## 15. Local code manifests (dev.7)
 
-[Export and offline comparison](CODE_MANIFEST.md) are internal diagnostic tools, not a new public MOD API. The 433 standard checks include 45 new manifest checks. A CODE_MATCH result covers startup code identity only; lobby integration, shared-settings checks and automatic synchronization are not implemented. The internal handshake core is described below.
+[Export and offline comparison](CODE_MANIFEST.md) are internal diagnostic tools, not a new public MOD API. The 477 standard checks include 45 new manifest checks. A CODE_MATCH result covers startup code identity only; lobby integration is available in dev.9, but shared-settings checks and automatic synchronization are not implemented. The internal handshake core is described below.
 
 ## 16. Internal code handshake (dev.8)
 
-See [protocol and state contract](CODE_HANDSHAKE.md). This is package-private framework infrastructure with 77 new regression checks, not a public MOD networking API. Real native Server/Client probes exercise it on both supported game snapshots; normal game launches do not run it yet. Lobby UI, ready/start gating and room-wide coordination are the next integration stage.
+See [protocol and state contract](CODE_HANDSHAKE.md). This is package-private framework infrastructure with 77 new regression checks, not a public MOD networking API. Real native Server/Client probes exercise it on both supported game snapshots; dev.9 runs it automatically in campaign lobbies. The core result remains local evidence rather than permission to start.
+
+## 17. Campaign lobby integration (dev.9)
+
+See [player behavior and integration contract](LOBBY_HANDSHAKE.md). Code failure blocks ready/start; changing context revokes preparation. All participants need matching code and a supporting framework. Existing MOD interfaces remain compatible, but this does not permit mixed old/new frameworks in a room. There is no new public networking API or automatic state/configuration synchronization.
