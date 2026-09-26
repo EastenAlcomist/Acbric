@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.3-dev.23 — External settings and texture-cache isolation (2026-09-26)
+
+- Continue from committed dev.22 (`40f599a`). Merge original launch settings with instance overrides before native initialization; force userdata/GIF output inside the instance, preserve malformed input and fail without global fallback. Disable external developer checksum/random-data paths.
+- Intercept the native texture-file loader and skip source `.tex` migration. Mirror requested assets by source/content into the instance; keep native file reads/cache writes there. Prefer PNG over unverified original raw, support raw-only and nested/generated assets, repair invalid raw lengths before native mmap, and invalidate metadata on MOD reload. Legacy paths and public API contracts are unchanged.
+- **924 standard checks** (+20), **36 real Knot external checks** on 1.2.15.3 and **142 legacy ARC checks** across 1.2.15.2 / 1.2.14 pass. All **5,325 installation file contents remain unchanged**. Texture tests replace only terminal GPU image construction, not native file IO.
+- Normal external startup remains blocked; Main/GPU/native DLL loading/full campaign/GIF/DLC/Workshop/multiplayer acceptance and remaining write-path review are pending. Disk cache has no automatic garbage collection. See [scope and reproduction](EXTERNAL_INSTALL.md).
+- dev.23 is committed at user request; no push or player runtime replacement. Legacy `distZip` is still not a clean release; distribution, template migration and installer work remain.
+
 ## 0.3.3-dev.22 — External-install preflight and loading prototype (2026-09-26)
 
 - Add a checker that does not initialize game classes, a Windows Java bootstrap check, and `preflightTools` containing explicit launch dependencies only. Early temporary reports preserve failures even when installation/instance paths are invalid.

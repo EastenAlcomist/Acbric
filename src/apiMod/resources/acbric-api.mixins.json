@@ -5,6 +5,9 @@
   "compatibilityLevel": "JAVA_17",
   "client": [
     "ExternalPathsMixin",
+    "ExternalLaunchSettingsMixin",
+    "ExternalTextureMixin",
+    "ExternalGifMixin",
     "MainMixin",
     "AirshipGameMixin",
     "ClientConnectionMixin",

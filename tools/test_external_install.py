@@ -67,11 +67,15 @@ def main():
         if 'INSTALL_NOT_FOUND' not in invalid or not list((run / 'tmp').glob('acbric-preflight-*/preflight.properties')):
             raise AssertionError('Invalid install must have a readable failure and early log')
         (instance / 'mods').mkdir(exist_ok=True)
+        (instance / 'config/launch-settings.json').write_text(json.dumps({'customWindowW': 1111, 'customDataDirectoryLocation': str(run / 'forbidden-data'), 'customGIFSaveDirectoryLocation': str(run / 'forbidden-gifs')}), encoding='utf-8')
         shutil.copy2(api, instance / 'mods/acbric-api.jar')
         with zipfile.ZipFile(instance / 'mods/external-probe.jar', 'w', zipfile.ZIP_DEFLATED) as jar:
             jar.write(probe, 'net/fabricacs/regression/ExternalRuntimeProbe.class')
+            jar.write(probe.parent / 'TextureProbeImage.class', 'net/fabricacs/regression/TextureProbeImage.class')
+            jar.write(probe.parent / 'fixtures/ExternalTextureFixture.class', 'net/fabricacs/regression/fixtures/ExternalTextureFixture.class')
             jar.writestr('fabric.mod.json', json.dumps({'schemaVersion': 1, 'id': 'external_probe', 'version': '1',
-                'entrypoints': {'acbric': ['net.fabricacs.regression.ExternalRuntimeProbe']}}))
+                'entrypoints': {'acbric': ['net.fabricacs.regression.ExternalRuntimeProbe']}, 'mixins': ['external-fixture.mixins.json']}))
+            jar.writestr('external-fixture.mixins.json', json.dumps({'required': True, 'package': 'net.fabricacs.regression.fixtures', 'compatibilityLevel': 'JAVA_21', 'mixins': ['ExternalTextureFixture'], 'injectors': {'defaultRequire': 1}}))
             jar.writestr('acbric_vanilla/info.json', json.dumps({'id': 'external_probe', 'name': 'External path probe'}))
             jar.writestr('acbric_vanilla/marker.txt', 'external instance only')
         props = [f'-Dacbric.external.install={install}', f'-Dacbric.external.instance={instance}']
@@ -87,9 +91,11 @@ def main():
             raise AssertionError(log[-10000:])
         if any((run / 'appdata').iterdir()) or any((run / 'home').iterdir()):
             raise AssertionError('Unexpected global fallback user data writes')
+        if (run / 'forbidden-data').exists() or (run / 'forbidden-gifs').exists():
+            raise AssertionError('Launch settings escaped instance')
         summary = {'status': 'PASS', 'runtimeChecks': int(match.group(1)), 'processes': results,
                    'apiSha256': digest(api), 'launcherSha256': digest(loader / 'Acbric-1.0-SNAPSHOT.jar'),
-                   'limits': 'No Main.main, GPU, full assets/world, native loading, DLC, Workshop or multiplayer.'}
+                   'limits': 'No Main.main, GPU, full assets/world, native loading, DLC, Workshop or multiplayer. Texture GPU construction replaced only in fixture; native file reads/writes/cache fallback exercised.'}
     finally:
         after = snapshot(install)
         changes = {'added': sorted(after.keys() - before.keys()), 'removed': sorted(before.keys() - after.keys()),

@@ -1,8 +1,8 @@
-# External game installation: phase one (dev.22)
+# External game installation: settings and texture isolation (dev.23)
 
 [中文](EXTERNAL_INSTALL.zh-CN.md)
 
-This phase implements **installation discovery/preflight and a minimal external-loading prototype**. Existing `run.bat`, development launch and legacy layouts retain their behavior. The new tool does not start the normal game and is not an installer. Resource-cache separation is still pending; this is not a publicly ready read-only installation mode.
+This prototype implements **installation discovery/preflight, instance launch settings and texture-cache isolation**. Existing `run.bat`, development launch and legacy layouts retain their behavior. The new tool does not start the normal game and is not an installer. Full menu/campaign validation and the remaining write-path review are pending; this is not a publicly ready read-only installation mode.
 
 ## Check a local installation
 
@@ -42,6 +42,29 @@ Provider accepts the paired properties `acbric.external.install` / `acbric.exter
 
 The real Knot prototype reads the installation's A/B and `lib` directly. Fabric `gameDir` points to the instance. The path Mixin takes effect before API preLaunch: `AGame.getStaticGameDirectory()` is the installation; `AGame.getGameDirectory()` is instance `userdata/`. Java MODs/config/framework logs stay in the instance, bundled vanilla resources go to instance `userdata/mods`. Legacy mode retains native paths. Public methods including `AirshipsPaths.staticDataDir()` retain their instance-side semantics; no read-only installation resource API is added yet.
 
+## Settings and output isolation
+
+Before initializing game classes, the external Provider reads installation `launch_settings.json`, overlays instance `config/launch-settings.json`, and atomically writes the effective settings to instance `.fabric/acbric/launch-settings.json`. The native initializer reads that generated file. Omitted fields retain installation values; this is a top-level overlay, not a recursive merge. Missing files mean no overrides; malformed JSON, duplicate keys, linked paths, excessive nesting or files larger than 1 MiB abort instead of silently reverting. Original files and a previous generated file remain intact on parse failure. Edit the instance config and restart; do not edit the generated copy.
+
+Two output fields are always forced, even if the installation or instance config requests somewhere else:
+
+| Native field | Effective location |
+|---|---|
+| `customDataDirectoryLocation` | Instance `userdata/` |
+| `customGIFSaveDirectoryLocation` | Instance `userdata/gifs/` |
+
+The GIF entry checks the instance target again before export. If unavailable it fails before the native Desktop/home/installation fallback. Developer checksum output and randomized userdata paths are disabled in external mode. This does not sandbox arbitrary third-party MOD code. Actual GIF rendering/export has not been exercised by the automated probe.
+
+## Texture cache
+
+External mode intercepts the common native image-file loader and skips native `.tex` migration. It mirrors only the requested image and related image/cache candidates under instance `cache/game-textures/v1/<content-key>/`; it does not copy the full asset tree. The native file reader and raw-cache generator then operate on that mirror. Source ordering remains with the original MOD/DLC/base lookup. Generated and nested images use the same interception; actual DLC content remains untested.
+
+- Source location, content and metadata determine separate cache namespaces. Different MOD sources and different instances cannot share a namespace accidentally.
+- If a source PNG exists, unverified original `.tex` files are ignored and the instance raw texture is regenerated. A newer timestamp alone cannot prove a raw texture matches an edited PNG. Assets distributed only as raw textures remain supported; `generated` wins over the old `images` location. Originals are never moved or deleted.
+- Repeated lookups use a bounded in-memory metadata cache. File size/time/identity changes trigger recomputation. Same-size, same-time edits are detected after native MOD reload or a process restart; they are not continuously hashed every frame.
+- Invalid raw byte lengths are removed from the instance before the native memory-mapped reader and fall back to PNG when available. This is structural validation, not detection of every form of pixel corruption. Mirrored image damage is repaired on reload/restart. Failed isolation throws instead of writing beside original resources.
+- Disk namespaces persist for reuse and currently have no automatic garbage collection. Mirrored assets and raw pixels remain local game content; do not include the instance/cache in framework releases. This cache is not a new public MOD API.
+
 ## Validation and next phase
 
 ```powershell
@@ -51,6 +74,6 @@ python tools/test_external_install.py --tag my-check --game-dir "D:/Games/Airshi
 
 Requires Windows, Python 3.11+ and JDK 21, with a fresh tag each run. Output is `build/external-tests/<tag>/`. Installation file contents are hashed before/after; the prototype never calls `Main.main`. Test sources/probe JARs are not packaged in the API. Do not commit or redistribute fixtures/logs/resources. Avoid concurrent game processes modifying the input installation, which would make hash differences ambiguous.
 
-dev.22 validation: 904 standard checks (32 added); 25 real Knot checks against the full 1.2.15.3 installation, with all 5,325 installation file contents unchanged. Checks cover preLaunch extraction, class origins, identity/paths, instance diagnostics/config and failure instead of global userdata fallback. Legacy-layout ARC checks for 1.2.15.2 / 1.2.14 pass 71 each, 142 total. These results do not establish full game compatibility on the new version.
+dev.23 validation: 924 standard checks (20 added since dev.22); 36 real Knot checks against the full 1.2.15.3 installation, with all 5,325 installation file contents unchanged. Checks cover preLaunch, origins/paths, effective launch settings, native texture-file reads/writes/cache fallback and userdata failure without global fallback. A test-only Mixin replaces the terminal Slick Image construction, so this exercises native file IO without a GPU. Legacy-layout ARC checks for 1.2.15.2 / 1.2.14 pass 71 each, 142 total. These results do not establish full graphics, native-library, DLC, Workshop or campaign compatibility. Probe results: `build/external-tests/dev23-final/`; test replacements are absent from production JARs.
 
-Next: instance `LaunchSettings` overrides, GIF/other user-output paths, base/DLC/vanilla-MOD texture cache reads/generation/invalidation, and all installation write paths; then verify a read-only installation through menu and full campaign. Distribution/template cleanup, migration and installer follow. The current legacy `distZip` still contains local game dependencies and **must not be shared as a clean framework distribution**. This phase's `preflightTools` contains only framework launcher, explicit launch dependencies, script and documentation.
+Next: finish the installation write-path review and verify real graphics, menu, campaign, GIF export and DLC/MOD combinations before enabling normal external launch. Distribution/template cleanup, migration and installer follow. The current legacy `distZip` still contains local game dependencies and **must not be shared as a clean framework distribution**. `preflightTools` contains only framework launcher, explicit launch dependencies, script and documentation.

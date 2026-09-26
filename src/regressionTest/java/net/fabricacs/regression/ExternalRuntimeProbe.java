@@ -42,6 +42,15 @@ public final class ExternalRuntimeProbe implements AcbricInitializer {
         check(Files.isRegularFile(instance.resolve("logs/acbric/" + System.getProperty("acbric.internal.diagnostics.session") + "/launch.properties")), "startup diagnostics belong to instance");
         check(AirshipsPaths.ensureModDataDir("external_probe").startsWith(instance), "MOD persistent data remains writable instance data");
         check(!Files.exists(instance.resolve("asplit-A.zip")) && !Files.exists(instance.resolve("lib")), "no game archive/library copies in instance");
+        var settings = Class.forName("com.zarkonnen.airships.LaunchSettings");
+        check(settings.getField("customDataDirectoryLocation").get(null).equals(instance.resolve("userdata").toString()), "LaunchSettings reads forced instance data before initialization");
+        check(settings.getField("customGIFSaveDirectoryLocation").get(null).equals(instance.resolve("userdata/gifs").toString()), "GIF default belongs to instance");
+        check(settings.getField("customWindowW").getInt(null) == 1111, "instance window override is effective");
+        System.setProperty("writechecksum", "true");
+        check(!(Boolean) AGame.class.getMethod("doWritechecksum").invoke(null), "external mode blocks developer checksum writes");
+        System.clearProperty("writechecksum");
+        Class.forName("com.zarkonnen.airships.PlaybackIntent", false, Thread.currentThread().getContextClassLoader());
+        textureFiles(instance);
         // 原生失败回退必须关闭：模拟运行中用户数据目录消失，不去创建全局目录。
         Path userdata = instance.resolve("userdata");
         Path held = instance.resolve("probe-userdata-held");
@@ -51,5 +60,29 @@ public final class ExternalRuntimeProbe implements AcbricInitializer {
             catch (IllegalStateException expected) { check(expected.getMessage().contains("no fallback"), "missing userdata fails without native fallback"); }
         } finally { Files.move(held, userdata); }
         System.out.println("EXTERNAL RUNTIME PASS: " + checks + " checks");
+    }
+
+    private static void textureFiles(Path instance) throws Exception {
+        Path images = instance.resolve("probe-assets/images"); Files.createDirectories(images);
+        Path png = Files.writeString(images.resolve("probe.png"), "PNG fixture");
+        Path legacy = Files.write(images.resolve("raw-only.png.tex"), new byte[1024]);
+        com.zarkonnen.airships.SpriteUtils.ensureTexFilesInGeneratedDirectory(images.toFile());
+        check(Files.exists(legacy) && !Files.exists(images.getParent().resolve("generated")), "native texture migration never moves/deletes source tex");
+        var entry = Class.forName("com.zarkonnen.airships.SpriteUtils$ImageEntry");
+        var load = com.zarkonnen.airships.SpriteUtils.class.getDeclaredMethod("loadImageFromFile", String.class, entry, java.io.File.class);
+        load.setAccessible(true);
+        check(load.invoke(null, "probe", null, png.toFile()) != null, "native PNG loading runs through mirrored file");
+        Path mirrored = net.fabricacs.api.impl.ExternalTextureCache.image(png.toFile()).toPath();
+        Path raw = mirrored.getParent().getParent().resolve("generated/probe.png.tex");
+        check(Files.size(raw) == 1024 && !Files.exists(images.getParent().resolve("generated/probe.png.tex")), "native raw writes go only to instance cache");
+        check(load.invoke(null, "probe", null, png.toFile()) != null, "native cached raw read succeeds");
+        Path brokenPng = Files.writeString(images.resolve("broken.png"), "another PNG");
+        load.invoke(null, "broken", null, brokenPng.toFile());
+        Path brokenMirror = net.fabricacs.api.impl.ExternalTextureCache.image(brokenPng.toFile()).toPath();
+        Path brokenRaw = brokenMirror.getParent().getParent().resolve("generated/broken.png.tex");
+        Files.write(brokenRaw, new byte[5]);
+        check(load.invoke(null, "broken", null, brokenPng.toFile()) != null && Files.size(brokenRaw) == 1024, "bad raw falls back to PNG and rewrites instance cache before mmap");
+        check(load.invoke(null, "raw-only", null, images.resolve("raw-only.png").toFile()) != null, "legacy raw-only asset loads without source PNG");
+        check(Files.readString(png).equals("PNG fixture") && Files.size(legacy) == 1024, "original fixture images unchanged");
     }
 }

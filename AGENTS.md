@@ -1,5 +1,7 @@
 # AGENTS.md — Acbric
 
+2026-09-26 dev.22 已提交 `40f599a`，未推送；dev.23 已按本轮用户要求提交：实例 LaunchSettings 覆盖、强制 userdata/GIF、禁止 checksum/随机目录，以及按资源内容隔离原生图片读取/raw 缓存写入，MOD 重载重算元数据。924 标准 / 1.2.15.3 外部 36 / 旧布局两版 ARC 142 通过，源安装 5,325 文件内容未变。纹理真实文件 IO + 测试末端 GPU 替身；没有实际 Main/图形/战役/GIF/DLC/联机验收，正常外部入口继续 EXTERNAL_NOT_READY。详细契约 EXTERNAL_INSTALL 双语；证据工作区 `99-研究工具/Acbric外部缓存隔离-20260926`。旧 distZip 仍含游戏内容，不对外分发。缓存含本地资源且无自动回收。当前本地 origin/dev 有另外两项快速构建/测试入口提交，尚未合并，后续整合时注意回归注册兼容；未自动覆盖远端工作。以下旧状态为历史。
+
 2026-09-26 dev.22：用户授权按独立安装方案开始重构，本轮完成阶段 1 与阶段 2 的最小内部探针，不是完整阶段 2 菜单验收。入口 EXTERNAL_INSTALL.md / EXTERNAL_INSTALL.zh-CN.md；preflightTools 无游戏内容，现有 distZip 仍含本地游戏依赖，不能作为干净框架包发布。外部 Provider 使用显式安装/实例、实例锁、早期 AGame 路径 Mixin；正常外部启动阻断 EXTERNAL_NOT_READY，缓存/LaunchSettings/发行迁移/安装器尚未实现。904 标准、1.2.15.3 真实 Knot 25 项、旧布局两版 ARC 142 项；5,325 安装文件内容前后相同，未启动正常 Main/GPU/联机。证据 build/external-tests/final、build/external-build.log，ARC 测试在相邻 `ARC Overhaul/build/runtime-tests/acbric-dev22`。Java 8/21 引导已测。dev.22 已按用户要求纳入本轮提交，未推送、旧运行副本未覆盖；下一步缓存与用户输出隔离。旧状态记录保留历史。
 
 2026-09-26 提交核验：用户要求提交 dev.20–dev.21 并开始讨论第一个功能 MOD。47 个变更文件和 4 个交付产物均匹配 dev.21 已验证快照；仅补充本条记录，沿用 872 标准 / 两版 464 集成结果，不重复运行未改代码。没有新增逐项实机矩阵，不扩张 OS/GPU 验收结论。未要求推送。下一步先确定功能 MOD 的玩法目标和首版范围；先前城市升级试点仍未重新授权实施，独立示例/源码快照不属于本 Git 仓库。

@@ -10,6 +10,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = AGame.class, remap = false)
 public abstract class ExternalPathsMixin {
+    @Inject(method = {"doWritechecksum()Z", "randomDataDir()Z"}, at = @At("HEAD"), cancellable = true)
+    private static void acbric$disableInstallWrites(CallbackInfoReturnable<Boolean> cir) {
+        if (System.getProperty("acbric.external.install") != null) cir.setReturnValue(false);
+    }
     @Inject(method = "getStaticGameDirectory()Ljava/io/File;", at = @At("HEAD"), cancellable = true)
     private static void acbric$externalResources(CallbackInfoReturnable<File> cir) {
         String install = System.getProperty("acbric.external.install");

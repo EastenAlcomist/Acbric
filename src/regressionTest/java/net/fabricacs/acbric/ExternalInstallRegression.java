@@ -133,6 +133,21 @@ public final class ExternalInstallRegression {
             if (oldInstall == null) System.clearProperty(ExternalGameInstallation.INSTALL_PROPERTY); else System.setProperty(ExternalGameInstallation.INSTALL_PROPERTY, oldInstall);
             if (oldInstance == null) System.clearProperty(ExternalGameInstallation.INSTANCE_PROPERTY); else System.setProperty(ExternalGameInstallation.INSTANCE_PROPERTY, oldInstance);
         }
+        Path nativeSettings = install.resolve("launch_settings.json");
+        String originalSettings = "{\"customWindowW\":900,\"customDataDirectoryLocation\":\"outside\",\"other\":{\"a\":[1,true,null,\"中文\\n\\\"\"]}}";
+        Files.writeString(nativeSettings, originalSettings);
+        Path override = instance.resolve("config/launch-settings.json");
+        Files.writeString(override, "{\"customWindowW\":1200,\"customGIFSaveDirectoryLocation\":\"outside\"}");
+        Path effective = ExternalLaunchSettings.prepare(plan);
+        var settings = ExternalLaunchSettings.read(effective);
+        check(settings.get("customWindowW").equals("1200") && settings.containsKey("other"), "instance settings override base while retaining unknown nested JSON");
+        check(settings.get("customDataDirectoryLocation").equals(ExternalLaunchSettings.quote(instance.resolve("userdata").toString()))
+                && settings.get("customGIFSaveDirectoryLocation").equals(ExternalLaunchSettings.quote(instance.resolve("userdata/gifs").toString())), "settings always force instance outputs");
+        check(Files.readString(nativeSettings).equals(originalSettings), "native launch settings are never rewritten");
+        String previousEffective = Files.readString(effective);
+        Files.writeString(override, "{\"x\":1,\"x\":2}");
+        reject("LAUNCH_SETTINGS_INVALID", () -> ExternalLaunchSettings.prepare(plan));
+        check(Files.readString(effective).equals(previousEffective), "bad override preserves last effective file and aborts");
         return checks;
     }
 }

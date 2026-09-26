@@ -15,6 +15,7 @@ public abstract class ModMixin {
     @Inject(method = "refreshMods", at = @At("HEAD"), remap = false)
     private static void acbric$refreshBundleState(CallbackInfo ci) {
         net.fabricacs.api.impl.DisabledBundledMods.invalidate();
+        net.fabricacs.api.impl.ExternalTextureCache.invalidate();
     }
 
     @Inject(method = "refreshMods", at = @At("RETURN"), remap = false)

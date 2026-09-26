@@ -305,6 +305,8 @@ public final class AirshipsGameProvider implements GameProvider {
             var plan = ExternalGameInstallation.inspect(Path.of(install), Path.of(instance));
             externalLease = ExternalPreflight.InstanceLease.open(plan);
             externalLease.prepareDirectories(plan.instance());
+            Path settings = ExternalLaunchSettings.prepare(plan);
+            System.setProperty("acbric.internal.launchSettings", settings.toString());
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try { externalLease.close(); } catch (IOException ignored) { }
             }, "acbric-instance-release"));
