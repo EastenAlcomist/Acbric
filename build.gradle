@@ -307,6 +307,8 @@ tasks.register('externalDistDir', Sync) {
     dependsOn tasks.named('jar'), tasks.named('apiModJar')
     into externalRoot
     from('src/dist/start.ps1', 'src/dist/check-install.ps1', 'src/dist/setup.ps1', 'src/dist/Setup.cmd', 'src/dist/Start Acbric.cmd', 'src/dist/start-configured.ps1', 'LICENSE')
+    from('src/dist/Update Acbric.cmd', 'src/dist/update.ps1', 'src/dist/maintenance.ps1', 'src/dist/QUICK_START.txt', 'src/dist/使用说明.txt')
+    into('update-baselines') { from('src/dist/update-baselines') }
     from('EXTERNAL_INSTALL.md', 'EXTERNAL_INSTALL.zh-CN.md', 'EXTERNAL_START.md', 'EXTERNAL_START.zh-CN.md', 'INSTALLER.md', 'INSTALLER.zh-CN.md')
     into('docs') { from fileTree(projectDir) { include '*.md'; exclude 'AGENTS.md' } }
     into('mods') { from('src/dist/mods/README.md') }
@@ -332,6 +334,13 @@ tasks.register('externalDistDir', Sync) {
             lines.add("sha256.${relative}=${hash}")
         }
         new File(root, 'bundle.properties').setText(lines.join('\n') + '\n', 'UTF-8')
+        def release = lines.take(2)
+        fileTree(root) { exclude 'release-files.properties' }.files.sort().each { input ->
+            def hash = java.security.MessageDigest.getInstance('SHA-256').digest(input.bytes).encodeHex().toString()
+            def relative = root.toPath().relativize(input.toPath()).toString().replace('\\', '/')
+            release.add("sha256.${relative}=${hash}")
+        }
+        new File(root, 'release-files.properties').setText(release.join('\n') + '\n', 'UTF-8')
     }
 }
 

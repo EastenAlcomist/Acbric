@@ -17,6 +17,7 @@ def main():
     parser.add_argument('--tag', required=True)
     parser.add_argument('--arc-jar', type=Path)
     parser.add_argument('--installer', action='store_true', help='Create and rebind an instance through setup, then use its saved launcher')
+    parser.add_argument('--upgrade-from', type=Path, help='Extract this previous release, upgrade with the current ZIP, then restore and launch it again')
     args = parser.parse_args()
     project = Path(__file__).resolve().parents[1]
     if not args.tag.isalnum(): parser.error('Use a fresh alphanumeric tag')
@@ -27,7 +28,8 @@ def main():
     before = snapshot(install)
     bundle_zip = project / 'build/external-dist/Acbric-external.zip'
     unpack = run / '中文 & 空格发行'
-    with zipfile.ZipFile(bundle_zip) as archive: archive.extractall(unpack)
+    if args.upgrade_from and not args.installer: parser.error('--upgrade-from requires --installer')
+    with zipfile.ZipFile(args.upgrade_from or bundle_zip) as archive: archive.extractall(unpack)
     bundle = unpack / 'Acbric'
     instance = run / '独立 中文实例'
     # Fresh root entry must explain setup requirements instead of guessing an instance.
@@ -78,7 +80,18 @@ def main():
         results.append(label)
         return (run / (label + '.log')).read_text(encoding='utf-8', errors='replace')
     summary = {'status': 'FAILED', 'packageSha256': digest(bundle_zip)}
+    updater = project / 'build/external-dist/Acbric/update.ps1'
+    def update_command(restore=False):
+        return ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(updater), '-TargetDir', str(bundle),
+                *(['-Restore'] if restore else ['-PackagePath', str(bundle_zip)])]
     try:
+        if args.upgrade_from:
+            saved_user = snapshot(instance); saved_mods = snapshot(mods)
+            binding_bytes = (bundle / '.acbric-active-instance.json').read_bytes()
+            if 'UPDATE_OK' not in execute('update-previous-release', update_command()): raise AssertionError('Upgrade did not complete')
+            if snapshot(instance) != saved_user or snapshot(mods) != saved_mods or (bundle / '.acbric-active-instance.json').read_bytes() != binding_bytes:
+                raise AssertionError('Update modified player files')
+            summary['baselineSha256'] = digest(args.upgrade_from)
         results.append('unconfigured-entry-diagnosed')
         if args.installer:
             results.append('setup-created-instance')
@@ -90,7 +103,15 @@ def main():
                 binding.write_text(json.dumps({'schema': '1', 'instanceDir': str(run / 'missing-instance')}), encoding='utf-8')
                 if 'INSTANCE_NOT_FOUND' not in execute('missing-root-instance', command, 2): raise AssertionError('Missing instance accepted')
             finally: binding.write_bytes(saved_binding)
-        for index in range(2):
+        for index in range(3 if args.upgrade_from else 2):
+            if index == 2:
+                saved_user = snapshot(instance); saved_mods = snapshot(mods)
+                if 'RESTORED' not in execute('restore-previous-release', update_command(True)): raise AssertionError('Restore did not complete')
+                with zipfile.ZipFile(args.upgrade_from) as old:
+                    for item in old.infolist():
+                        if not item.is_dir() and item.filename != 'Acbric/mods/README.md' and (bundle / item.filename[7:]).read_bytes() != old.read(item):
+                            raise AssertionError('Restored release differs: ' + item.filename)
+                if snapshot(instance) != saved_user or snapshot(mods) != saved_mods: raise AssertionError('Restore changed player data')
             if args.installer and index == 1:
                 relocated = run / '重定位 & 框架' / 'Acbric'
                 relocated.parent.mkdir()
@@ -118,6 +139,8 @@ def main():
                         if child.poll() is not None or time.monotonic() > deadline: raise AssertionError('Public menu did not reach checkpoint')
                         time.sleep(.25)
                     if index == 0:
+                        if args.upgrade_from and 'FRAMEWORK_BUSY' not in execute('update-running-game-refused', update_command(), 2):
+                            raise AssertionError('Update allowed while game running')
                         text = execute('busy-instance', command, 2)
                         if 'INSTANCE_BUSY' not in text: raise AssertionError('Missing busy diagnosis')
                         other = run / 'other-instance'
@@ -137,8 +160,10 @@ def main():
         if (instance / 'mods').exists(): raise AssertionError('Unused instance mods folder created')
         if any((run / 'appdata').iterdir()): raise AssertionError('Global APPDATA fallback')
         logs = list((instance / 'logs/acbric/launcher').glob('*.log'))
-        if len(logs) != 2 or not all('ENTERING_MAIN' in p.read_text(encoding='utf-8') or 'Loading Airships' in p.read_text(encoding='utf-8') for p in logs):
+        if len(logs) != (3 if args.upgrade_from else 2) or not all('ENTERING_MAIN' in p.read_text(encoding='utf-8') or 'Loading Airships' in p.read_text(encoding='utf-8') for p in logs):
             raise AssertionError('Missing captured child logs')
+        if args.upgrade_from:
+            if 'UPDATE_OK' not in execute('reapply-update', update_command()): raise AssertionError('Reapplying update failed')
         core = bundle / 'core/acbric-api.jar'
         original = core.read_bytes()
         try:

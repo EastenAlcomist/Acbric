@@ -1,5 +1,7 @@
 # Acbric — Airships Fabric Mod Framework
 
+2026-09-26 dev.29: Setup can find Steam installations through the registry and library lists, with manual selection when none is found. Local ZIP updates, automatic restoration after write failures and manual restoration of the previous framework preserve MODs, instances, saves, settings and the launch binding. Changed files are not overwritten; interrupted maintenance requires recovery before launch. Player-facing 使用说明.txt / QUICK_START.txt and Update Acbric.cmd are included at the release root. See INSTALLER.md / INSTALLER.zh-CN.md. No online auto-update or new MOD API. Earlier records below are historical.
+
 2026-09-26 dev.28: Setup.cmd, root Start Acbric.cmd and mods now share the same directory inside Acbric. Saving in setup updates the default instance binding; the root entry launches the most recently saved instance. Instance-local entries remain compatible. Manually copy dev.27 sibling MODs into Acbric/mods. Missing/invalid bindings, missing instances and framework relocation are diagnosed without guessing another instance. Bilingual prompts, path API docs and template targets are updated; dev.27 and earlier records below are historical.
 
 dev.27: Java MOD `.jar` files and native MOD folders now share **`mods` beside Acbric**. Setup shows the full path and offers Open MOD folder. The API still loads automatically from `Acbric/core`; saves, configuration and logs remain in the instance. Instances using the same framework share MOD files but retain separate settings. Only one game session may use a shared MOD folder, preventing concurrent bundled-resource changes. Old folders are not migrated automatically; copy wanted MODs manually. dev.26 and earlier entries below are historical.
@@ -26,7 +28,7 @@ native JSON data-mod system.
 
 ## Current development API and documentation
 
-Current API: **0.3.3-dev.24** (unreleased). Existing events, managed resources, configuration/campaign data, shared rules/lobby checks, restart-based Java MOD management, shared UI and settings remain available. Command registration and built-in developer tools remain available; this revision fixes external-mode audio loading from Chinese paths and verifies the native menu. Entry: **Mods → Acbric API → Details → Developer tools / Console**.
+Current API: **0.3.3-dev.29** (unreleased). Existing events, managed resources, configuration/campaign data, shared rules/lobby checks, restart-based Java MOD management, shared UI and settings remain available. Command registration and built-in developer tools remain available; this revision fixes external-mode audio loading from Chinese paths and verifies the native menu. Entry: **Mods → Acbric API → Details → Developer tools / Console**.
 
 - [Documentation map and first-MOD workflow](DEVELOPMENT.md)
 - [Complete API guide](API.md)

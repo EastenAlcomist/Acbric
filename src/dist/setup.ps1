@@ -8,6 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $bootstrapLog = Join-Path ([System.IO.Path]::GetTempPath()) ('acbric-bootstrap-' + [guid]::NewGuid().ToString() + '.log')
 try {
+    if (Test-Path -LiteralPath (Join-Path $PSScriptRoot '.acbric-maintenance/pending.json')) { throw 'UPDATE_RECOVERY_REQUIRED / Run Update Acbric.cmd to restore / 更新未完成，请运行 Update Acbric.cmd 恢复' }
     'Acbric external launcher / 外部启动器' | Out-File -LiteralPath $bootstrapLog -Encoding utf8
     Write-Host "Bootstrap log / 引导日志: $bootstrapLog"
     $bundleRoot = Split-Path -Parent $MyInvocation.MyCommand.Path

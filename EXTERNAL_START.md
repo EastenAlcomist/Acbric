@@ -1,8 +1,8 @@
-# Acbric external distribution launcher (dev.28)
+# Acbric external distribution launcher (dev.29)
 
 [中文](EXTERNAL_START.zh-CN.md)
 
-Experimental Windows x64 framework distribution. Bring a complete local game installation and Java 21. No game code, resources, game libraries or player data are included. The graphical instance setup wizard is available; automatic updates are not implemented yet. Use a fresh instance and follow these instructions to reinstall MODs and configure settings; automatic migration from legacy layouts is not provided.
+Experimental Windows x64 framework distribution. Bring a complete local game installation and Java 21. No game code, resources, game libraries or player data are included. The graphical setup wizard includes Steam discovery. Local ZIP update/restoration and bilingual quick-start files are available; online auto-update is not implemented. Use a fresh instance and follow these instructions to reinstall MODs and configure settings; automatic migration from legacy layouts is not provided.
 
 ```text
 Acbric/
@@ -60,7 +60,7 @@ In `acbric-mod-template/`, copy `local.properties.example` to `local.properties`
 
 ## Known limits
 
-See [external validation](EXTERNAL_INSTALL.md) for menu, campaign and media evidence and limitations. The terrain GL error also reproduced in the legacy layout is deferred by user decision and does not block the installation refactor; it is not fixed. Workshop, arbitrary MODs, other devices and GPU combinations need further acceptance. Basic instance setup is available; update/uninstall workflows are later phases; automatic legacy-data migration is outside the development plan.
+See [external validation](EXTERNAL_INSTALL.md) for menu, campaign and media evidence and limitations. The terrain GL error also reproduced in the legacy layout is deferred by user decision and does not block the installation refactor; it is not fixed. Workshop, arbitrary MODs, other devices and GPU combinations need further acceptance. Setup and local update/restoration are available; uninstall remains a later phase; automatic legacy-data migration is outside the development plan.
 
 ## Developer acceptance
 

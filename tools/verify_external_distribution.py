@@ -71,6 +71,7 @@ def main():
             with path.open('rb') as stream: forbidden.add(hashlib.file_digest(stream, 'sha256').hexdigest())
     allowed = {'INSTALLER.md', 'INSTALLER.zh-CN.md', 'Setup.cmd', 'setup.ps1', 'Start Acbric.cmd', 'start-configured.ps1', 'mods/README.md', 'LICENSE', 'start.ps1', 'check-install.ps1', 'bundle.properties', 'EXTERNAL_INSTALL.md', 'EXTERNAL_INSTALL.zh-CN.md', 'EXTERNAL_START.md', 'EXTERNAL_START.zh-CN.md'}
     loader_names = {'Acbric-1.0-SNAPSHOT.jar', 'fabric-loader-0.19.3.jar', 'sponge-mixin-0.17.3+mixin.0.8.7.jar'}
+    allowed |= {'Update Acbric.cmd', 'update.ps1', 'maintenance.ps1', 'QUICK_START.txt', '使用说明.txt', 'release-files.properties'}
     loader_names |= {f'asm{x}-9.8.jar' for x in ('', '-analysis', '-commons', '-tree', '-util')}
     with zipfile.ZipFile(args.archive) as archive:
         for item in archive.infolist():
@@ -81,6 +82,7 @@ def main():
             valid = sub in allowed or sub == 'core/acbric-api.jar' or (len(parts) == 3 and parts[1] == 'loader-libs' and parts[2] in loader_names)
             valid |= parts[1] == 'docs' and len(parts) == 3 and sub.endswith('.md')
             valid |= parts[1] == 'runtime'
+            valid |= parts[1] == 'update-baselines' and len(parts) == 3 and sub.endswith('.properties')
             if parts[1] == 'acbric-mod-template':
                 t = '/'.join(parts[2:])
                 valid |= t.startswith(('src/', 'gradle/wrapper/')) or t in {'gradlew', 'gradlew.bat', 'build.gradle', 'settings.gradle', 'gradle.properties', 'README.md', 'README.zh-CN.md', '.gitignore', 'local.properties.example'}

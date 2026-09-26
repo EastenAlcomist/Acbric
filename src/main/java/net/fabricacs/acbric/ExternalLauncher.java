@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.zip.ZipFile;
 
 public final class ExternalLauncher {
-    static final String CORE_VERSION = "0.3.3-dev.28";
+    static final String CORE_VERSION = "0.3.3-dev.29";
     private ExternalLauncher() {}
 
     public static void main(String[] args) { System.exit(run(args)); }
@@ -75,6 +75,7 @@ public final class ExternalLauncher {
 
     static int run(String[] args) {
         Path early = null;
+        FrameworkUse use = null;
         try {
             early = Files.createTempFile("acbric-launch-", ".log");
             System.out.println("Bootstrap log / 引导日志: " + early);
@@ -82,6 +83,7 @@ public final class ExternalLauncher {
             ExternalGameInstallation.runtime(System.getProperty("os.name"), Runtime.version().feature(), System.getProperty("os.arch"));
             Path ownJar = Path.of(ExternalLauncher.class.getProtectionDomain().getCodeSource().getLocation().toURI());
             Path bundle = ownJar.getParent().getParent().toRealPath();
+            use = FrameworkUse.open(bundle);
             List<Path> loaders = verifyBundle(bundle);
             Path core = requireCore(bundle.resolve("core/acbric-api.jar").toString());
             var plan = ExternalGameInstallation.inspect(Path.of(options.get("--game-dir")), Path.of(options.get("--instance-dir")));
@@ -124,6 +126,6 @@ public final class ExternalLauncher {
             catch (IOException ignored) { }
             System.err.println("Launch failed / 启动失败: " + ex.getMessage());
             return 2;
-        }
+        } finally { if (use != null) try { use.close(); } catch (IOException ignored) { } }
     }
 }

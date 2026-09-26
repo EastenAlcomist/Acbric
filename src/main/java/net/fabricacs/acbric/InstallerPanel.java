@@ -13,7 +13,7 @@ final class InstallerPanel extends JPanel {
     final JComboBox<String> language = new JComboBox<>(new String[]{"中文", "English"});
     final JTextField game = new JTextField(43), instance = new JTextField(43);
     final JButton check = new JButton(), save = new JButton(), load = new JButton(), play = new JButton();
-    final JButton openMods = new JButton();
+    final JButton openMods = new JButton(), steam = new JButton();
     private final JButton browseGame = new JButton(), browseInstance = new JButton(), open = new JButton(), logs = new JButton();
     private final JLabel title = new JLabel(), gameLabel = new JLabel(), instanceLabel = new JLabel(), hint = new JLabel();
     final JTextArea status = new JTextArea(11, 65);
@@ -35,7 +35,7 @@ final class InstallerPanel extends JPanel {
         center.add(form, BorderLayout.NORTH); status.setEditable(false); status.setLineWrap(true); status.setWrapStyleWord(true);
         center.add(new JScrollPane(status), BorderLayout.CENTER); add(center, BorderLayout.CENTER);
         JPanel actions = new JPanel(new GridLayout(0, 3, 10, 10));
-        for (JButton button : new JButton[]{load, check, save, openMods, open, logs, play}) actions.add(button);
+        for (JButton button : new JButton[]{steam, load, check, save, openMods, open, logs, play}) actions.add(button);
         add(actions, BorderLayout.SOUTH);
         instance.setText(bundle.resolve("instances/default").toString());
         DocumentListener invalidate = new DocumentListener() {
@@ -47,6 +47,19 @@ final class InstallerPanel extends JPanel {
         game.getDocument().addDocumentListener(invalidate); instance.getDocument().addDocumentListener(invalidate);
         language.addActionListener(e -> { preview = null; translate(); });
         browseGame.addActionListener(e -> choose(game)); browseInstance.addActionListener(e -> choose(instance));
+        steam.addActionListener(e -> work(SteamGameLocator::find, found -> {
+            if (found.isEmpty()) {
+                status.setText(text("未找到完整的 Steam 游戏安装，请使用“浏览”手动指定游戏目录。已填写的路径保持不变。", "No complete Steam installation found. Use Browse to select the game folder manually. Your current path is unchanged."));
+                return;
+            }
+            Path selected = found.size() == 1 ? found.getFirst() : (Path) JOptionPane.showInputDialog(this,
+                    text("找到多份游戏，请选择：", "Multiple installations found. Choose one:"),
+                    text("选择 Steam 游戏", "Select Steam game"), JOptionPane.QUESTION_MESSAGE, null, found.toArray(), found.getFirst());
+            if (selected != null) {
+                game.setText(selected.toString());
+                status.setText(text("已找到 Steam 游戏。请检查目录并保存配置。", "Steam game found. Check folders and save the setup."));
+            }
+        }));
         load.addActionListener(e -> {
             Path path;
             try { path = path(instance); } catch (Exception ex) { failed(ex); return; }
@@ -114,6 +127,7 @@ final class InstallerPanel extends JPanel {
         gameLabel.setText(text("游戏目录", "Game folder")); instanceLabel.setText(text("实例目录", "Instance folder"));
         browseGame.setText(text("浏览…", "Browse…")); browseInstance.setText(text("浏览…", "Browse…"));
         hint.setText(text("选择包含 Airships.json 的游戏目录；实例用于存档和设置；MOD 放在 Setup.cmd 同目录的 mods。", "Select the game folder containing Airships.json; saves/settings stay in the instance; MODs go in mods beside Setup.cmd."));
+        steam.setText(text("从 Steam 查找游戏", "Find game in Steam"));
         load.setText(text("读取已有实例", "Load existing instance")); check.setText(text("检查目录", "Check folders"));
         save.setText(text("保存并生成入口", "Save & create launcher")); open.setText(text("打开实例目录", "Open instance folder"));
         openMods.setText(text("打开 MOD 目录", "Open MOD folder"));
@@ -121,7 +135,7 @@ final class InstallerPanel extends JPanel {
         status.setText(text("选择目录后先检查，再保存。不会导入旧版数据。", "Select folders, check, then save. Legacy data is not imported.")); updateEnabled();
     }
     private void updateEnabled() {
-        for (JComponent field : new JComponent[]{game, instance, language, browseGame, browseInstance, load, check}) field.setEnabled(!working);
+        for (JComponent field : new JComponent[]{game, instance, language, browseGame, browseInstance, steam, load, check}) field.setEnabled(!working);
         save.setEnabled(!working && preview != null);
         for (JButton button : new JButton[]{openMods, open, logs, play}) button.setEnabled(!working && savedInstance != null);
     }

@@ -13,6 +13,8 @@ public final class ExternalInstaller {
         try {
             ExternalGameInstallation.runtime(System.getProperty("os.name"), Runtime.version().feature(), System.getProperty("os.arch"));
             Path bundle = Path.of(ExternalInstaller.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParent().getParent().toRealPath();
+            FrameworkUse use = FrameworkUse.open(bundle);
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> { try { use.close(); } catch (IOException ignored) { } }, "acbric-setup-release"));
             if (args.length == 0) {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                 SwingUtilities.invokeLater(() -> {

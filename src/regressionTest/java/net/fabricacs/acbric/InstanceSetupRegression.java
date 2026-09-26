@@ -108,9 +108,11 @@ public final class InstanceSetupRegression {
             InstallerPanel panel = value[0] = new InstallerPanel(framework);
             panel.game.setText(game.toString()); panel.instance.setText(root.resolve("ui-instance").toString());
             check(panel.check.getText().equals("检查目录") && !panel.save.isEnabled(), "Chinese defaults, save requires preview");
+            check(panel.steam.getText().equals("从 Steam 查找游戏") && panel.steam.isEnabled(), "Chinese Steam lookup button available");
             paint(panel, root.resolve("installer-zh.png"));
             panel.language.setSelectedIndex(1);
             check(panel.check.getText().equals("Check folders") && panel.game.getText().equals(game.toString()), "English switching preserves paths");
+            check(panel.steam.getText().equals("Find game in Steam"), "English Steam lookup button available");
             paint(panel, root.resolve("installer-en.png")); panel.check.doClick();
             check(panel.busy() && !panel.game.isEnabled(), "background inspection disables editing");
         });

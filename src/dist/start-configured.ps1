@@ -1,6 +1,7 @@
 ﻿# Root launcher / 与 Setup 同层的日常启动入口；路径只作为数据传递。
 $ErrorActionPreference = 'Stop'
 try {
+    if (Test-Path -LiteralPath (Join-Path $PSScriptRoot '.acbric-maintenance/pending.json')) { throw 'UPDATE_RECOVERY_REQUIRED / Run Update Acbric.cmd to restore / 更新未完成，请运行 Update Acbric.cmd 恢复' }
     $folder = [IO.Path]::GetFullPath($PSScriptRoot)
     $bindingFile = Join-Path $folder '.acbric-active-instance.json'
     if (-not (Test-Path -LiteralPath $bindingFile -PathType Leaf)) {
