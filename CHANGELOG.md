@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.3-dev.22 — External-install preflight and loading prototype (2026-09-26)
+
+- Add a checker that does not initialize game classes, a Windows Java bootstrap check, and `preflightTools` containing explicit launch dependencies only. Early temporary reports preserve failures even when installation/instance paths are invalid.
+- Parse real JSON; inspect root A/B, stable dependency order, duplicate classes, critical dependencies, version/code fingerprint, basic resource directories and x64 DLL PE headers. Retain the established steamworks version exclusion.
+- External Provider uses explicit paths, instance locking and write checks. A real Knot probe reads selected installation code directly; an early Mixin separates native resources and instance userdata. Legacy startup and public API signatures remain unchanged.
+- **904 standard checks** (32 added); **25 external checks on 1.2.15.3**, with **5,325 installation file contents unchanged**; **71×2=142 ARC checks** on legacy layouts for 1.2.15.2 / 1.2.14. Windows PowerShell 5.1 clearly rejects Java 8 and passes preflight with Java 21.
+- No normal Main invocation or GPU/native DLL loading/full generation/DLC/Workshop/multiplayer acceptance; the earlier full UI matrix was not rerun. Normal external launch returns `EXTERNAL_NOT_READY`. Resource caches, LaunchSettings overrides, clean distribution/templates, migration and installer remain later phases; existing distZip is still not a clean framework package.
+- See [external-install instructions](EXTERNAL_INSTALL.md). dev.22 is committed at user request; not pushed, and no player runtime copy was replaced.
+
+
 ## 0.3.3-dev.21 — Console shortcut (2026-09-26)
 
 Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physical `GRAVE`; Shift is optional) to open the console with the command field focused. The opening key is consumed. Ctrl/Alt/Meta combinations, inactive displays, native error/help/chat overlays, and existing Acbric windows do not trigger it. Close another Acbric window before using the shortcut. While the console is open this key remains ordinary text; use Esc/X/Close to dismiss. Holding the key cannot repeatedly reopen it. This is a fixed console shortcut, not a general key-binding API.

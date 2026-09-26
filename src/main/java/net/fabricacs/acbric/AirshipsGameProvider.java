@@ -44,6 +44,7 @@ public final class AirshipsGameProvider implements GameProvider {
     private String mainClass = DEFAULT_MAIN_CLASS;
     private GameBuildIdentity buildIdentity = GameBuildIdentity.unknown();
     private LaunchDiagnostics diagnostics;
+    private ExternalPreflight.InstanceLease externalLease;
 
     @Override
     public String getGameId() {
@@ -101,6 +102,11 @@ public final class AirshipsGameProvider implements GameProvider {
     @Override
     public boolean locateGame(FabricLauncher launcher, String[] args) {
         arguments.parse(args);
+
+        if (System.getProperty(ExternalGameInstallation.INSTALL_PROPERTY) != null
+                || System.getProperty(ExternalGameInstallation.INSTANCE_PROPERTY) != null) {
+            return locateExternal();
+        }
 
         Path cwd = Paths.get("").toAbsolutePath().normalize();
         Path candidateGameDir = findGameDirectory(cwd);
@@ -256,7 +262,7 @@ public final class AirshipsGameProvider implements GameProvider {
     }
 
     /** 按实际类内容识别基础设施库，重命名 JAR 也不能绕过类加载器隔离。 */
-    private boolean isRuntimeLibrary(Path path) throws IOException {
+    static boolean isRuntimeLibrary(Path path) throws IOException {
         String fileName = path.getFileName().toString().toLowerCase(Locale.ROOT);
         if ((!fileName.endsWith(".jar") && !fileName.endsWith(".zip"))
                 || fileName.equals("steamworks4j-1.3.0.jar")) return false;
@@ -283,5 +289,43 @@ public final class AirshipsGameProvider implements GameProvider {
         System.setProperty("org.lwjgl.librarypath", nativePath);
         System.setProperty("net.java.games.input.librarypath", nativePath);
         System.setProperty("java.library.path", nativePath);
+    }
+
+    /** 外部路径必须显式成对提供；不进入旧模式的目录猜测，不在父加载器加载游戏类。 */
+    private boolean locateExternal() {
+        try {
+            String install = System.getProperty(ExternalGameInstallation.INSTALL_PROPERTY);
+            String instance = System.getProperty(ExternalGameInstallation.INSTANCE_PROPERTY);
+            if (install == null || instance == null) throw new IOException("EXTERNAL_PATHS_REQUIRED / 外部模式须同时指定安装与实例路径");
+            // 当前阶段仅允许内部探针主类，避免尚未适配的纹理写入路径触及原版安装。
+            String probe = System.getProperty(ExternalGameInstallation.PROBE_PROPERTY);
+            if (!"net.fabricacs.regression.ExternalRuntimeProbe".equals(probe))
+                throw new IOException("EXTERNAL_NOT_READY: use ExternalPreflight; normal launch awaits cache isolation / 请先使用预检查，正常启动待缓存隔离完成");
+            ExternalGameInstallation.runtime(System.getProperty("os.name"), Runtime.version().feature(), System.getProperty("os.arch"));
+            var plan = ExternalGameInstallation.inspect(Path.of(install), Path.of(instance));
+            externalLease = ExternalPreflight.InstanceLease.open(plan);
+            externalLease.prepareDirectories(plan.instance());
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try { externalLease.close(); } catch (IOException ignored) { }
+            }, "acbric-instance-release"));
+            gameDirectory = plan.instance();
+            libsDirectory = plan.install().resolve("lib");
+            mainClass = probe;
+            gameClassPath.clear(); gameClassPath.addAll(plan.classPath());
+            buildIdentity = plan.identity();
+            System.setProperty(ExternalGameInstallation.INSTALL_PROPERTY, plan.install().toString());
+            System.setProperty(ExternalGameInstallation.INSTANCE_PROPERTY, plan.instance().toString());
+            System.setProperty("dev", "false");
+            System.setProperty("steam", "false");
+            diagnostics = new LaunchDiagnostics(gameDirectory, buildIdentity);
+            diagnostics.phase("EXTERNAL_PROBE_LOCATED", null);
+            configureNativeLibraries();
+            net.fabricacs.management.ModSelection.applyAtStartup(gameDirectory.resolve("config"));
+            return true;
+        } catch (IOException | RuntimeException ex) {
+            if (externalLease != null) try { externalLease.close(); } catch (IOException ignored) { }
+            if (diagnostics != null) diagnostics.phase("EXTERNAL_LOCATE_FAILED", ex);
+            throw new RuntimeException("External game lookup failed / 外部游戏定位失败: " + ex.getMessage(), ex);
+        }
     }
 }

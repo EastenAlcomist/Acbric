@@ -1,5 +1,7 @@
 # AGENTS.md — Acbric
 
+2026-09-26 dev.22：用户授权按独立安装方案开始重构，本轮完成阶段 1 与阶段 2 的最小内部探针，不是完整阶段 2 菜单验收。入口 EXTERNAL_INSTALL.md / EXTERNAL_INSTALL.zh-CN.md；preflightTools 无游戏内容，现有 distZip 仍含本地游戏依赖，不能作为干净框架包发布。外部 Provider 使用显式安装/实例、实例锁、早期 AGame 路径 Mixin；正常外部启动阻断 EXTERNAL_NOT_READY，缓存/LaunchSettings/发行迁移/安装器尚未实现。904 标准、1.2.15.3 真实 Knot 25 项、旧布局两版 ARC 142 项；5,325 安装文件内容前后相同，未启动正常 Main/GPU/联机。证据 build/external-tests/final、build/external-build.log，ARC 测试在相邻 `ARC Overhaul/build/runtime-tests/acbric-dev22`。Java 8/21 引导已测。dev.22 已按用户要求纳入本轮提交，未推送、旧运行副本未覆盖；下一步缓存与用户输出隔离。旧状态记录保留历史。
+
 2026-09-26 提交核验：用户要求提交 dev.20–dev.21 并开始讨论第一个功能 MOD。47 个变更文件和 4 个交付产物均匹配 dev.21 已验证快照；仅补充本条记录，沿用 872 标准 / 两版 464 集成结果，不重复运行未改代码。没有新增逐项实机矩阵，不扩张 OS/GPU 验收结论。未要求推送。下一步先确定功能 MOD 的玩法目标和首版范围；先前城市升级试点仍未重新授权实施，独立示例/源码快照不属于本 Git 仓库。
 
 2026-09-26 当前 dev.21（未提交/未推送）：用户实测 dev.20 正常，要求 ~ 直接开控制台。已实现固定 GRAVE/Shift+GRAVE 入口与命令框自动焦点，按帧消费开窗输入，保护已有 Acbric 窗口和原生错误/帮助/聊天，Ctrl/Alt/Meta 不触发，按住不重开，Esc 关闭。通用快捷键/改键接口仍未实现。872 标准 / 两版 464 真实 Fabric 检查通过（新增 50 项）。证据位于工作区 99-研究工具/Acbric控制台快捷键-20260926；旧版本数字与状态为历史。

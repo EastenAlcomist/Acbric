@@ -35,6 +35,7 @@ public final class FrameworkRegression {
         checks += RenamePanelRegression.run();
         checks += ModManagementRegression.run(root.resolve("mod-management"));
         checks += net.fabricacs.acbric.GameIdentityRegression.run(root.resolve("game-identity"));
+        checks += net.fabricacs.acbric.ExternalInstallRegression.run(root.resolve("external-install"));
         checks += net.fabricacs.api.impl.StartupDiagnosticsRegression.run(root.resolve("startup-diagnostics"));
         checks += CampaignDataRegression.run(root.resolve("campaign-data"));
         checks += CampaignLifecycleRegression.run();

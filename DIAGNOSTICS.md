@@ -1,5 +1,7 @@
 # Game identity and startup diagnostics
 
+dev.22 adds [external-install preflight](EXTERNAL_INSTALL.md) with reports before game discovery: temporary reports on failure, plus instance copies on success. The new mode requires valid identity/complete fingerprints and rejects duplicate ordinary classes, rather than using the legacy unknown/0.0.0 fallback described below. Preflight success does not establish startup or compatibility. Existing launch-report protocol and public APIs remain unchanged.
+
 **English** | [中文](DIAGNOSTICS.zh-CN.md)
 
 Startup identity/reports were introduced in dev.2; this page describes the internal report behavior retained in dev.20. The public snapshot API and in-game tools added in dev.20 are documented in [DEVELOPER_TOOLS.md](DEVELOPER_TOOLS.md). File layouts remain internal; event order, cancellation and exception propagation are unchanged.

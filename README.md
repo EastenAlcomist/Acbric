@@ -1,5 +1,7 @@
 # Acbric — Airships Fabric Mod Framework
 
+dev.22 starts external-install refactoring: [installation preflight and internal loading prototype](EXTERNAL_INSTALL.md). This phase passes 904 standard checks, 25 external-loading checks on 1.2.15.3, and 142 legacy-layout ARC checks across two builds. Normal external game launch awaits resource-cache isolation. Legacy `distZip` still includes local game dependencies and is not a clean framework distribution. Console behavior and the existing launch/build instructions below continue to apply to the legacy layout.
+
 Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physical `GRAVE`; Shift is optional) to open the console with the command field focused. The opening key is consumed. Ctrl/Alt/Meta combinations, inactive displays, native error/help/chat overlays, and existing Acbric windows do not trigger it. Close another Acbric window before using the shortcut. While the console is open this key remains ordinary text; use Esc/X/Close to dismiss. Holding the key cannot repeatedly reopen it. This is a fixed console shortcut, not a general key-binding API.
 
 **English** | [中文](README.zh-CN.md)
@@ -12,7 +14,7 @@ native JSON data-mod system.
 
 ## Current development API and documentation
 
-Current API: **0.3.3-dev.21** (unreleased). Existing events, managed resources, configuration/campaign data, shared rules/lobby checks, restart-based Java MOD management, shared UI and settings remain available. This revision adds command registration and built-in developer tools. Entry: **Mods → Acbric API → Details → Developer tools / Console**.
+Current API: **0.3.3-dev.22** (unreleased). Existing events, managed resources, configuration/campaign data, shared rules/lobby checks, restart-based Java MOD management, shared UI and settings remain available. Command registration and built-in developer tools remain available; this revision adds the external-install preflight prototype. Entry: **Mods → Acbric API → Details → Developer tools / Console**.
 
 - [Documentation map and first-MOD workflow](DEVELOPMENT.md)
 - [Complete API guide](API.md)

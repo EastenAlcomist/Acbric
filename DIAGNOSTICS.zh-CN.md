@@ -1,5 +1,7 @@
 # 游戏身份与启动诊断
 
+dev.22 新增[外部安装预检查](EXTERNAL_INSTALL.zh-CN.md)，日志早于游戏定位，失败写入系统临时目录，成功另存实例。该新模式要求有效版本/完整代码指纹，拒绝重复普通类；不会沿用下文 legacy 模式的 unknown/0.0.0 回退。预检查通过不等于启动或兼容性通过，完整启动诊断协议与公开 API 不变。
+
 [English](DIAGNOSTICS.md) | **中文**
 
 启动身份与报告从 dev.2 开始提供，本页记录仍适用于 dev.20 的内部报告格式。dev.20 新增公开诊断记录 API 和游戏内工具，见 [DEVELOPER_TOOLS.zh-CN.md](DEVELOPER_TOOLS.zh-CN.md)。报告文件格式本身不属于稳定公开 API；事件时序、取消和异常传播不变。

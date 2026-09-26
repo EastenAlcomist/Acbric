@@ -175,6 +175,21 @@ tasks.register('startAirships') {
     dependsOn tasks.named('runAirshipsFabric')
 }
 
+// 第一阶段仅生成检查工具，不复制游戏/API/实例内容，不启动游戏。
+tasks.register('preflightTools', Sync) {
+    group = 'acbric'
+    description = 'Builds external-install preflight tools only; does not launch or package the game.'
+    dependsOn tasks.named('jar')
+    into layout.buildDirectory.dir('preflight')
+    from('src/dist/check-install.ps1')
+    from('LICENSE')
+    from('EXTERNAL_INSTALL.md', 'EXTERNAL_INSTALL.zh-CN.md')
+    into('loader-libs') {
+        from tasks.named('jar')
+        from configurations.fabricLoaderRuntime
+    }
+}
+
 // ---- 通过 jlink 创建分发用 Java 21 运行时 ----
 def bundledJreDir = layout.buildDirectory.dir('jre')
 

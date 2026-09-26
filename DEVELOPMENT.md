@@ -1,8 +1,10 @@
 # Developer documentation map
 
+dev.22 starts external-install refactoring: [installation preflight and internal loading prototype](EXTERNAL_INSTALL.md). This phase passes 904 standard checks, 25 external-loading checks on 1.2.15.3, and 142 legacy-layout ARC checks across two builds. Normal external game launch awaits resource-cache isolation. Legacy `distZip` still includes local game dependencies and is not a clean framework distribution. Console behavior and the existing launch/build instructions below continue to apply to the legacy layout.
+
 Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physical `GRAVE`; Shift is optional) to open the console with the command field focused. The opening key is consumed. Ctrl/Alt/Meta combinations, inactive displays, native error/help/chat overlays, and existing Acbric windows do not trigger it. Close another Acbric window before using the shortcut. While the console is open this key remains ordinary text; use Esc/X/Close to dismiss. Holding the key cannot repeatedly reopen it. This is a fixed console shortcut, not a general key-binding API.
 
-[中文](DEVELOPMENT.zh-CN.md) · Current source/API: **0.3.3-dev.21**, unreleased.
+[中文](DEVELOPMENT.zh-CN.md) · Current source/API: **0.3.3-dev.22**, unreleased.
 
 Start here for the current contracts. READMEs cover installation/build; topic documents define behavior. Changelogs and dated workspace research are historical evidence, not alternate current specifications. New interfaces need matching English/Chinese documentation, a minimal example, bounded failure behavior and regression coverage.
 
