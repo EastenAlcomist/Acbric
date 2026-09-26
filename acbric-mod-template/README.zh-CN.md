@@ -1,5 +1,7 @@
 # Acbric MOD 模板项目
 
+dev.19 新增窗口固定页脚和主动关闭确认，见 ../UI.zh-CN.md；使用新 API 时声明最低依赖 dev.19。
+
 这是一个独立 Gradle 项目，用来作为新的 Acbric MOD 起点。模板构建只依赖本目录自身内容，编译依赖放在 `libs/`，不会读取 Acbric 主工程的 `build.gradle`、`libs/` 或 `game/mods`。
 
 ## 构建

@@ -21,4 +21,6 @@ public final class UiWindowHandle implements AutoCloseable {
                 Ui.button(yes,h->{h.close();accepted.run();}),Ui.button(no,UiWindowHandle::close)))));
     }
     @Override public void close(){runtime.close(this,UiWindow.CloseReason.CLOSED);}
+    /** 请求玩家主动关闭；窗口可在回调中确认未保存内容，close 仍为无条件清理。 */
+    public void requestClose(){runtime.requestClose(this);}
 }

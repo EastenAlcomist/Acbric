@@ -1,5 +1,11 @@
 # Changelog
 
+dev.19 validation: 810 standard checks (41 new), and 356 across two real Fabric game builds (169 main + 5 restart + 4 corrupt-config startup each). All 80 public types/428 member signatures from dev.18 are retained. Clipboard success uses a substitute; failure uses actual headless AWT. Native font/input paths are checked with GPU-free drawing terminals; Windows clipboard, screenshots, IME and focus transitions still require manual validation. dev.18 and earlier counts below are historical.
+
+## Development build — API 0.3.3-dev.19
+
+dev.19 adds font-measured caret placement, drag/Shift selection, Ctrl+C/X, and held navigation/deletion keys. Settings use a fixed action footer and confirm before Cancel/X/Esc discard a draft. Existing constructors, programmatic close and lifecycle cleanup retain their behavior. Companion showcase: 0.3.0. See [UI contract](UI.md) and [settings contract](SETTINGS.md).
+
 2026-09-26 player acceptance: the user reported no problems testing dev.18 and requested a commit. All 28 changed files matched the build-validation snapshot before acceptance notes were added. Code is unchanged; the existing 769 standard checks and 304 integration checks across two game versions remain the validation evidence. No detailed manual test matrix was supplied, so this feedback does not establish coverage of every GPU, IME or third-party MOD combination.
 
 Final validation: 769 standard checks (57 new) and 304 checks across two game versions covering Fabric/UI, showcase saving, fresh-process reload and corrupt-config startup; dev.17 public signatures retain 71 types/354 members. English/Chinese UI and settings examples are compiled. Drawing terminals are GPU-free; player feedback is recorded above, and automated checks do not cover OS display, IME or focus switching.

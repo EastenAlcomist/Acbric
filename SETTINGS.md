@@ -1,5 +1,7 @@
 # MOD settings UI (dev.18)
 
+dev.19 validation: 810 standard checks (41 new), and 356 across two real Fabric game builds (169 main + 5 restart + 4 corrupt-config startup each). All 80 public types/428 member signatures from dev.18 are retained. Clipboard success uses a substitute; failure uses actual headless AWT. Native font/input paths are checked with GPU-free drawing terminals; Windows clipboard, screenshots, IME and focus transitions still require manual validation. dev.18 and earlier counts below are historical.
+
 2026-09-26 player acceptance: the user reported no problems testing dev.18 and requested a commit. All 28 changed files matched the build-validation snapshot before acceptance notes were added. Code is unchanged; the existing 769 standard checks and 304 integration checks across two game versions remain the validation evidence. No detailed manual test matrix was supplied, so this feedback does not establish coverage of every GPU, IME or third-party MOD combination.
 
 Final validation: 769 standard checks (57 new) and 304 checks across two game versions covering Fabric/UI, showcase saving, fresh-process reload and corrupt-config startup; dev.17 public signatures retain 71 types/354 members. English/Chinese UI and settings examples are compiled. Drawing terminals are GPU-free; player feedback is recorded above, and automated checks do not cover OS display, IME or focus switching.
@@ -75,7 +77,7 @@ ConfigEditor is confined to its creation thread; create it in the tool factory o
 - `restoreDefaults()` changes only declared fields in the draft.
 - `apply()` returns `Applied(snapshot, changedKeys, effects)`. Keys are compared by value, so `0.50` versus `0.5` creates no false numeric change notification. Success updates the baseline; failure retains the draft.
 - `reload()` explicitly discards the draft and calls ModConfig.reload. The UI confirms first because this also discards pending in-memory updates in the shared handle. Failure retains the draft. If the file is valid but incompatible with field declarations, the handle may have reloaded successfully while the editor retains its previous draft; fix declarations/migration and reopen.
-- `SettingsUi.window(title, editor, applied)` directly builds a window. Cancel, X, Esc and other root-close paths discard unapplied edits. Closing a child dialog preserves the parent draft.
+- `SettingsUi.window(title, editor, applied)` directly builds a window. In dev.19, Cancel/X/Esc confirm when a draft is dirty. Keep editing or dismissing the confirmation preserves it; Discard closes. Clean drafts close immediately. Programmatic close, screen changes, native overlays, errors and exit still dispose immediately and discard unapplied edits. Closing ordinary child dialogs preserves the parent draft.
 
 Apply may explicitly create a defaults file even without value changes. Every successful Apply invokes `applied` once; use changedKeys to avoid unnecessary runtime updates. The callback runs on the game thread after saving. Callback failure is explicitly reported as saved-but-not-applied, with no file rollback or automatic callback retry. Validators and callbacks should avoid reentry and irreversible side effects.
 
@@ -95,10 +97,16 @@ Shared gameplay values still follow the existing shared-rule/save workflow. The 
 - `Ui.integerField(value,min,max,change)` and `Ui.numberField(value,min,max,change)` combine controlled text with bilingual validation. Both value/change use Strings; the caller controls submission.
 - `Ui.choice(value,List<Ui.Choice>,change)` opens a modal list. Choice values are stable and labels may use Suppliers for localization. Selecting invokes change; cancelling leaves the value unchanged.
 
-No nested field paths, arbitrary JSON editor, sliders, automatic migration, mouse-positioned caret or dedicated IME panel are included. Language follows the game; reopen to refresh titles and fixed labels.
+No nested field paths, arbitrary JSON editor, sliders, automatic migration or dedicated IME panel are included. Language follows the game; reopen to refresh titles and fixed labels.
 
 ## Validation
 
 769 standard checks include 57 new numeric/draft/commit checks. The plain-JDK test process patches `jdk.unsupported` with FloatIO.jar to load the native JSON decimal formatter; actual game processes still load it through Knot, with no production launcher argument changes. SettingsUiRegression needs game language/font resources and runs through the workspace Fabric probe rather than the resource-free standard entry point.
 
 Game versions 1.2.15.2 and 1.2.14 cover forms, validation failures, cancel/defaults, callback failures, external conflicts, independent showcase saving and fresh-process reload. Drawing terminals do not use a GPU. Chinese layout, resolutions, IME and screenshot/focus changes still need real-game checks. Showcase 0.2.0 requires dev.18 and writes `game/config/acbric_ui_showcase/ui-settings.json`; its new-campaign action only copies a mock value.
+
+## Fixed actions and close confirmation (dev.19)
+
+Apply, Cancel, Defaults and Reload file occupy a fixed footer; fields scroll separately. The footer shows draft state or Saved; detailed effects remain at the end of the body. Save/reload failures and saved-but-callback-failed results also open bilingual message dialogs. Dismissing the message retains the settings form; errors remain visible even when the body is scrolled elsewhere. At tiny resolutions the footer can scroll independently; see the UI contract.
+
+No configuration format change is required. Showcase 0.3.0 requires dev.19 and adds long-text filling to test horizontal scrolling; previous 0.2.0 settings remain usable. This release does not add game logic, a hotkey registry or network synchronization.

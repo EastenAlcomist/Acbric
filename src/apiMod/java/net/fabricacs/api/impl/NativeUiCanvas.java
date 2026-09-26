@@ -34,17 +34,31 @@ final class NativeUiCanvas implements UiRuntime.Canvas {
     private void focus(Rect bounds,boolean focused){if(focused)draw.rect(new Clr(100,190,240),bounds.x(),bounds.y()+bounds.h()-2,bounds.w(),2);}
     public void button(Rect bounds,Rect clip,String text,boolean enabled,boolean focused){clipped(clip,()->{draw.button(bounds.x(),bounds.y(),bounds.w(),literal(text),(Runnable)null,enabled);focus(bounds,focused);});}
     public void toggle(Rect bounds,Rect clip,String text,boolean value,boolean enabled,boolean focused){clipped(clip,()->{draw.toggle(bounds.x(),bounds.y(),bounds.w(),literal(text),null,in->{},value,enabled);focus(bounds,focused);});}
+    public int[] textAdvances(String text){
+        String shown=literal(text);int[] widths=new int[shown.length()+1];
+        // 原生单行字距为每个 UTF-16 字形宽度加 letterSpacing；一次扫描，避免重复测量所有前缀。
+        for(int i=0;i<shown.length();i++)widths[i+1]=widths[i]+AGame.FOUNT.getWidth(shown.charAt(i))+AGame.FOUNT.letterSpacing;
+        return widths;
+    }
+    public int textWidth(String text){int[] widths=textAdvances(text);return widths[widths.length-1];}
     public void text(Rect bounds,Rect clip,String text,int caret,boolean selected,boolean focused,boolean enabled){
+        text(bounds,clip,text,caret,selected?0:caret,Math.max(0,textWidth(text.substring(0,caret))-Math.max(0,bounds.w()-8)+4),focused,enabled);
+    }
+    public void text(Rect bounds,Rect clip,String text,int caret,int anchor,int offset,boolean focused,boolean enabled){
         clipped(clip,()->{
             draw.rect(new Clr(25,30,35),bounds.x(),bounds.y(),bounds.w(),bounds.h());draw.drawPanelBorder(bounds.x(),bounds.y(),bounds.w(),bounds.h());
             Rect inner=new Rect(bounds.x()+4,bounds.y()+2,Math.max(0,bounds.w()-8),Math.max(0,bounds.h()-4));
             clipped(inner.intersect(clip),()->{
-                // tw 是开关按钮宽度（大字体加装饰），不能用于正文光标。测量和绘制必须使用同一字体。
-                int before=(int)draw.textSize(literal(text.substring(0,caret)),AGame.FOUNT).x;
-                int offset=Math.max(0,before-inner.w()+4);
+                // 正文、选区、命中和光标都使用同一字体，水平滚动由窗口编辑状态保存。
+                int before=textWidth(text.substring(0,caret));
                 int y=inner.y()+Math.max(0,(inner.h()-lineHeight())/2);
-                if(selected&&focused)draw.rect(new Clr(50,80,130),inner.x(),inner.y(),inner.w(),inner.h());
-                draw.text(literal(text),AGame.FOUNT,inner.x()-offset,y);
+                if(caret!=anchor&&focused){int start=textWidth(text.substring(0,Math.min(caret,anchor))),end=textWidth(text.substring(0,Math.max(caret,anchor)));
+                    draw.rect(new Clr(50,80,130),inner.x()+start-offset,y,Math.max(0,end-start),lineHeight());}
+                String shown=literal(text);int[] widths=textAdvances(text);int start=0,end=shown.length();
+                while(start<shown.length()&&widths[shown.offsetByCodePoints(start,1)]<offset)start=shown.offsetByCodePoints(start,1);
+                end=start;while(end<shown.length()&&widths[end]<=offset+inner.w())end=shown.offsetByCodePoints(end,1);
+                // 只向原生绘制传入可见片段，并关闭命令解释；花括号和反斜杠也是真实可编辑字符。
+                draw.text(shown.substring(start,end),AGame.FOUNT,inner.x()-offset+widths[start],y,Integer.MAX_VALUE,AGame.FOUNT.lineHeight,0,false);
                 if(focused&&enabled)draw.rect(new Clr(220,230,245),inner.x()+before-offset,y,1,lineHeight());
             });focus(bounds,focused);
         });

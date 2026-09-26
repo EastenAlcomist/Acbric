@@ -26,8 +26,8 @@ public final class SettingsUi {
     }
     public static UiWindow window(String title,ConfigEditor editor,Consumer<ConfigEditor.Applied> applied){
         Objects.requireNonNull(editor);Objects.requireNonNull(applied);List<UiNode> nodes=new ArrayList<>();
-        class Status {Supplier<String> message=()->t("Changes stay in this draft until Apply. Closing discards unapplied edits.","修改暂存于草稿，点击应用才保存。关闭窗口会丢弃未应用的修改。");}
-        Status status=new Status();nodes.add(Ui.label(()->status.message.get()));
+        class Status {Supplier<String> summary=()->t("No unapplied changes","无未应用的修改");Supplier<String> message=()->t("Changes stay in this draft until Apply. Closing asks before discarding unapplied edits.","修改暂存于草稿，点击应用才保存。关闭窗口前会确认是否丢弃未应用的修改。");}
+        Status status=new Status();List<UiNode> footer=new ArrayList<>();
         for(ConfigField f:editor.fields()){
             nodes.add(Ui.label(()->label(f.label())+" · "+effect(f.effect())));
             if(!f.description().english().isEmpty()||!f.description().chinese().isEmpty())nodes.add(Ui.label(()->label(f.description())));
@@ -41,8 +41,8 @@ public final class SettingsUi {
             }
             if(f.kind()!=ConfigField.Kind.INTEGER&&f.kind()!=ConfigField.Kind.DECIMAL)nodes.add(Ui.label(()->editor.error(f.key(),AcbricLanguage.isChinese())));
         }
-        nodes.add(Ui.label(()->editor.isDirty()?t("Unapplied changes","有未应用的修改"):t("No unapplied changes","无未应用的修改")));
-        nodes.add(Ui.row(8,
+        footer.add(Ui.label(()->editor.isDirty()?t("Unapplied changes","有未应用的修改"):status.summary.get()));
+        footer.add(Ui.row(8,
             Ui.button(()->t("Apply","应用"),h->{
                 ConfigEditor.Applied result;
                 try{result=editor.apply();}
@@ -51,18 +51,25 @@ public final class SettingsUi {
                     boolean conflict=ex instanceof ConfigException c&&c.code()==ConfigException.Code.CONFLICT;
                     status.message=()->conflict?t("Config changed or is locked. Draft retained; reopen for current in-memory values, or explicitly Reload file to discard edits and reread disk.","配置已变化或被锁定，草稿已保留。重开可读取当前内存值；重新读取文件会丢弃草稿并读取磁盘。")
                             :t("Could not save. Draft retained; check validation and file access.","保存失败，草稿已保留，请检查配置校验和文件权限。");
-                    return;
+                    h.message(t("Could not save","无法保存"),status.message.get());return;
                 }
+                status.summary=()->t("Saved","已保存");
                 status.message=()->t("Saved. Effects: ","已保存。生效方式：")+(result.effects().isEmpty()?t("No value changes","值未变化"):result.effects().stream().sorted().map(SettingsUi::effect).reduce((a,b)->a+" / "+b).orElse(""));
-                try{applied.accept(result);}catch(RuntimeException ex){System.err.println("[Acbric settings] Saved; callback failed: "+ex);status.message=()->t("Saved, but the MOD's apply callback failed. Do not assume runtime values changed; check the log.","配置已保存，但 MOD 生效回调失败。请勿假定运行中的值已更新，详情见日志。");}
+                try{applied.accept(result);}catch(RuntimeException ex){System.err.println("[Acbric settings] Saved; callback failed: "+ex);status.message=()->t("Saved, but the MOD's apply callback failed. Do not assume runtime values changed; check the log.","配置已保存，但 MOD 生效回调失败。请勿假定运行中的值已更新，详情见日志。");h.message(t("Apply callback failed","生效回调失败"),status.message.get());}
             }).enabled(editor::isValid),
-            Ui.button(()->t("Cancel","取消"),h->{editor.cancel();h.close();})));
-        nodes.add(Ui.row(8,
+            Ui.button(()->t("Cancel","取消"),UiWindowHandle::requestClose)));
+        footer.add(Ui.row(8,
             Ui.button(()->t("Defaults","恢复默认值"),h->{editor.restoreDefaults();status.message=()->t("Defaults are in the draft. Apply to save.","默认值已放入草稿，点击应用才会保存。");}),
             Ui.button(()->t("Reload file","重新读取文件"),h->h.confirm(t("Reload settings","重新读取设置"),t("Discard this draft and pending in-memory config changes, then read the file?","丢弃草稿及配置句柄内未保存的修改，然后重新读取文件？"),t("Reload","重新读取"),t("Cancel","取消"),()->{
-                try{editor.reload();status.message=()->t("Reloaded from file.","已从文件重新读取。");}
-                catch(IOException|RuntimeException ex){System.err.println("[Acbric settings] "+ex);status.message=()->t("Reload failed. Draft retained; check the config file and migration.","重新读取失败，草稿已保留，请检查文件及迁移。");}
+                try{editor.reload();status.summary=()->t("Reloaded from file","已从文件重新读取");status.message=()->t("Reloaded from file.","已从文件重新读取。");}
+                catch(IOException|RuntimeException ex){System.err.println("[Acbric settings] "+ex);status.message=()->t("Reload failed. Draft retained; check the config file and migration.","重新读取失败，草稿已保留，请检查文件及迁移。");h.message(t("Reload failed","重新读取失败"),status.message.get());}
             }))));
-        return new UiWindow(title,620,620,true,Ui.column(8,nodes.toArray(UiNode[]::new)),reason->editor.cancel());
+        // 状态留在正文底部，失败另开消息框，避免长说明挤掉固定操作按钮。
+        nodes.add(Ui.label(()->status.message.get()));
+        return new UiWindow(title,620,620,true,Ui.column(8,nodes.toArray(UiNode[]::new)),reason->editor.cancel())
+                .withFooter(Ui.column(8,footer.toArray(UiNode[]::new)))
+                .onCloseRequest(h->{if(!editor.isDirty())h.close();else h.confirm(t("Discard changes?","丢弃修改？"),
+                    t("Close settings and discard unapplied changes? Saved settings will remain unchanged.","关闭设置并丢弃未应用的修改？已经保存的设置不受影响。"),
+                    t("Discard","丢弃修改"),t("Keep editing","继续编辑"),h::close);});
     }
 }

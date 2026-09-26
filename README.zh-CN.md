@@ -1,5 +1,7 @@
 # Acbric — 飞艇 Fabric MOD 框架
 
+dev.19 完善单行输入：原生字体鼠标定位、拖动/Shift 选区、Ctrl+C/X、导航与删除按键重复。设置页固定操作区，并在取消/X/Esc 丢弃草稿前确认；旧构造、程序 close 与生命周期清理保持兼容。配套展示 MOD 0.3.0。详见 [UI 契约](UI.zh-CN.md) 和 [设置契约](SETTINGS.zh-CN.md)。
+
 dev.18 新增显式字段的 MOD 设置页、数字/选项组件和受控文本绑定；草稿应用、取消、默认值、重读及双重冲突保护。新增 ModConfig.defaults()/save(expected,data)、ConfigField、ConfigEditor、SettingsUi。生效时机由 MOD 处理，不自动同步配置或修改已有战役。详见 [设置 API](SETTINGS.zh-CN.md)。
 
 dev.17 修复新 UI 使用偏移点击坐标导致未命中的问题；原生点击决定触发，Slick 输入使用同帧悬停坐标进行命中，保留缩放、遮蔽及无坐标回退。标题栏关闭改用原生字体支持的 X。日志回放已验证，Windows 切屏仍需实机复测。

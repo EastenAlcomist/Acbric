@@ -1,5 +1,11 @@
 # AGENTS.md — Acbric
 
+2026-09-26 提交核验：用户要求提交 dev.19 并讨论下一步。25 个变更文件与上一轮已验证源码快照一致，构建产物哈希匹配；仅更新本条状态说明，沿用 810 项标准/两版 356 项集成结果，不重复运行未改动代码的测试。本轮没有新的逐项实机验收记录，不扩大 Windows 剪贴板、IME 或切屏覆盖结论。未要求推送；快捷键与诊断的后续设计尚未实施。
+
+dev.19 开发记录（基于 dev cccd4bd）：完成文本选区/鼠标定位/剪贴板/重复键及设置固定页脚、主动关闭确认。契约见 UI.md / UI.zh-CN.md、SETTINGS.md / SETTINGS.zh-CN.md。玩家主动 requestClose 可确认；程序 close 与生命周期清理必须直接执行。原生字体字宽按 UTF-16 累加，选区停在码点边界，输入框关闭游戏格式命令、仅绘制可见片段。显示失焦取消拖动/重复及原拖动释放；禁止合成按钮连发。双语示例 0.3.0。用户本轮批准实施上一轮建议第 1 项；快捷键注册、可视化诊断尚未实施。
+
+dev.19 验证：810 项标准检查（新增 41 项），两版真实 Fabric 各 169 + 5 重启 + 4 损坏配置启动，共 356 项；dev.18 的 80 个公开类型/428 个成员签名保留。剪贴板成功用替身、不可用用真实无头 AWT；原生字体/输入已检查，绘制终端无 GPU，Windows 剪贴板/截图/输入法和失焦仍待实机。以下 dev.18 及更早数字为历史记录。
+
 2026-09-26 实机验收：用户确认 dev.18 测试没有发现问题，并要求提交。提交前全部 28 个变更文件与构建验证快照一致；本次只补充验收说明，沿用 769 项标准检查和两版共 304 项集成检查，不重复测试未改动的代码。未提供逐项实机测试矩阵，此反馈不代表全部 GPU、输入法或第三方 MOD 组合均已覆盖。
 
 最终验证：769 项标准检查（57 项新增）、两版共 304 项真实 Fabric/界面/示例保存/新进程重启及损坏配置启动检查通过，保留 dev.17 的 71 个公开类型/354 个成员。UI 与设置双语文档示例编译检查。绘制终端无 GPU；用户实机反馈见上方，自动化验证不覆盖操作系统显示、输入法和切屏。
@@ -50,7 +56,7 @@ Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Ski
 | 层 | 位置 | 职责 | 依赖 |
 |---|---|---|---|
 | 启动层 | `src/main` | `AirshipsGameProvider` 把游戏塞进 Fabric(解析 `game/Airships.json`、拼类路径、反射调 `Main.main`) | Fabric Loader；不依赖游戏 API 或 Acbric API |
-| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.3-dev.18（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、21 个 hook mixin | 游戏 + fabric-loader |
+| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.3-dev.19（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、21 个 hook mixin | 游戏 + fabric-loader |
 
 功能 MOD 不属于本仓库:使用者在自己的项目里编写(可以 `acbric-mod-template/` 为起点),
 编译期依赖 API JAR，通常还依赖 `libs/asplit-*.zip`。独立模板使用其本地 API JAR；同工程 source set 才可直接依赖 `apiMod.output`。
@@ -141,7 +147,7 @@ Fabric 略有差异:
   `javap -p -c` 反编译 `libs/asplit-*.zip` 里的目标 class 核对。
 - dev.12 的 `disabledMods` 在 Provider 定位阶段读取，交由固定 Loader 候选过滤；必须同时更新启动器和 API。Java 启停重启后生效，原生热重载按钮不影响此选择，见 MOD_MANAGEMENT.md。不可实现成只跳过 acbric 入口，否则 Mixin 仍生效。
 - 真实入口是 `src/main` 的 GameProvider + ServiceLoader 注册,不是任何 `fabric.mod.json`。
-- API 版本号 `acbric_api` = 0.3.3-dev.18（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
+- API 版本号 `acbric_api` = 0.3.3-dev.19（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
 
 ## 最近验证状态
 

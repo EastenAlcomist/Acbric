@@ -1,5 +1,7 @@
 # Acbric Mod Template
 
+dev.19 adds fixed window footers and player-close confirmation; see ../UI.md. Declare a dev.19 minimum when using these new APIs.
+
 Standalone Gradle template for Acbric mods. It builds from its own directory and
 uses only the bundled `libs/` dependencies. See `README.zh-CN.md` for the full
 Chinese guide.

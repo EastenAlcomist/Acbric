@@ -37,7 +37,7 @@ public final class UiBridge {
         if(currentGame!=game){if(runtime!=null)runtime.closeAll(UiWindow.CloseReason.GAME_EXIT);currentGame=game;cursor=null;pointerMasked=false;
             inputDiagnostics=new UiInputDiagnostics(()->AGame.getGameDirectory().toPath());runtime=new UiRuntime((owner,error)->{
             System.err.println("[Acbric UI/"+owner+"] "+error);error.printStackTrace();game.showError("Acbric UI ["+owner+"]: "+error.getMessage());
-        });}
+        },UiBridge::writeClipboard);}
         return runtime;
     }
     private static boolean nativeDialog(AirshipGame game){return game.error!=null||game.helpText!=null||game.mpChatOverlayActive;}
@@ -68,12 +68,18 @@ public final class UiBridge {
         Boolean active=displayActive();
         boolean trace=inputDiagnostics.event(runtime.isOpen(),active,input.mouseDownButton(),click!=null,uiInput.enter()||uiInput.escape()||uiInput.tab());
         String before=trace?runtime.inputDiagnosticState():null;
-        var capture=runtime.input(uiInput);
+        int held=(input.keyDown("BACK")?1:0)|(input.keyDown("DELETE")?2:0)|(input.keyDown("LEFT")?4:0)|(input.keyDown("RIGHT")?8:0)|(input.keyDown("HOME")?16:0)|(input.keyDown("END")?32:0);
+        var capture=runtime.input(uiInput,new UiRuntime.Editing(ctrl&&input.keyPressed("C"),ctrl&&input.keyPressed("X"),held,!Boolean.FALSE.equals(active),input.mouseDownButton()==1,System.nanoTime()));
         if(trace)inputDiagnostics.write("clickButton="+input.clickButton()+" click="+uiInput.click()+" x="+uiInput.x()+" y="+uiInput.y()
                 +" cursor="+coordinates(cursor)+" event="+coordinates(click)
                 +" nav="+uiInput.enter()+"/"+uiInput.escape()+"/"+uiInput.tab()+" before={"+before+"} after={"+runtime.inputDiagnosticState()+"} capture="+capture);
         pointerMasked=capture.pointer();
         return capture.pointer()||capture.keyboard()?new UiMaskedInput(input,capture.pointer(),capture.keyboard()||capture.pointer()):input;
+    }
+    /** 剪贴板暂时忙碌时保留文本，尤其不能在剪切复制失败后删除选区。 */
+    private static boolean writeClipboard(String value){
+        try{java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(value),null);return true;}
+        catch(RuntimeException ex){return false;}
     }
     public static void created(AirshipGame game){runtime(game);}
     private static String coordinates(Pt point){return point==null?"null":point.x+","+point.y;}

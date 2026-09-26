@@ -1,5 +1,7 @@
 # Acbric — Airships Fabric Mod Framework
 
+dev.19 adds font-measured caret placement, drag/Shift selection, Ctrl+C/X, and held navigation/deletion keys. Settings use a fixed action footer and confirm before Cancel/X/Esc discard a draft. Existing constructors, programmatic close and lifecycle cleanup retain their behavior. Companion showcase: 0.3.0. See [UI contract](UI.md) and [settings contract](SETTINGS.md).
+
 dev.18 adds explicit MOD settings forms, numeric/choice controls and controlled text binding, with draft apply/cancel/defaults/reload and memory/disk conflict protection. New APIs: ModConfig.defaults()/save(expected,data), ConfigField, ConfigEditor and SettingsUi. MOD code implements effect timing; configuration is not automatically synchronized and existing campaigns are not rewritten. See [settings API](SETTINGS.md).
 
 dev.17 corrects shared-UI hit testing when Slick click-event coordinates drift from the current cursor. Native clicks still trigger actions; hit testing uses the polled cursor with scaling, masking and missing-cursor fallback preserved. Title-bar close now uses the supported X glyph. Offset replay passes; Windows focus switching still needs a real-game retest.
