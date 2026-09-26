@@ -4,6 +4,7 @@
   "package": "net.fabricacs.api.mixin",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "ExternalMainMixin",
     "ExternalPathsMixin",
     "ExternalLaunchSettingsMixin",
     "ExternalTextureMixin",

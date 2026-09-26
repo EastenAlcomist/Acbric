@@ -25,6 +25,10 @@ public final class ExternalRuntimeProbe implements AcbricInitializer {
         initialized = true;
     }
     public static void main(String[] args) throws Exception {
+        if (Boolean.getBoolean("acbric.test.menu")) {
+            ExternalMenuProbe.main(args);
+            return;
+        }
         Path install = Path.of(System.getProperty("acbric.external.install"));
         Path instance = Path.of(System.getProperty("acbric.external.instance"));
         check(initialized, "real API preLaunch and contextual entry completed");

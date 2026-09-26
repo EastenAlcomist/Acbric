@@ -1,10 +1,10 @@
 # Developer documentation map
 
-dev.23 continues external-install refactoring: [instance launch settings, user outputs and texture-cache isolation](EXTERNAL_INSTALL.md). Validation passes 924 standard checks, 36 external-loading checks on 1.2.15.3 and 142 legacy-layout ARC checks across two builds; all 5,325 installation file contents are unchanged. Normal external launch remains blocked pending real menu/graphics/campaign validation. Legacy `distZip` still includes local game dependencies and is not a clean framework distribution. Existing launch/build instructions below continue to apply to the legacy layout.
+dev.24 adds [real external-mode menu/audio verification](EXTERNAL_INSTALL.md) and fixes OpenAL loading from a Chinese installation path. 924 standard / 36 external / 142 legacy ARC checks pass; fresh and warm-cache launches each render 30 menu frames and initialize audio, with all 5,325 installation file contents unchanged. Normal external launch still awaits full campaign and broader acceptance. Legacy distZip still includes game dependencies; existing launch instructions below apply to the legacy layout.
 
 Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physical `GRAVE`; Shift is optional) to open the console with the command field focused. The opening key is consumed. Ctrl/Alt/Meta combinations, inactive displays, native error/help/chat overlays, and existing Acbric windows do not trigger it. Close another Acbric window before using the shortcut. While the console is open this key remains ordinary text; use Esc/X/Close to dismiss. Holding the key cannot repeatedly reopen it. This is a fixed console shortcut, not a general key-binding API.
 
-[中文](DEVELOPMENT.zh-CN.md) · Current source/API: **0.3.3-dev.23**, unreleased.
+[中文](DEVELOPMENT.zh-CN.md) · Current source/API: **0.3.3-dev.24**, unreleased.
 
 Start here for the current contracts. READMEs cover installation/build; topic documents define behavior. Changelogs and dated workspace research are historical evidence, not alternate current specifications. New interfaces need matching English/Chinese documentation, a minimal example, bounded failure behavior and regression coverage.
 

@@ -7,6 +7,8 @@ game/
 build/
 .gradle/
 out/
+__pycache__/
+*.pyc
 
 ### IDE ###
 .idea/

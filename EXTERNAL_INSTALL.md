@@ -1,8 +1,8 @@
-# External game installation: settings and texture isolation (dev.23)
+# External game installation: native menu verification (dev.24)
 
 [中文](EXTERNAL_INSTALL.zh-CN.md)
 
-This prototype implements **installation discovery/preflight, instance launch settings and texture-cache isolation**. Existing `run.bat`, development launch and legacy layouts retain their behavior. The new tool does not start the normal game and is not an installer. Full menu/campaign validation and the remaining write-path review are pending; this is not a publicly ready read-only installation mode.
+This prototype implements **installation discovery/preflight, instance launch settings and texture-cache isolation**. dev.24 verifies real menu rendering and audio initialization in an isolated test and fixes OpenAL loading from a Chinese installation path. Existing `run.bat`, development launch and legacy layouts retain their behavior. The checker does not start the game and is not an installer. Normal external launch remains blocked pending campaign and broader integration validation; this is not a public installer release.
 
 ## Check a local installation
 
@@ -76,4 +76,33 @@ Requires Windows, Python 3.11+ and JDK 21, with a fresh tag each run. Output is 
 
 dev.23 validation: 924 standard checks (20 added since dev.22); 36 real Knot checks against the full 1.2.15.3 installation, with all 5,325 installation file contents unchanged. Checks cover preLaunch, origins/paths, effective launch settings, native texture-file reads/writes/cache fallback and userdata failure without global fallback. A test-only Mixin replaces the terminal Slick Image construction, so this exercises native file IO without a GPU. Legacy-layout ARC checks for 1.2.15.2 / 1.2.14 pass 71 each, 142 total. These results do not establish full graphics, native-library, DLC, Workshop or campaign compatibility. Probe results: `build/external-tests/dev23-final/`; test replacements are absent from production JARs.
 
-Next: finish the installation write-path review and verify real graphics, menu, campaign, GIF export and DLC/MOD combinations before enabling normal external launch. Distribution/template cleanup, migration and installer follow. The current legacy `distZip` still contains local game dependencies and **must not be shared as a clean framework distribution**. `preflightTools` contains only framework launcher, explicit launch dependencies, script and documentation.
+### Real menu and audio test (dev.24)
+
+```powershell
+.\gradlew.bat build preflightTools
+python tools/test_external_menu.py --tag my-menu-check --game-dir "D:/Games/Airships Conquer the Skies" --java-home "D:/Java/jdk-21"
+```
+
+Use **JDK 21** for this test harness: its Java write/network interceptor uses the deprecated SecurityManager, only in the test process. The production framework does not install it. A new output tag is required. Two launches run against one isolated instance by default (fresh cache, then restart); `--runs 1` selects only the first. Each process has a 90-second deadline, calls the real `Main.main`, and automatically exits after 30 completed menu renders. Native graphics, assets, audio and texture IO are not mocked. A game window and audio may briefly appear; do not use this as a player launcher. A render-return checkpoint is not a visual inspection of every widget or a clean-exit acceptance test.
+
+Reports and console/native logs are in `build/external-menu/<tag>/`. The test blocks Java file writes outside that test directory and all Java network connections. Permission queries such as ZipFS `Files.isWritable` remain allowed; actual write handles remain blocked. It is not an OS sandbox or an ACL read-only test and does not intercept native driver writes. The original installation is separately hashed before/after. Network functionality is deliberately untested.
+
+dev.24 passes 924 standard checks, 36 headless external checks and 142 legacy ARC checks, plus both real menu launches on the 1.2.15.3 input. Each menu process renders 30 frames with an NVIDIA RTX 5060 / OpenGL 4.6 context and OpenAL Soft; 147 raw texture files remain in the instance after each run. All 5,325 installation file contents remain unchanged. Standard tests still skip two pre-existing symlink cases on this host. These are local device results, not broad GPU compatibility or listening-quality verification.
+
+The initial real test exposed OpenAL failure on the Chinese installation path (LWJGL native lookup error 126). External `Main` now preloads the selected installation's `OpenAL64.dll` through JVM `System.load`; LWJGL can then obtain the loaded module by name. This copies no DLL and does not change global PATH. Failure preserves the DLL cause in launch diagnostics. Legacy startup does not preload it.
+
+### Write-path review and remaining acceptance
+
+| Path family | Reviewed handling / current limit |
+|---|---|
+| Base/DLC checksum files | Read from installation; external `doWritechecksum=false` blocks development writes. Base and heroes checksum loading observed in the menu test. |
+| Default designs, settings, log, recording cleanup | `AGame` copies/overlays into userdata; settings/log/recording paths use that root. Real initialization writes stay in the test instance. |
+| Image/raw caches | Common loader uses instance mirrors; original `.tex` migration is skipped. Cold/warm menu launches pass. |
+| MOD derived images/fragments | Generated under the source MOD directory; normal instance MODs are writable there. Linked/custom external MOD folders and Workshop remain unaccepted. |
+| Missions/monsters | Static assets are read; backend locks protect static missions and monsters. User missions use userdata. No mission-editor workflow acceptance yet. |
+| GIF and manual exports | GIF guard is implemented, actual export remains untested. User-selected export destinations are a separate explicit operation. |
+| Offline author tools | Not invoked by normal Main. Their hard-coded development output paths are not a supported framework workflow. |
+
+Review compares relevant 1.2.15.3 classes with the existing 1.2.15.2 decompilation; changed classes were checked separately. This is targeted source/bytecode review plus runtime write observation, not a proof covering arbitrary MOD code or every game branch.
+
+Next: full campaign creation/save/reload, GIF export and DLC/MOD combinations before enabling normal external launch. Distribution/template cleanup, migration and installer follow. The current legacy `distZip` still contains local game dependencies and **must not be shared as a clean framework distribution**. `preflightTools` contains only framework launcher, explicit launch dependencies, script and documentation.

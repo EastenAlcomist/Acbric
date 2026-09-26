@@ -1,5 +1,7 @@
 # AGENTS.md — Acbric
 
+2026-09-26 dev.23 已提交 `b431406`，未推送。dev.24 已按本轮用户要求提交：真实 Main 菜单测试器（Java 写入/网络拦截仅测试，JDK 21），修复中文安装路径 OpenAL DLL 预载；首次及缓存重启各完成 30 帧原生菜单，OpenGL 4.6 / OpenAL Soft 成功，实例 raw 147 个，源安装 5,325 文件内容未变。924 标准 / 36 外部 / 两版 ARC 142 通过；标准两项符号链接权限跳过。详见 EXTERNAL_INSTALL 双语，证据工作区 99-研究工具/Acbric外部菜单验收-20260926。没有完整战役/存读档/GIF/广泛 DLC-MOD/联网验收，正常外部入口仍 EXTERNAL_NOT_READY。旧 distZip 非干净发行包，不覆盖运行副本；ARC 源码未改。本地相对已知 origin/dev 领先 2、落后 2，远端快速构建/测试尚未合并。下方为历史。
+
 2026-09-26 dev.22 已提交 `40f599a`，未推送；dev.23 已按本轮用户要求提交：实例 LaunchSettings 覆盖、强制 userdata/GIF、禁止 checksum/随机目录，以及按资源内容隔离原生图片读取/raw 缓存写入，MOD 重载重算元数据。924 标准 / 1.2.15.3 外部 36 / 旧布局两版 ARC 142 通过，源安装 5,325 文件内容未变。纹理真实文件 IO + 测试末端 GPU 替身；没有实际 Main/图形/战役/GIF/DLC/联机验收，正常外部入口继续 EXTERNAL_NOT_READY。详细契约 EXTERNAL_INSTALL 双语；证据工作区 `99-研究工具/Acbric外部缓存隔离-20260926`。旧 distZip 仍含游戏内容，不对外分发。缓存含本地资源且无自动回收。当前本地 origin/dev 有另外两项快速构建/测试入口提交，尚未合并，后续整合时注意回归注册兼容；未自动覆盖远端工作。以下旧状态为历史。
 
 2026-09-26 dev.22：用户授权按独立安装方案开始重构，本轮完成阶段 1 与阶段 2 的最小内部探针，不是完整阶段 2 菜单验收。入口 EXTERNAL_INSTALL.md / EXTERNAL_INSTALL.zh-CN.md；preflightTools 无游戏内容，现有 distZip 仍含本地游戏依赖，不能作为干净框架包发布。外部 Provider 使用显式安装/实例、实例锁、早期 AGame 路径 Mixin；正常外部启动阻断 EXTERNAL_NOT_READY，缓存/LaunchSettings/发行迁移/安装器尚未实现。904 标准、1.2.15.3 真实 Knot 25 项、旧布局两版 ARC 142 项；5,325 安装文件内容前后相同，未启动正常 Main/GPU/联机。证据 build/external-tests/final、build/external-build.log，ARC 测试在相邻 `ARC Overhaul/build/runtime-tests/acbric-dev22`。Java 8/21 引导已测。dev.22 已按用户要求纳入本轮提交，未推送、旧运行副本未覆盖；下一步缓存与用户输出隔离。旧状态记录保留历史。

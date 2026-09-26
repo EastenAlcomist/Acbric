@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.3-dev.24 — Native external menu and Unicode audio loading (2026-09-26)
+
+- dev.23 committed as `b431406`; continue with a test harness that calls actual Main and exits after 30 completed menu renders. Cold and warm-cache runs use real GPU, assets and audio, with Java writes/network guarded inside an isolated test. The test-only deprecated SecurityManager requires JDK 21 and is absent from the product.
+- Real testing exposed OpenAL error 126 with a Chinese installation path. External Main now uses JVM Unicode loading to preload the selected installation DLL before LWJGL lookup. No DLL copies/downloads/global PATH edits; legacy mode is unchanged, and DLL failure retains its cause in launch diagnostics.
+- 924 standard checks, 36 headless external checks, 142 legacy ARC checks pass. Both real menu runs initialize OpenGL 4.6 / OpenAL Soft, with 147 instance raw-cache files and all 5,325 installation file contents unchanged. Two pre-existing standard symlink cases remain skipped on this host.
+- Record targeted write-path review and bilingual reproduction in [EXTERNAL_INSTALL](EXTERNAL_INSTALL.md). Full campaign/save/reload, GIF export, broad DLC/MOD combinations and online functionality remain unaccepted; normal external launch is still blocked. Existing distZip is not a clean release.
+- dev.24 is committed at user request; no push or player installation replacement.
+
 ## 0.3.3-dev.23 — External settings and texture-cache isolation (2026-09-26)
 
 - Continue from committed dev.22 (`40f599a`). Merge original launch settings with instance overrides before native initialization; force userdata/GIF output inside the instance, preserve malformed input and fail without global fallback. Disable external developer checksum/random-data paths.
