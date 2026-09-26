@@ -80,8 +80,18 @@ def main():
             jar.writestr('acbric_vanilla/marker.txt', 'external instance only')
         props = [f'-Dacbric.external.install={install}', f'-Dacbric.external.instance={instance}']
         blocked = command('normal-launch-blocked', common[:1] + props + common[1:] + ['net.fabricmc.loader.impl.launch.knot.KnotClient'], 1)
-        if 'EXTERNAL_NOT_READY' not in blocked:
-            raise AssertionError('External normal launch must fail before game/mod initialization')
+        if 'CORE_REQUIRED' not in blocked:
+            raise AssertionError('Direct external launch without required core must fail before game/mod initialization')
+        # 正式入口在 preLaunch 前拒绝缺失/解析成其他版本的核心；不触发 Main 或游戏图形。
+        isolated = run / 'core-guard-instance'
+        guarded = [f'-Dacbric.external.install={install}', f'-Dacbric.external.instance={isolated}', f'-Dacbric.external.core={api}']
+        missing = command('resolved-core-missing', common[:1] + guarded + common[1:] + ['net.fabricmc.loader.impl.launch.knot.KnotClient'], 1)
+        if 'CORE_MISSING' not in missing: raise AssertionError('Unloaded core was accepted')
+        with zipfile.ZipFile(isolated / 'mods/wrong-core.jar', 'w') as jar:
+            jar.writestr('fabric.mod.json', json.dumps({'schemaVersion': 1, 'id': 'acbric_api', 'version': '99.0.0'}))
+        mismatch = command('resolved-core-mismatch', common[:1] + guarded + common[1:] + ['net.fabricmc.loader.impl.launch.knot.KnotClient'], 1)
+        if 'CORE_MISMATCH' not in mismatch: raise AssertionError('Wrong resolved core was accepted')
+        if any(p.is_file() for p in (isolated / 'userdata').rglob('*')): raise AssertionError('Game data initialized before core validation')
         log = command('external-runtime', common[:1] + props + [
             '-Dacbric.internal.externalProbeMain=net.fabricacs.regression.ExternalRuntimeProbe',
             '-Djava.awt.headless=true', '--add-opens=java.base/java.util=ALL-UNNAMED'] + common[1:] +

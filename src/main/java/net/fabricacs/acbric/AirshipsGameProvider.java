@@ -147,6 +147,15 @@ public final class AirshipsGameProvider implements GameProvider {
 
     @Override
     public void unlockClassPath(FabricLauncher launcher) {
+        // Loader 已解析 MOD，尚未调用 preLaunch；先确认隔离适配来自匹配的发行核心。
+        if (externalLease != null && ExternalGameInstallation.MAIN.equals(mainClass)) {
+            var core = net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("acbric_api")
+                    .orElseThrow(() -> new IllegalStateException("CORE_MISSING / 缺少核心 API"));
+            Path expected = Path.of(System.getProperty("acbric.external.core")).toAbsolutePath().normalize();
+            if (!core.getMetadata().getVersion().getFriendlyString().equals(ExternalLauncher.CORE_VERSION)
+                    || core.getOrigin().getPaths().stream().noneMatch(path -> path.toAbsolutePath().normalize().equals(expected)))
+                throw new IllegalStateException("CORE_MISMATCH / 实际加载的核心 API 与发行包不匹配");
+        }
         for (Path path : gameClassPath) {
             launcher.addToClassPath(path);
         }
@@ -297,10 +306,11 @@ public final class AirshipsGameProvider implements GameProvider {
             String install = System.getProperty(ExternalGameInstallation.INSTALL_PROPERTY);
             String instance = System.getProperty(ExternalGameInstallation.INSTANCE_PROPERTY);
             if (install == null || instance == null) throw new IOException("EXTERNAL_PATHS_REQUIRED / 外部模式须同时指定安装与实例路径");
-            // 当前阶段仅允许内部探针主类，避免尚未适配的纹理写入路径触及原版安装。
+            // 内部探针保留用于回归；正式入口必须明确提供包含隔离适配的核心 API。
             String probe = System.getProperty(ExternalGameInstallation.PROBE_PROPERTY);
-            if (!"net.fabricacs.regression.ExternalRuntimeProbe".equals(probe))
-                throw new IOException("EXTERNAL_NOT_READY: use ExternalPreflight; normal launch awaits cache isolation / 请先使用预检查，正常启动待缓存隔离完成");
+            if (probe != null && !"net.fabricacs.regression.ExternalRuntimeProbe".equals(probe))
+                throw new IOException("EXTERNAL_PROBE_INVALID / 无效的内部探针入口");
+            if (probe == null) ExternalLauncher.requireCore(System.getProperty("acbric.external.core"));
             ExternalGameInstallation.runtime(System.getProperty("os.name"), Runtime.version().feature(), System.getProperty("os.arch"));
             var plan = ExternalGameInstallation.inspect(Path.of(install), Path.of(instance));
             externalLease = ExternalPreflight.InstanceLease.open(plan);
@@ -312,7 +322,7 @@ public final class AirshipsGameProvider implements GameProvider {
             }, "acbric-instance-release"));
             gameDirectory = plan.instance();
             libsDirectory = plan.install().resolve("lib");
-            mainClass = probe;
+            mainClass = probe == null ? ExternalGameInstallation.MAIN : probe;
             gameClassPath.clear(); gameClassPath.addAll(plan.classPath());
             buildIdentity = plan.identity();
             System.setProperty(ExternalGameInstallation.INSTALL_PROPERTY, plan.install().toString());
@@ -320,7 +330,7 @@ public final class AirshipsGameProvider implements GameProvider {
             System.setProperty("dev", "false");
             System.setProperty("steam", "false");
             diagnostics = new LaunchDiagnostics(gameDirectory, buildIdentity);
-            diagnostics.phase("EXTERNAL_PROBE_LOCATED", null);
+            diagnostics.phase(probe == null ? "EXTERNAL_GAME_LOCATED" : "EXTERNAL_PROBE_LOCATED", null);
             configureNativeLibraries();
             net.fabricacs.management.ModSelection.applyAtStartup(gameDirectory.resolve("config"));
             return true;

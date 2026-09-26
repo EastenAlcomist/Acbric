@@ -298,3 +298,55 @@ tasks.register('distZip', Zip) {
         into distributionName
     }
 }
+
+// 外部发行使用允许清单，不复用旧 distDir 的游戏目录或模板 libs。
+def externalRoot = layout.buildDirectory.dir('external-dist/Acbric')
+tasks.register('externalDistDir', Sync) {
+    group = 'acbric'
+    description = 'Assembles a framework-only external distribution (bring Java 21 or bundle it explicitly).'
+    dependsOn tasks.named('jar'), tasks.named('apiModJar')
+    into externalRoot
+    from('src/dist/start.ps1', 'src/dist/check-install.ps1', 'LICENSE')
+    from('EXTERNAL_INSTALL.md', 'EXTERNAL_INSTALL.zh-CN.md', 'EXTERNAL_START.md', 'EXTERNAL_START.zh-CN.md')
+    into('docs') { from fileTree(projectDir) { include '*.md'; exclude 'AGENTS.md' } }
+    into('core') { from(tasks.named('apiModJar')) { rename { 'acbric-api.jar' } } }
+    into('loader-libs') { from tasks.named('jar'); from configurations.fabricLoaderRuntime }
+    into('acbric-mod-template') {
+        from(modTemplateDir) {
+            include 'src/**', 'gradle/wrapper/**', 'gradlew', 'gradlew.bat', 'build.gradle', 'settings.gradle', 'gradle.properties'
+            include 'README.md', 'README.zh-CN.md', '.gitignore', 'local.properties.example'
+        }
+    }
+    // 默认不打包运行时；显式 -PbundleRuntime 时仅复制 jlink 输出，不复制游戏自带 Java。
+    if (project.hasProperty('bundleRuntime')) {
+        dependsOn tasks.named('createBundledJre')
+        into('runtime') { from bundledJreDir }
+    }
+    doLast {
+        def root = externalRoot.get().asFile
+        def lines = ['schema=1', "api.version=${new groovy.json.JsonSlurper().parse(file('src/apiMod/resources/fabric.mod.json')).version}"]
+        fileTree(root) { include 'loader-libs/*.jar', 'core/acbric-api.jar' }.files.sort().each { input ->
+            def hash = java.security.MessageDigest.getInstance('SHA-256').digest(input.bytes).encodeHex().toString()
+            def relative = root.toPath().relativize(input.toPath()).toString().replace('\\', '/')
+            lines.add("sha256.${relative}=${hash}")
+        }
+        new File(root, 'bundle.properties').setText(lines.join('\n') + '\n', 'UTF-8')
+    }
+}
+
+tasks.register('externalDistZip', Zip) {
+    dependsOn tasks.named('externalDistDir')
+    archiveFileName = 'Acbric-external.zip'
+    destinationDirectory = layout.buildDirectory.dir('external-dist')
+    from(externalRoot) { into 'Acbric' }
+    // 包扫描失败则构建失败；输入安装仅用于本地内容指纹，路径不会写入 ZIP。
+    doLast {
+        exec {
+            commandLine 'python', 'tools/verify_external_distribution.py', archiveFile.get().asFile.absolutePath,
+                    '--game-dir', file(findProperty('externalGameDir') ?: 'game').absolutePath,
+                    '--game-libs', file('libs').absolutePath,
+                    '--report', layout.buildDirectory.file('external-dist/verification.json').get().asFile.absolutePath
+            environment 'PYTHONUTF8', '1'
+        }
+    }
+}

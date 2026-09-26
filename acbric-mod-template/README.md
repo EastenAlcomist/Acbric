@@ -1,23 +1,17 @@
 # Acbric Mod Template
 
-dev.19 adds fixed window footers and player-close confirmation; see ../UI.md. Declare a dev.19 minimum when using these new APIs.
+[中文](README.zh-CN.md)
 
-Standalone Gradle template for Acbric mods. It builds from its own directory and
-uses only the bundled `libs/` dependencies. See `README.zh-CN.md` for the full
-Chinese guide.
-
-Quick start:
+Standalone Gradle project using JDK 21. Copy `local.properties.example` to `local.properties`, then set your local `gameInstallDir`, external distribution `frameworkDir`, and target `instanceDir`, using forward slashes. Command-line `-P` overrides these values.
 
 ```powershell
 .\gradlew.bat build
 .\gradlew.bat installMod
 ```
 
-`build` does not depend on the main Acbric project. `installMod` copies the jar
-to `gameDir/mods`; set `gameDir` in `gradle.properties` if the template is moved.
+`build` references local game A/B, game libraries, framework launch dependencies and API without including them in the MOD JAR. `installMod` requires an explicit target and copies output to `<instanceDir>/mods`. Do not share game files, `libs/` or private `local.properties` with the template.
 
-When working inside the main Acbric workspace, run `.\gradlew.bat syncModTemplateLibs`
-from the workspace root to repopulate this template's `libs/` directory.
+Legacy local `libs/` remains a compile fallback. `syncModTemplateLibs` is for local development only and is no longer part of external distribution packaging. Do not distribute its copied dependencies.
 
 ## UI event version
 

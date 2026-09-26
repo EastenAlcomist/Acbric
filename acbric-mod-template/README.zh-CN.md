@@ -1,42 +1,17 @@
 # Acbric MOD 模板项目
 
-dev.19 新增窗口固定页脚和主动关闭确认，见 ../UI.zh-CN.md；使用新 API 时声明最低依赖 dev.19。
+[English](README.md)
 
-这是一个独立 Gradle 项目，用来作为新的 Acbric MOD 起点。模板构建只依赖本目录自身内容，编译依赖放在 `libs/`，不会读取 Acbric 主工程的 `build.gradle`、`libs/` 或 `game/mods`。
-
-## 构建
-
-在本目录执行：
+独立 Gradle 项目，使用 JDK 21。复制 `local.properties.example` 为 `local.properties`，填入本机游戏 `gameInstallDir`、外部框架发行 `frameworkDir` 和目标实例 `instanceDir`，路径使用正斜杠。命令行 `-P` 可覆盖这些值。
 
 ```powershell
 .\gradlew.bat build
-```
-
-如果你把模板复制到了其他位置，`.\gradlew.bat build` 仍可直接运行。只有安装到游戏目录时需要修改 `gradle.properties`：
-
-```properties
-gameDir=C:/path/to/Acbric/game
-```
-
-Gradle 8.13 需要使用兼容的 Java 运行。若本机 `JAVA_HOME` 指向 JDK 25 或更新版本，请临时切到 JDK 21：
-
-```powershell
-$env:JAVA_HOME="C:\Program Files\Java\jdk-21"
-$env:PATH="$env:JAVA_HOME\bin;$env:PATH"
-.\gradlew.bat build
-```
-
-## 安装到游戏
-
-```powershell
 .\gradlew.bat installMod
 ```
 
-该任务会构建 MOD，并复制到：
+`build` 只引用游戏 A/B、游戏 lib、框架启动依赖和核心 API；不复制依赖进 MOD JAR。`installMod` 需要显式目标，将产物复制到 `<instanceDir>/mods`。复制或分享模板时不携带游戏内容、`libs/` 或个人 `local.properties`。
 
-```text
-<gameDir>/mods/acbric-template-mod.jar
-```
+旧开发环境的 `libs/` 仍可作为兼容编译输入；`syncModTemplateLibs` 仅用于本机，不再属于外部发行流程。不要分享其生成的依赖目录。
 
 ## 改名清单
 
@@ -47,7 +22,7 @@ $env:PATH="$env:JAVA_HOME\bin;$env:PATH"
 - `src/main/java/net/fabricacs/template/TemplateMod.java`: Java 包名和类名
 - `src/main/resources/assets/acbric_template_mod/icon.png`: 默认 MOD 图标
 
-`libs/` 是模板的编译依赖目录，复制模板项目时需要一起复制。它包含 Acbric API、Fabric Loader、游戏编译桩和基础运行库，仅用于编译；最终 MOD jar 不会把这些依赖打包进去。在主工程内可执行 `.\gradlew.bat syncModTemplateLibs` 自动补齐此目录。
+编译依赖由每位开发者在自己的 `local.properties` 中指定，个人路径及依赖不应提交或分发。
 
 `modId` 建议只使用小写字母、数字和下划线，例如 `my_airships_mod`。
 

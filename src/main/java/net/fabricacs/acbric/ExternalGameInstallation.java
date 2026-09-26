@@ -15,7 +15,7 @@ final class ExternalGameInstallation {
     static final String MAIN = "com.zarkonnen.airships.Main";
     static final String INSTALL_PROPERTY = "acbric.external.install";
     static final String INSTANCE_PROPERTY = "acbric.external.instance";
-    // 仅供当前阶段的隔离测试；资源写入分离完成前不允许正常游戏入口。
+    // 仅供隔离回归测试；公开启动器不暴露探针参数。
     static final String PROBE_PROPERTY = "acbric.internal.externalProbeMain";
     record Plan(Path install, Path instance, Path nativeDir, List<Path> classPath,
                 GameBuildIdentity identity, List<String> warnings) {}
@@ -139,7 +139,7 @@ final class ExternalGameInstallation {
         Path nativeDir = inside(install, "lib/native");
         for (String dll : List.of("lwjgl64.dll", "OpenAL64.dll", "jinput-dx8_64.dll", "jinput-raw_64.dll")) verifyNative(inside(install, "lib/native/" + dll));
         List<String> warnings = new ArrayList<>(identity.warnings());
-        warnings.add("EXPERIMENTAL: preflight/probe only; resource-cache isolation is pending / 当前仅预检查与探针，尚未完成资源缓存隔离");
+        warnings.add("EXPERIMENTAL: external instances; Workshop and arbitrary MOD writes remain unverified / 外部实例为实验功能，Workshop 与任意 MOD 写入尚未完整验收");
         warnings.add((Set.of("1.2.14", "1.2.15.2", "1.2.15.3").contains(identity.rawVersion()) ? "KNOWN_VERSION_UNVERIFIED_CONTENT" : "UNKNOWN_VERSION")
                 + ": " + identity.rawVersion() + "; version recognition is not a compatibility guarantee / 版本识别不等于兼容性验收");
         return new Plan(install, instance, nativeDir, List.copyOf(classPath), identity, List.copyOf(warnings));

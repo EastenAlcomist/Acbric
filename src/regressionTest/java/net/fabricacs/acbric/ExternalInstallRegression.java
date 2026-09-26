@@ -126,7 +126,7 @@ public final class ExternalInstallRegression {
         try {
             System.setProperty(ExternalGameInstallation.INSTALL_PROPERTY, install.toString());
             System.setProperty(ExternalGameInstallation.INSTANCE_PROPERTY, instance.toString());
-            reject("EXTERNAL_NOT_READY", () -> new AirshipsGameProvider().locateGame(null, new String[0]));
+            reject("CORE_REQUIRED", () -> new AirshipsGameProvider().locateGame(null, new String[0]));
             System.clearProperty(ExternalGameInstallation.INSTANCE_PROPERTY);
             reject("EXTERNAL_PATHS_REQUIRED", () -> new AirshipsGameProvider().locateGame(null, new String[0]));
         } finally {

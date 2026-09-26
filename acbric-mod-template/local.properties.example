@@ -1,0 +1,5 @@
+# Copy to local.properties; use forward slashes, keep private.
+# Windows paths / Windows 路径示例
+gameInstallDir=C:/Games/Airships
+frameworkDir=C:/Tools/Acbric
+instanceDir=C:/AcbricInstances/default

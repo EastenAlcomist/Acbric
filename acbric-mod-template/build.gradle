@@ -1,4 +1,4 @@
-// 独立 MOD 模板构建：读取本地 libs，展开 metadata，按需安装到 gameDir/mods。
+// 独立 MOD 模板构建：显式引用本机游戏和框架依赖；依赖从不进入模板或 MOD 产物。
 // Java 17 是模板源代码/输出级别；所依赖的 Acbric API 编译与运行仍需要 JDK 21。
 plugins {
     id 'java'
@@ -14,12 +14,20 @@ repositories {
     }
 }
 
-def templateLibsDir = file('libs')
-def fabricLoaderJar = new File(templateLibsDir, 'fabric-loader-0.19.3.jar')
-def acbricApiJar = new File(templateLibsDir, 'acbric-api.jar')
-def airshipsJarA = new File(templateLibsDir, 'asplit-A.zip')
-def airshipsJarB = new File(templateLibsDir, 'asplit-B.zip')
-def gameDir = file(findProperty('gameDir') ?: '../game')
+// 个人绝对路径仅放在被 Git 排除的 local.properties，命令行 -P 可覆盖。
+def localPaths = new Properties()
+if (file('local.properties').isFile()) file('local.properties').withReader('UTF-8') { localPaths.load(it) }
+def pathOption = { name -> findProperty(name) ?: localPaths.getProperty(name) }
+def templateLibsDir = file('libs') // 仅兼容开发者自备的旧依赖目录，不随发行打包。
+def externalMode = pathOption('gameInstallDir') || pathOption('frameworkDir')
+def installDir = file(pathOption('gameInstallDir') ?: 'missing-game-install')
+def frameworkDir = file(pathOption('frameworkDir') ?: 'missing-framework')
+def fabricLoaderJar = externalMode ? new File(frameworkDir, 'loader-libs/fabric-loader-0.19.3.jar') : new File(templateLibsDir, 'fabric-loader-0.19.3.jar')
+def acbricApiJar = externalMode ? new File(frameworkDir, 'core/acbric-api.jar') : new File(templateLibsDir, 'acbric-api.jar')
+def airshipsJarA = new File(externalMode ? installDir : templateLibsDir, 'asplit-A.zip')
+def airshipsJarB = new File(externalMode ? installDir : templateLibsDir, 'asplit-B.zip')
+def installTarget = pathOption('instanceDir') ?: pathOption('gameDir')
+def gameDir = file(installTarget ?: 'missing-instance')
 
 // 编译前明确列出缺失依赖，便于复制模板后定位配置错误。
 tasks.register('verifyAcbricTemplateInputs') {
@@ -29,7 +37,7 @@ tasks.register('verifyAcbricTemplateInputs') {
             throw new GradleException(
                             'Missing Acbric template dependencies:\n' +
                             missing.collect { ' - ' + it.absolutePath }.join('\n') +
-                            '\n\nCopy the Acbric template dependency bundle into this project\'s libs/ directory.'
+                            '\n\nSet gameInstallDir and frameworkDir in local.properties / 请在 local.properties 指定游戏安装和框架发行目录。'
             )
         }
     }
@@ -40,7 +48,8 @@ dependencies {
     compileOnly files(fabricLoaderJar)
     compileOnly files(acbricApiJar)
     compileOnly files(airshipsJarA, airshipsJarB)
-    compileOnly fileTree(dir: templateLibsDir, include: ['*.jar'], exclude: ['fabric-loader-*.jar', 'acbric-api.jar'])
+    compileOnly fileTree(dir: externalMode ? new File(installDir, 'lib') : templateLibsDir, include: ['*.jar'], exclude: ['fabric-loader-*.jar', 'acbric-api.jar', 'steamworks4j-1.3.0.jar'])
+    if (externalMode) compileOnly fileTree(dir: new File(frameworkDir, 'loader-libs'), include: ['sponge-mixin-*.jar', 'asm-*.jar'])
 }
 
 java {
@@ -84,8 +93,8 @@ tasks.register('installMod', Copy) {
 
 tasks.register('verifyInstallTarget') {
     doLast {
-        if (!gameDir.isDirectory()) {
-            throw new GradleException("gameDir does not exist: ${gameDir.absolutePath}\nSet gameDir in gradle.properties or pass -PgameDir=...")
+        if (!installTarget || !gameDir.isDirectory()) {
+            throw new GradleException("gameDir does not exist: ${gameDir.absolutePath}\nSet instanceDir in local.properties or pass -PinstanceDir=...")
         }
     }
 }
@@ -97,7 +106,9 @@ tasks.register('printTemplateInfo') {
         println "modId=${findProperty('modId')}"
         println "modName=${findProperty('modName')}"
         println "modVersion=${findProperty('modVersion')}"
-        println "libsDir=${templateLibsDir.absolutePath}"
+        println "externalMode=${externalMode as boolean}"
+        println "gameInstallDir=${installDir.absolutePath}"
+        println "frameworkDir=${frameworkDir.absolutePath}"
         println "gameDir=${gameDir.absolutePath}"
         println "installTarget=${new File(gameDir, 'mods').absolutePath}"
     }

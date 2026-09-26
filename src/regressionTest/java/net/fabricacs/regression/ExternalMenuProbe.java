@@ -13,6 +13,11 @@ public final class ExternalMenuProbe {
         throw new AssertionError("Game returned before menu checkpoint");
     }
     public static void rendered() {
+        if (Boolean.getBoolean("acbric.test.media")) { ExternalMediaProbe.menuRendered(); return; }
+        if (System.getProperty("acbric.test.campaign") != null) {
+            ExternalCampaignProbe.menuRendered();
+            return;
+        }
         if (++frames < 30) return;
         try {
             if (!Display.isCreated()) throw new AssertionError("No native OpenGL display");

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "acbric_api",
-  "version": "0.3.3-dev.24",
+  "version": "0.3.3-dev.25",
   "name": "Acbric API",
   "description": "Fabric-style API layer for Airships: Conquer the Skies.",
   "icon": "assets/acbric_api/icon.png",
