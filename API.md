@@ -1,12 +1,12 @@
 # Acbric API Developer Guide
 
-dev.19 adds font-measured caret placement, drag/Shift selection, Ctrl+C/X, and held navigation/deletion keys. Settings use a fixed action footer and confirm before Cancel/X/Esc discard a draft. Existing constructors, programmatic close and lifecycle cleanup retain their behavior. Companion showcase: 0.3.0. See [UI contract](UI.md) and [settings contract](SETTINGS.md).
-
-dev.18 adds explicit MOD settings forms, numeric/choice controls and controlled text binding, with draft apply/cancel/defaults/reload and memory/disk conflict protection. New APIs: ModConfig.defaults()/save(expected,data), ConfigField, ConfigEditor and SettingsUi. MOD code implements effect timing; configuration is not automatically synchronized and existing campaigns are not rewritten. See [settings API](SETTINGS.md).
+Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physical `GRAVE`; Shift is optional) to open the console with the command field focused. The opening key is consumed. Ctrl/Alt/Meta combinations, inactive displays, native error/help/chat overlays, and existing Acbric windows do not trigger it. Close another Acbric window before using the shortcut. While the console is open this key remains ordinary text; use Esc/X/Close to dismiss. Holding the key cannot repeatedly reopen it. This is a fixed console shortcut, not a general key-binding API.
 
 **English** | [中文](API.zh-CN.md)
 
-Applies to **`acbric_api 0.3.3-dev.18`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
+Current navigation: [development workflow](DEVELOPMENT.md), [command API](COMMANDS.md), [developer tools and diagnostics](DEVELOPER_TOOLS.md). `context.commands()` is available since dev.20, with typed arguments, help/completion and closeable registrations; existing public APIs remain compatible.
+
+Applies to **`acbric_api 0.3.3-dev.21`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
 
 - Installation, building and launching: [README.md](README.md).
 - Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
@@ -104,6 +104,7 @@ Game data and UI objects may not yet exist during pre-launch. Register the appro
 | `configDir()` / `ensureConfigDir()` | Get / create this mod's configuration directory |
 | `dataDir()` / `ensureDataDir()` | Get / create this mod's data directory |
 | `logger()` | `AcbricLogger` tagged with this mod's ID |
+| `commands()` | Owner-scoped command registration since dev.20; see [command contract](COMMANDS.md). |
 | `sharedRules(int version, JSONObject values, SharedRules.Validator validator)` | Declare gameplay rules for this MOD (dev.10); see [contract](SHARED_RULES.md) |
 | `campaignData(Object worldMap)` | `CampaignData` scoped to this mod and the given map (since dev.3) |
 | `config(name, dataVersion, defaults, validator)` | Create a configuration handle; explicit I/O, migration and reload (dev.5), see [CONFIG](CONFIG.md) |

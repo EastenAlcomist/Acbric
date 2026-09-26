@@ -83,6 +83,15 @@ public final class TextInteractionRegression {
         e.all();e.insert("\n\r\t",5);check(e.text.equals("A123Z")&&e.selected(),"control-only paste preserves selection and text");
         e.insert("\uD800B",5);check(e.text.equals("B"),"paste drops isolated surrogate instead of corrupting text");
         check(errors.isEmpty(),"all interaction paths leave error handler empty");
+        r.closeAll(UiWindow.CloseReason.GAME_EXIT);r.input(key("",false));int[] submitted={0},completed={0},history={0};
+        UiNode command=Ui.textField(value::get,64,value::set).onSubmit(w->submitted[0]++);command.completion=w->completed[0]++;command.history=d->history[0]+=d;
+        r.open("test",new UiWindow("Command",360,260,true,Ui.column(8,command.width(280),Ui.button("Other",w->buttons[0]++))),screen);c.render(r);click(r,c.field);r.input(key("ENTER",false));
+        check(submitted[0]==1,"focused text Enter submits once after copied modifiers");
+        r.input(key("TAB",false));check(completed[0]==1,"command text Tab invokes completion");
+        r.input(key("",false),new UiRuntime.Editing(false,false,0,true,false,0,true,false));check(history[0]==-1,"command history Up uses explicit key press");
+        r.input(key("",false),new UiRuntime.Editing(false,false,0,false,false,0,false,true));check(history[0]==-1,"inactive window cannot navigate command history");
+        r.input(key("TAB",true));r.input(key("ENTER",false));check(!r.isOpen()&&submitted[0]==1,"Shift Tab reaches title close through normal focus traversal");
+        try{Ui.label("x").onSubmit(w->{});throw new AssertionError();}catch(IllegalStateException expected){check(true,"submit handler only valid on text field");}
         return checks;
     }
 }

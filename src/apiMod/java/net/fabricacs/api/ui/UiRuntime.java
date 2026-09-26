@@ -31,7 +31,9 @@ public final class UiRuntime {
                         boolean tab,boolean shift,boolean enter,boolean escape,boolean back,boolean delete,
                         boolean left,boolean right,boolean home,boolean end,boolean selectAll) {}
     /** 适配层额外状态；旧 Input/Canvas 入口保留给现有探针，非公开 MOD API。 */
-    public record Editing(boolean copy,boolean cut,int held,boolean active,boolean leftDown,long nanos) {}
+    public record Editing(boolean copy,boolean cut,int held,boolean active,boolean leftDown,long nanos,boolean historyUp,boolean historyDown) {
+        public Editing(boolean copy,boolean cut,int held,boolean active,boolean leftDown,long nanos){this(copy,cut,held,active,leftDown,nanos,false,false);}
+    }
     public record Capture(boolean pointer,boolean keyboard) {}
     private record Box(UiNode node,Rect bounds,Rect clip,boolean enabled,String text,boolean checked) {}
     private record Scroll(UiNode node,Rect bounds,int max) {}
@@ -43,7 +45,9 @@ public final class UiRuntime {
         final Map<UiNode,Integer> offsets=new IdentityHashMap<>();
         final List<Box> boxes=new ArrayList<>();final List<Scroll> scrolls=new ArrayList<>();
         final TextKeyRepeat repeat=new TextKeyRepeat();UiNode focus,drag;Rect bounds=new Rect(0,0,0,0);int windowOffset;boolean ready;
-        State(UiWindowHandle handle){this.handle=handle;}
+        State(UiWindowHandle handle){this.handle=handle;focus=initialFocus(handle.window.content());}
+        // 框架控制台的内部焦点提示；不改变其他窗口的默认焦点或公开组件契约。
+        private static UiNode initialFocus(UiNode node){if(node.initialFocus)return node;for(UiNode child:node.children){UiNode found=initialFocus(child);if(found!=null)return found;}return null;}
     }
     private final Thread thread=Thread.currentThread();
     private final List<State> stack=new ArrayList<>();
@@ -232,11 +236,16 @@ public final class UiRuntime {
                 }
             }
             if(in.wheel!=0&&inside)for(int i=s.scrolls.size()-1;i>=0;i--){Scroll scroll=s.scrolls.get(i);if(scroll.bounds.contains(in.x,in.y)&&scroll.max>0){int current=scroll.node==null?s.windowOffset:s.offsets.get(scroll.node);int next=(int)Math.clamp((long)current-(long)in.wheel*32/120,0,scroll.max);if(scroll.node==null)s.windowOffset=next;else s.offsets.put(scroll.node,next);s.ready=false;break;}}
+            if(in.tab&&!in.shift&&keyboard&&s.focus!=null&&enabled.getOrDefault(s.focus,false)&&s.focus.completion!=null){s.focus.completion.accept(s.handle);return new Capture(true,true);}
             if(in.tab&&keyboard){List<UiNode> focusable=s.boxes.stream().filter(b->b.enabled&&enabled.get(b.node)&&interactive(b.node)&&b.clip.w>0&&b.clip.h>0).map(Box::node).toList();if(!focusable.isEmpty()){int index=focusable.indexOf(s.focus);s.focus=focusable.get(index<0?(in.shift?focusable.size()-1:0):Math.floorMod(index+(in.shift?-1:1),focusable.size()));}}
             if(previousFocus!=s.focus)s.repeat.clear();
             Box focused=s.boxes.stream().filter(b->b.node==s.focus&&b.enabled&&enabled.get(b.node)).findFirst().orElse(null);
             if(focused!=null){
-                if(focused.node.kind==UiNode.Kind.TEXT)edit(s,focused.node,in,editing);
+                if(focused.node.kind==UiNode.Kind.TEXT){
+                    if(focused.node.history!=null&&(editing.historyUp||editing.historyDown)){s.repeat.clear();focused.node.history.accept(editing.historyUp?-1:1);return new Capture(true,true);}
+                    edit(s,focused.node,in,editing);
+                    if(in.enter&&focused.node.submit!=null&&s.handle.isOpen()&&!stack.isEmpty()&&stack.getLast()==s){focused.node.submit.accept(s.handle);return new Capture(true,true);}
+                }
                 else if(in.enter){activate(s,focused);return new Capture(true,true);}
             }
             else s.repeat.clear();

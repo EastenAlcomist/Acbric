@@ -2,7 +2,7 @@
 
 **English** | [中文](DIAGNOSTICS.zh-CN.md)
 
-Available in the unreleased `0.3.3-dev.2` framework build. This work adds internal diagnostics, without new public mod APIs or changes to event ordering, cancellation or exception propagation.
+Startup identity/reports were introduced in dev.2; this page describes the internal report behavior retained in dev.20. The public snapshot API and in-game tools added in dev.20 are documented in [DEVELOPER_TOOLS.md](DEVELOPER_TOOLS.md). File layouts remain internal; event order, cancellation and exception propagation are unchanged.
 
 ## Game identity
 

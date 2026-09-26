@@ -52,6 +52,7 @@ public final class FrameworkRegression {
         checks += net.fabricacs.api.ui.TextInteractionRegression.run();
         checks += net.fabricacs.api.impl.UiInputDiagnosticsRegression.run(root.resolve("ui-input"));
         checks += net.fabricacs.api.util.LanguageRegression.run();
+        checks += net.fabricacs.api.impl.DeveloperToolsRegression.run(root.resolve("developer-tools"));
         System.out.println("REGRESSION PASS: " + checks + " checks; fixtures=" + root);
     }
 

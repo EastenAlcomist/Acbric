@@ -139,6 +139,7 @@ final class StartupDiagnostics {
         try {
             report.put("updatedAt", Instant.now().toString());
             for (JSONObject mod : mods.values()) mod.put("acbricStatus", status(mod));
+            DeveloperTools.startup(report,directory);
             Files.createDirectories(directory);
             temporary = Files.createTempFile(directory, "startup-", ".tmp");
             Files.writeString(temporary, report.toString(2) + "\n", StandardCharsets.UTF_8);

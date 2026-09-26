@@ -78,6 +78,8 @@ public final class AcbricModContext {
 
     /** 当前 MOD 的公共界面入口；注册可在初始化时完成，打开窗口须在游戏线程。 */
     public net.fabricacs.api.ui.ModUi ui() { return new net.fabricacs.api.ui.ModUi(modId()); }
+    /** 注册本 MOD 的命令；注册不执行命令，不要求游戏界面已经创建。 */
+    public net.fabricacs.api.command.ModCommands commands(){return new net.fabricacs.api.command.ModCommands(modId());}
 
     public AcbricLogger logger() {
         return logger;

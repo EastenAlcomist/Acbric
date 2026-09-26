@@ -137,3 +137,8 @@ var scope = handle.manage(context.eventScope("settings-window"));
 新增 API 需要 `acbric_api >=0.3.3-dev.19`。没有多行编辑、双击选词、撤销/重做、拖动滚动条或专用 IME 候选面板。界面与手册继续同时维护英文、中文。
 
 输入框的字符测量按原生字体字宽和字距一次扫描完成；仅绘制水平视口可见片段。花括号、反斜杠不解释为游戏命令，方括号沿用全角显示；底层文本保持原样。
+
+
+## 文本提交（dev.20）
+
+`UiNode.onSubmit(Consumer<UiWindowHandle>)` 仅用于文本框，返回保留其他修饰的新描述。有焦点时 Enter 在编辑后提交；普通文本框的 Tab 仍切换焦点。框架控制台使用内部适配完成历史与 Tab 补全，不改变其他 MOD 文本框的行为。详见 [命令](COMMANDS.zh-CN.md)。

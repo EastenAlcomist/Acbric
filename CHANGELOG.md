@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.3-dev.21 — Console shortcut (2026-09-26)
+
+Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physical `GRAVE`; Shift is optional) to open the console with the command field focused. The opening key is consumed. Ctrl/Alt/Meta combinations, inactive displays, native error/help/chat overlays, and existing Acbric windows do not trigger it. Close another Acbric window before using the shortcut. While the console is open this key remains ordinary text; use Esc/X/Close to dismiss. Holding the key cannot repeatedly reopen it. This is a fixed console shortcut, not a general key-binding API.
+
+872 standard checks and 464 real Fabric integration checks across both game versions pass, including 50 new shortcut assertions. Existing console-demo 0.1.0 and UI showcase 0.3.0 need no update. Windows real focus/keyboard-layout acceptance remains interactive.
+
+
+## 0.3.3-dev.20 — Developer tools and console (2026-09-26)
+
+- Built-in API-details entries, status/MOD snapshots, filtered paged messages, detail/copy and asynchronous diagnostic export.
+- Public namespaced commands with typed positional arguments, metadata-driven help/static completion and closeable registration; game-thread/context checks, SHARED reserved and refused.
+- Bounded capture of existing logging/startup/resource diagnostics, preserving event exception semantics; no global stdout interception or automatic gameplay synchronization.
+- Compatible text-field onSubmit; console Enter/history/Tab behavior, bilingual UI and documentation.
+- Consolidated current README/API/developer navigation; standalone console-demo 0.1.0 remains outside the default framework distribution.
+- 872 standard and 414 real Fabric checks across two game builds pass. Two existing symlink scenarios skipped; OS/GPU/full-game acceptance remains interactive.
+
+
 dev.19 validation: 810 standard checks (41 new), and 356 across two real Fabric game builds (169 main + 5 restart + 4 corrupt-config startup each). All 80 public types/428 member signatures from dev.18 are retained. Clipboard success uses a substitute; failure uses actual headless AWT. Native font/input paths are checked with GPU-free drawing terminals; Windows clipboard, screenshots, IME and focus transitions still require manual validation. dev.18 and earlier counts below are historical.
 
 ## Development build — API 0.3.3-dev.19

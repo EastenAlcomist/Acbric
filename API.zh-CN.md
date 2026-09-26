@@ -1,12 +1,12 @@
 # Acbric API 开发手册
 
-dev.19 完善单行输入：原生字体鼠标定位、拖动/Shift 选区、Ctrl+C/X、导航与删除按键重复。设置页固定操作区，并在取消/X/Esc 丢弃草稿前确认；旧构造、程序 close 与生命周期清理保持兼容。配套展示 MOD 0.3.0。详见 [UI 契约](UI.zh-CN.md) 和 [设置契约](SETTINGS.zh-CN.md)。
-
-dev.18 新增显式字段的 MOD 设置页、数字/选项组件和受控文本绑定；草稿应用、取消、默认值、重读及双重冲突保护。新增 ModConfig.defaults()/save(expected,data)、ConfigField、ConfigEditor、SettingsUi。生效时机由 MOD 处理，不自动同步配置或修改已有战役。详见 [设置 API](SETTINGS.zh-CN.md)。
+从 dev.21 起，按 **Esc 下方、数字 1 左侧的 ~ 键**（物理键 `GRAVE`，可带 Shift）直接打开控制台并聚焦命令框，开窗按键不会混入文本。Ctrl/Alt/Meta 组合、窗口失焦、原生错误/帮助/聊天覆盖层以及已有 Acbric 窗口时不触发；先关闭其他 Acbric 窗口再使用快捷键。控制台打开后该键仍可输入普通字符，用 Esc/X/关闭退出。长按不会反复开窗。这是固定控制台入口，尚未提供通用改键 API。
 
 [English](API.md) | **中文**
 
-适用版本：**`acbric_api 0.3.3-dev.18`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
+当前文档导航：[开发流程](DEVELOPMENT.zh-CN.md)、[命令 API](COMMANDS.zh-CN.md)、[开发者工具与诊断](DEVELOPER_TOOLS.zh-CN.md)。`context.commands()` 自 dev.20 提供，支持类型参数、帮助/补全和可注销注册；旧公开接口保持兼容。
+
+适用版本：**`acbric_api 0.3.3-dev.21`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
 
 - 安装、编译和启动：[README.zh-CN.md](README.zh-CN.md)。
 - 本次兼容性调整：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。
@@ -102,6 +102,7 @@ public final class ExampleMod implements AcbricInitializer {
 | `configDir()` / `ensureConfigDir()` | 获取 / 创建本 MOD 的配置目录 |
 | `dataDir()` / `ensureDataDir()` | 获取 / 创建本 MOD 的数据目录 |
 | `logger()` | 带当前 MOD ID 的 `AcbricLogger` |
+| `commands()` | 当前 MOD 的命令注册入口，dev.20；见 [命令契约](COMMANDS.zh-CN.md) |
 | `sharedRules(int version, JSONObject values, SharedRules.Validator validator)` | 注册本 MOD 的共享玩法规则（dev.10）；见 [规则契约](SHARED_RULES.zh-CN.md) |
 | `campaignData(Object worldMap)` | 绑定当前 MOD 和指定地图的 `CampaignData`（dev.3 新增） |
 | `config(name, dataVersion, defaults, validator)` | 创建配置句柄；显式读写/迁移/重载（dev.5），见 [CONFIG](CONFIG.zh-CN.md) |

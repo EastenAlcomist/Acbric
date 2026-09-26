@@ -26,6 +26,7 @@ public final class AcbricApiPreLaunch implements PreLaunchEntrypoint {
         FabricLoader loader = FabricLoader.getInstance();
         StartupDiagnostics diagnostics = new StartupDiagnostics(loader.getGameDir(), loader.getAllMods());
         try {
+            DeveloperTools.initialize();
             System.out.println("[Acbric API] Extracting bundled vanilla mods.");
             BundledVanillaModLoader.extractAll();
             System.out.println("[Acbric API] Initializing Acbric API entrypoints.");

@@ -16,6 +16,7 @@ public final class UiBridge {
     private static Pt cursor;
     private static boolean filteredWithWindow;
     private static boolean pointerMasked;
+    private static boolean graveHeld;
     private static UiInputDiagnostics inputDiagnostics;
     private UiBridge(){}
     private static final class Entry implements ModUi.Registration {
@@ -34,8 +35,10 @@ public final class UiBridge {
         synchronized(entries){if(entries.size()>=256||entries.containsKey(owner+":"+id))throw new IllegalStateException("Duplicate or excessive UI entry");Entry entry=new Entry(owner,id,label,factory);entries.put(owner+":"+id,entry);return entry;}
     }
     private static UiRuntime runtime(AirshipGame game){
-        if(currentGame!=game){if(runtime!=null)runtime.closeAll(UiWindow.CloseReason.GAME_EXIT);currentGame=game;cursor=null;pointerMasked=false;
+        if(currentGame!=game){if(runtime!=null)runtime.closeAll(UiWindow.CloseReason.GAME_EXIT);currentGame=game;cursor=null;pointerMasked=false;graveHeld=false;
+            DeveloperTools.bind(game);
             inputDiagnostics=new UiInputDiagnostics(()->AGame.getGameDirectory().toPath());runtime=new UiRuntime((owner,error)->{
+            DiagnosticHub.publish(owner,net.fabricacs.api.diagnostics.DiagnosticMessage.Level.ERROR,"UI callback failed / 界面回调失败",error);
             System.err.println("[Acbric UI/"+owner+"] "+error);error.printStackTrace();game.showError("Acbric UI ["+owner+"]: "+error.getMessage());
         },UiBridge::writeClipboard);}
         return runtime;
@@ -51,6 +54,16 @@ public final class UiBridge {
         if(runtime==null||currentGame!=game)return input;
         runtime.observe(game.s,nativeDialog(game));
         cursor=input.cursor();Pt click=input.clicked();boolean ctrl=input.keyDown("LCONTROL")||input.keyDown("RCONTROL")||input.keyDown("LMETA")||input.keyDown("RMETA");
+        Boolean active=displayActive();
+        boolean gravePressed=input.keyPressed("GRAVE"),openConsole=gravePressed&&!graveHeld;
+        // 物理键兼容 ` 和 Shift+~；按住/系统重复不能重新打开，失焦期间也更新状态。
+        graveHeld=input.keyDown("GRAVE")||gravePressed;
+        if(openConsole&&!ctrl&&!input.keyDown("LALT")&&!input.keyDown("RALT")&&!Boolean.FALSE.equals(active)
+                &&game.s!=null&&!nativeDialog(game)&&!runtime.isOpen()){
+            open("acbric_api",DeveloperConsoleUi.consoleWindow());
+            // 开窗这一帧不把 ~、Enter 或鼠标事件送给新窗口或下层游戏；保留时钟和网络推进。
+            pointerMasked=true;return new UiMaskedInput(input,true,true);
+        }
         Input raw=unwrap(input);String typed="",paste=null;
         if(runtime.isOpen()){
             // 原生 typedText 支持多字符提交；测试输入或自定义 Input 不假定属于 Slick。
@@ -65,11 +78,10 @@ public final class UiBridge {
         var uiInput=new UiRuntime.Input(point==null?-1:point.x,point==null?-1:point.y,click!=null&&input.clickButton()==1,input.mouseDown()!=null,
                 input.scrollAmount(),ctrl?"":typed,paste,input.keyPressed("TAB"),input.keyDown("LSHIFT")||input.keyDown("RSHIFT"),input.keyPressed("ENTER"),input.keyPressed("ESCAPE"),
                 input.keyPressed("BACK"),input.keyPressed("DELETE"),input.keyPressed("LEFT"),input.keyPressed("RIGHT"),input.keyPressed("HOME"),input.keyPressed("END"),ctrl&&input.keyPressed("A"));
-        Boolean active=displayActive();
         boolean trace=inputDiagnostics.event(runtime.isOpen(),active,input.mouseDownButton(),click!=null,uiInput.enter()||uiInput.escape()||uiInput.tab());
         String before=trace?runtime.inputDiagnosticState():null;
         int held=(input.keyDown("BACK")?1:0)|(input.keyDown("DELETE")?2:0)|(input.keyDown("LEFT")?4:0)|(input.keyDown("RIGHT")?8:0)|(input.keyDown("HOME")?16:0)|(input.keyDown("END")?32:0);
-        var capture=runtime.input(uiInput,new UiRuntime.Editing(ctrl&&input.keyPressed("C"),ctrl&&input.keyPressed("X"),held,!Boolean.FALSE.equals(active),input.mouseDownButton()==1,System.nanoTime()));
+        var capture=runtime.input(uiInput,new UiRuntime.Editing(ctrl&&input.keyPressed("C"),ctrl&&input.keyPressed("X"),held,!Boolean.FALSE.equals(active),input.mouseDownButton()==1,System.nanoTime(),input.keyPressed("UP"),input.keyPressed("DOWN")));
         if(trace)inputDiagnostics.write("clickButton="+input.clickButton()+" click="+uiInput.click()+" x="+uiInput.x()+" y="+uiInput.y()
                 +" cursor="+coordinates(cursor)+" event="+coordinates(click)
                 +" nav="+uiInput.enter()+"/"+uiInput.escape()+"/"+uiInput.tab()+" before={"+before+"} after={"+runtime.inputDiagnosticState()+"} capture="+capture);
@@ -81,7 +93,7 @@ public final class UiBridge {
         try{java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new java.awt.datatransfer.StringSelection(value),null);return true;}
         catch(RuntimeException ex){return false;}
     }
-    public static void created(AirshipGame game){runtime(game);}
+    public static void created(AirshipGame game){runtime(game);DeveloperTools.bind(game);}
     private static String coordinates(Pt point){return point==null?"null":point.x+","+point.y;}
     /** 无窗口测试或不可用的原生显示不应被诊断逻辑变成游戏故障；null 表示未知。 */
     private static Boolean displayActive(){
@@ -106,7 +118,7 @@ public final class UiBridge {
         runtime.render(new NativeUiCanvas(draw,frame.mode().width,frame.mode().height),frame.mode().width,frame.mode().height);
     }
     public static boolean openedDuringNativeInput(AirshipGame game){return currentGame==game&&runtime!=null&&runtime.isOpen()&&!filteredWithWindow;}
-    public static void exit(AirshipGame game){if(currentGame==game&&runtime!=null)runtime.closeAll(UiWindow.CloseReason.GAME_EXIT);}
+    public static void exit(AirshipGame game){if(currentGame==game&&runtime!=null)runtime.closeAll(UiWindow.CloseReason.GAME_EXIT);DeveloperTools.exit(game);}
     public static Input unwrap(Input input){for(int i=0;i<16;i++){if(input instanceof BlankInput blank)input=blank.originalIn;else if(input instanceof ScaledInput scaled)input=scaled.originalIn;else return input;}throw new IllegalArgumentException("Too many input wrappers");}
     public static UiMaskedInput mask(Input input){for(int i=0;i<16;i++){if(input instanceof UiMaskedInput mask)return mask;if(input instanceof BlankInput blank)input=blank.originalIn;else if(input instanceof ScaledInput scaled)input=scaled.originalIn;else return null;}return null;}
 

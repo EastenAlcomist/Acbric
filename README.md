@@ -1,18 +1,6 @@
 # Acbric — Airships Fabric Mod Framework
 
-dev.19 adds font-measured caret placement, drag/Shift selection, Ctrl+C/X, and held navigation/deletion keys. Settings use a fixed action footer and confirm before Cancel/X/Esc discard a draft. Existing constructors, programmatic close and lifecycle cleanup retain their behavior. Companion showcase: 0.3.0. See [UI contract](UI.md) and [settings contract](SETTINGS.md).
-
-dev.18 adds explicit MOD settings forms, numeric/choice controls and controlled text binding, with draft apply/cancel/defaults/reload and memory/disk conflict protection. New APIs: ModConfig.defaults()/save(expected,data), ConfigField, ConfigEditor and SettingsUi. MOD code implements effect timing; configuration is not automatically synchronized and existing campaigns are not rewritten. See [settings API](SETTINGS.md).
-
-dev.17 corrects shared-UI hit testing when Slick click-event coordinates drift from the current cursor. Native clicks still trigger actions; hit testing uses the polled cursor with scaling, masking and missing-cursor fallback preserved. Title-bar close now uses the supported X glyph. Offset replay passes; Windows focus switching still needs a real-game retest.
-
-dev.16 fixes text-field caret measurement and vertical alignment. Intermittent ignored clicks remain unconfirmed; bounded input diagnostics are included, not a claimed fix. Keep showcase 0.1.1.
-
-dev.15 fixes Details crashing back to the main menu; update the framework and keep showcase 0.1.1. Game exceptions are normally recorded in `%APPDATA%/AirshipsGame/log.txt` (or the configured custom user-data directory).
-
-**dev.14 language fix:** Native Chinese (`chi`) is now recognized. UI/tool labels follow game language. See [UI localization](UI.md#bilingual-ui-dev14).
-
-dev.13 adds [shared UI components](UI.md): native controls, layout, scrolling, focus, modal dialogs and lifecycle cleanup. Framework MOD details use the same API and expose registered MOD tools. Java enable/disable still applies on restart; update launcher and API together.
+Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physical `GRAVE`; Shift is optional) to open the console with the command field focused. The opening key is consumed. Ctrl/Alt/Meta combinations, inactive displays, native error/help/chat overlays, and existing Acbric windows do not trigger it. Close another Acbric window before using the shortcut. While the console is open this key remains ordinary text; use Esc/X/Close to dismiss. Holding the key cannot repeatedly reopen it. This is a fixed console shortcut, not a general key-binding API.
 
 **English** | [中文](README.zh-CN.md)
 
@@ -24,31 +12,14 @@ native JSON data-mod system.
 
 ## Current development API and documentation
 
-- [Saved rule preflight and explicit conversion](RULE_SAVE_MIGRATION.md): old-save adoption, schema migration, preview and protected save-as.
+Current API: **0.3.3-dev.21** (unreleased). Existing events, managed resources, configuration/campaign data, shared rules/lobby checks, restart-based Java MOD management, shared UI and settings remain available. This revision adds command registration and built-in developer tools. Entry: **Mods → Acbric API → Details → Developer tools / Console**.
 
-- [Shared campaign rules](SHARED_RULES.md): declarations, peer checks, frozen new-campaign values and saved rules.
+- [Documentation map and first-MOD workflow](DEVELOPMENT.md)
+- [Complete API guide](API.md)
+- [Command API](COMMANDS.md) / [Developer tools](DEVELOPER_TOOLS.md)
+- [English changelog](CHANGELOG.md) / [中文变更](CHANGELOG.zh-CN.md)
 
-- [Campaign lobby code check](LOBBY_HANDSHAKE.md): automatic checking, preparation invalidation and start guards.
-
-- [Internal code handshake](CODE_HANDSHAKE.md): bounded requests, fresh sessions, retries, timeouts and explicit results.
-
-- [Local code manifests and offline comparison](CODE_MANIFEST.md): export loaded code identities and locate differences.
-
-- [Runtime diagnostics and event scopes](EVENT_SCOPES.md): MOD attribution, grouped cleanup and error reporting.
-
-The current API build is **0.3.3-dev.18**. This release adds shared UI components and MOD tool entries. Restart-based Java MOD management remains available. Saved-rule preflight and explicit conversion continue to support previewing old-save adoption/migrations and writing a separate save. Campaign lobbies check startup code and declared gameplay rules before preparation/start. New campaigns freeze the confirmed rules; resumed campaigns read saved values. Peers need matching framework/game/MOD code; this is not state synchronization or support for mixed framework versions. Runtime event diagnostics and managed subscription scopes remain available. Campaign lifecycle and native save/recovery integration remain available. Existing public members and event semantics remain compatible.
-
-- [Complete API guide](API.md) / [中文](API.zh-CN.md): entrypoints, context, paths, events and resources.
-- [Change record (Chinese)](CHANGELOG.zh-CN.md) / [English changelog](CHANGELOG.md).
-- [UI event contract](EVENTS.md) / [Bundled resource updates](BUNDLED_RESOURCES.md).
-- [Standalone mod template](acbric-mod-template/README.md).
-- [Game identity and startup diagnostics](DIAGNOSTICS.md): real game versions, build fingerprints and per-entrypoint results.
-- [Campaign lifecycle events](CAMPAIGN_LIFECYCLE.md): creation, loading, restoration and exit.
-- [Campaign data API](CAMPAIGN_DATA.md): persistence, schema migration and multiplayer boundaries.
-
-The build passes 698 assertions (two existing symlink scenarios skipped for host permissions). UI probes on both game builds cover native input ticks, scaling, click masking, tool entries and recording-renderer clip restoration. Earlier restart/save/network results remain historical. OpenGL rendering and full in-game acceptance remain manual.
-
-- [Configuration API](CONFIG.md): local preferences, explicit reload and frozen campaign rules.
+Validation: 872 standard checks and 464 real-game UI/console/settings-restart checks across two game builds; two existing symlink scenarios skipped for host permissions. The drawing terminal has no GPU. Windows clipboard, IME, focus switching and complete gameplay still require interactive acceptance. Code identity and save integration do not automatically synchronize arbitrary MOD state.
 
 ---
 
@@ -146,7 +117,7 @@ See [unreleased changes](CHANGELOG.md) for behavior changes and remaining limita
 For resource conflicts, backups and old-directory migration, see [bundled resources](BUNDLED_RESOURCES.md).
 
 New UI events, cancellation/order and legacy migration: [event contract](EVENTS.md).
-The current API build is `0.3.3-dev.18`; the template requires `>=0.3.3-dev.10`; the template includes an opt-in campaign-data example.
+The current API build is `0.3.3-dev.21`; the template requires `>=0.3.3-dev.10`; the template includes an opt-in campaign-data example.
 
 ## 4. Project layout
 

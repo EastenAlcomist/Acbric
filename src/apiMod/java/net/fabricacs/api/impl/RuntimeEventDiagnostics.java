@@ -41,6 +41,7 @@ public final class RuntimeEventDiagnostics {
             byte[] encoded = (row + "\n").getBytes(StandardCharsets.UTF_8);
             if (bytes + encoded.length > 1024 * 1024) return;
             records++; bytes += encoded.length;
+            DiagnosticHub.publish(modId,net.fabricacs.api.diagnostics.DiagnosticMessage.Level.ERROR,"Event / 事件: "+event+" ["+scope+"] #"+occurrence,failure);
             // 单行 JSON 也输出至控制台，异常文本中的换行会转义，文件不可写时仍有线索。
             try { System.err.println("[Acbric runtime event] " + row); } catch (Throwable ignored) {}
             if (path != null && !diskFailed) {

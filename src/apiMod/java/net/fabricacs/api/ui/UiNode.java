@@ -19,6 +19,10 @@ public final class UiNode {
     final String tip;
     final int width;
     boolean boundText;
+    boolean initialFocus;
+    Consumer<UiWindowHandle> submit;
+    Consumer<UiWindowHandle> completion;
+    Consumer<Integer> history;
 
     UiNode(Kind kind, List<UiNode> children, Supplier<String> text, Consumer<UiWindowHandle> action,
            BooleanSupplier checked, Consumer<Boolean> change, Consumer<String> edit, int size, Ui.Align alignment,
@@ -29,7 +33,12 @@ public final class UiNode {
     }
     private UiNode copy(BooleanSupplier enabled,String tip,int width) {
         UiNode next=new UiNode(kind,children,text,action,checked,change,edit,size,alignment,enabled,tip,width);
-        next.boundText=boundText;return next;
+        next.boundText=boundText;next.initialFocus=initialFocus;next.submit=submit;next.completion=completion;next.history=history;return next;
+    }
+    /** 文本框取得焦点时按 Enter 提交；不影响普通文本框的 Tab 焦点切换。 */
+    public UiNode onSubmit(Consumer<UiWindowHandle> action){
+        if(kind!=Kind.TEXT)throw new IllegalStateException("Submit requires a text field");
+        UiNode next=copy(enabled,tip,width);next.submit=Objects.requireNonNull(action);return next;
     }
     public UiNode enabled(BooleanSupplier value) { return copy(Objects.requireNonNull(value),tip,width); }
     public UiNode tooltip(String value) { return copy(enabled,Objects.requireNonNull(value),width); }

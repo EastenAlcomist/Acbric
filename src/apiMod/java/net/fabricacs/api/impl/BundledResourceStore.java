@@ -54,6 +54,7 @@ final class BundledResourceStore {
         if (exists && !Files.isDirectory(target)) throw new IOException("Bundle destination is not a directory: " + target);
         State old = exists ? readState(target, id) : null;
         if (exists && old == null && !migrate) {
+            DiagnosticHub.publish(id,net.fabricacs.api.diagnostics.DiagnosticMessage.Level.WARN,"Unmanaged resources preserved; explicit migration required / 已保留无归属资源，需要显式迁移: "+target,null);
             System.err.println("[Acbric] Unmanaged bundle directory preserved; explicit backup/migration required: " + target);
             return;
         }
@@ -373,6 +374,9 @@ final class BundledResourceStore {
 
     private static void report(Path target, Map<String, String> conflicts) {
         if (conflicts.isEmpty()) System.out.println("[Acbric] Bundled resources ready: " + target);
-        else for (var conflict : conflicts.entrySet()) System.err.println("[Acbric] Bundle conflict " + target.resolve(conflict.getKey()) + ": " + conflict.getValue());
+        else for (var conflict : conflicts.entrySet()) {
+            System.err.println("[Acbric] Bundle conflict " + target.resolve(conflict.getKey()) + ": " + conflict.getValue());
+            DiagnosticHub.publish(target.getFileName().toString(),net.fabricacs.api.diagnostics.DiagnosticMessage.Level.WARN,"Resource conflict / 资源冲突: "+target.resolve(conflict.getKey())+": "+conflict.getValue(),null);
+        }
     }
 }

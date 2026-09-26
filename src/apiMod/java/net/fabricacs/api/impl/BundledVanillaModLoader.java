@@ -27,6 +27,7 @@ public final class BundledVanillaModLoader {
             Files.createDirectories(gameModsDir);
             BundledResourceStore.rejectLinks(gameModsDir);
         } catch (IOException e) {
+            DiagnosticHub.publish("acbric_api",net.fabricacs.api.diagnostics.DiagnosticMessage.Level.ERROR,"Cannot prepare bundled MOD directory / 无法准备配套资源目录",e);
             System.err.println("[Acbric] Failed to prepare mods dir: " + gameModsDir + ": " + e);
             return;
         }
@@ -49,6 +50,7 @@ public final class BundledVanillaModLoader {
         try {
             BundledResourceStore.install(jarPath, gameModsDir, modId, false);
         } catch (IOException | InvalidPathException e) {
+            DiagnosticHub.publish(modId,net.fabricacs.api.diagnostics.DiagnosticMessage.Level.ERROR,"Cannot install bundled resources / 无法安装配套资源: "+jarPath,e);
             System.err.println("[Acbric] Failed to install bundled resources from " + jarPath + ": " + e);
         }
     }

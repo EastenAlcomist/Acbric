@@ -137,3 +137,8 @@ Player logs at 03:22:39–03:22:42 show repeated approximately 119-pixel differe
 New APIs require `acbric_api >=0.3.3-dev.19`. No multiline editing, double-click word selection, undo/redo, scrollbar dragging or dedicated IME candidate panel. UI and documentation continue to support English and Chinese together.
 
 Text fields measure native glyph widths and spacing in one pass and draw only the horizontal viewport. Braces and backslashes are literal, square brackets retain fullwidth display, and underlying text is unchanged.
+
+
+## Text submission (dev.20)
+
+`UiNode.onSubmit(Consumer<UiWindowHandle>)` applies only to text fields and returns a copied description retaining other modifiers. Enter submits after editing while focused; ordinary text fields retain Tab focus traversal. The console uses internal adapters for history and completion without changing other MOD text fields. See [commands](COMMANDS.md).
