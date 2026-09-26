@@ -439,7 +439,10 @@ tasks.register('externalDistDir', Sync) {
 
 tasks.register('externalDistZip', Zip) {
     dependsOn tasks.named('externalDistDir')
-    archiveFileName = 'Acbric-external.zip'
+    // 使用实际 API 版本命名，避免不同开发版的分享包互相混淆。
+    archiveFileName = providers.fileContents(layout.projectDirectory.file('src/apiMod/resources/fabric.mod.json')).asText.map {
+        "Acbric-external-${new groovy.json.JsonSlurper().parseText(it).version}.zip"
+    }
     destinationDirectory = layout.buildDirectory.dir('external-dist')
     from(externalRoot) { into 'Acbric' }
     // 包扫描失败则构建失败；输入安装仅用于本地内容指纹，路径不会写入 ZIP。

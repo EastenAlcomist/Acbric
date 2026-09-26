@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class PublicLaunchFixture {
     @Unique private int acbric$frames;
     @Inject(method = "render", at = @At("RETURN"))
-    private void acbric$checkpoint(CallbackInfo ci) throws Exception {
+    private void acbric$checkpoint(MyDraw draw, com.zarkonnen.catengine.util.ScreenMode mode, com.zarkonnen.catengine.Hooks hooks, com.zarkonnen.catengine.util.Pt cursor, CallbackInfo ci) throws Exception {
         if (++acbric$frames < 30) return;
         Path instance = FabricLoader.getInstance().getGameDir();
         if (acbric$frames == 30) {
@@ -26,8 +26,18 @@ public abstract class PublicLaunchFixture {
             if (!Display.isCreated() || !org.lwjgl.openal.AL.isCreated()) throw new AssertionError("Native display/audio missing");
             if (!AGame.getGameDirectory().toPath().equals(instance.resolve("userdata"))) throw new AssertionError("Wrong userdata");
             if (!AGame.getStaticGameDirectory().toPath().equals(install)) throw new AssertionError("Wrong resources");
-            acbric$checkMods(instance);
-            Files.writeString(instance.resolve("public-checkpoint.txt"), "PASS: actual Main, 30 rendered frames, native audio, selected A/B, instance cwd/data, external core, shared Java/native MOD scan/install/bundles/manager/fleet\njava.home=" + System.getProperty("java.home") + "\n");
+            if (Files.exists(instance.resolve("java-only-test"))) {
+                try { net.fabricacs.regression.JavaOnlyModListChecks.run(instance, draw, mode, hooks, cursor); }
+                catch (Throwable failure) {
+                    failure.printStackTrace();
+                    Files.writeString(instance.resolve("java-only-failure.txt"), failure.toString());
+                    System.exit(71);
+                }
+            } else acbric$checkMods(instance);
+            String scenario = Files.exists(instance.resolve("java-only-test"))
+                    ? "Java-only ModsScreen rendering, native availability isolation, refresh and restart selection"
+                    : "shared Java/native MOD scan/install/bundles/manager/fleet";
+            Files.writeString(instance.resolve("public-checkpoint.txt"), "PASS: actual Main, 30 rendered frames, native audio, selected A/B, instance cwd/data, external core, " + scenario + "\njava.home=" + System.getProperty("java.home") + "\n");
         }
         if (Files.exists(instance.resolve("allow-test-exit"))) System.exit(0);
     }

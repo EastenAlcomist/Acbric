@@ -43,7 +43,7 @@ Four reasons:
    launch is pure overhead, and correctness here only shows up at runtime (mixins are load-time bytecode
    injection), so the loop runs often.
 2. **`build` had no compile-only meaning.** Upstream wired `check` to `regressionTest`, so
-   `gradlew build` = compile + 987 assertions. Compiling alone meant remembering Gradle's internal
+   `gradlew build` = compile + 1011 assertions. Compiling alone meant remembering Gradle's internal
    `assemble` name. Now `build` compiles and `build full` compiles and tests.
 3. **145 lines of test noise bury compile errors.** The regression prints a lot of
    `[Acbric] Bundle conflict …`; a compile error is a couple of lines. Compiling only keeps it visible.
@@ -163,7 +163,7 @@ If it ever misbehaves on your machine, disable it for one run:
 ## 4. Testing
 
 ```sh
-./test.sh all          # every suite (currently 987 assertions)
+./test.sh all          # every suite (currently 1011 assertions)
 ./test.sh event        # one suite
 ./test.sh ev           # unique prefix works too
 ./test.sh data rename  # several suites, run in the order given
@@ -178,10 +178,10 @@ If it ever misbehaves on your machine, disable it for one run:
 | `data` | 3 | `DATA_LOADED` reports the game's real result: no log clearing, no failure-to-success rewriting | F01 |
 | `bundle` | 44 | bundled vanilla resource store: 9 traversal cases, updates, user-edit preservation, conflicts, backups, interrupted-transaction recovery | F02 / F05 |
 | `classpath` | 2 | launcher classpath excluded **by archive content** (Loader/Mixin/ASM/shim), game libraries kept, no duplicates | F03 |
-| `external` | 115 | external installation/launch, instance setup, Steam discovery, maintenance lock and cache isolation (full acceptance currently requires Windows) | `EXTERNAL_INSTALL.md` · `INSTALLER.md` |
+| `external` | 138 | external installation/launch, instance setup, Steam discovery, maintenance lock and cache isolation (full acceptance currently requires Windows) | `EXTERNAL_INSTALL.md` · `INSTALLER.md` |
 | `event` | 12 | event bus: `registerOnce` fires exactly once, handle identity, duplicate registrations | F04 / F12 |
 | `rename` | 7 | rename-panel legacy vs new event ordering and cancellation contract | F06 |
-| `mods` | 67 | Fabric mod install validation and Java JAR enable/disable: bad schema / id / missing fields, dependency pre-check | F07 · `MOD_MANAGEMENT.md` |
+| `mods` | 68 | Fabric mod install validation and Java JAR enable/disable: bad schema / id / missing fields, dependency pre-check | F07 · `MOD_MANAGEMENT.md` |
 | `campaign` | 41 | campaign data and lifecycle: missing-mod namespaces kept, load exits, explicit migration | `CAMPAIGN_DATA.md` · `CAMPAIGN_LIFECYCLE.md` |
 | `config` | 119 | mod config and settings contract: drafts, same-handle conflict check, explicit save | `CONFIG.md` · `SETTINGS.md` |
 | `scopes` | 108 | event subscription scopes and runtime diagnostics: listeners released, exceptions rethrown | `EVENT_SCOPES.md` |
@@ -192,7 +192,7 @@ If it ever misbehaves on your machine, disable it for one run:
 | `ui` | 107 | public UI components, text selection/editing, input masking, zh/en language selection | `UI.md` |
 | `devtools` | 56 | developer tools and console: command binding, execution, bounded diagnostics buffer | `DEVELOPMENT.md` · `COMMANDS.md` · `DEVELOPER_TOOLS.md` |
 
-**16 suites, 987 checks in total**. After adding a suite, run `test list` to check registration and `test all` to verify assertion counts.
+**16 suites, 1011 checks in total**. After adding a suite, run `test list` to check registration and `test all` to verify assertion counts.
 
 Resolution order: exact name → alias → **unique** prefix → unique substring. An ambiguous or unknown
 selector fails loudly with the list of valid names — it never silently runs the wrong thing.
@@ -292,7 +292,7 @@ This entry point is designed so that it does not break on another machine. The h
 - **Never put logic in `build.cmd` / `build.sh` / `test.cmd` / `test.sh`.** They only find a JDK and
   forward. Add a Gradle task instead so the IDE and CI benefit too.
 - **Run the suite that covers what you touched, then `test all` before you call it done.** A full run
-  is 987 assertions and about 7 seconds; there is no reason to skip it. Use `test <suite>` while iterating
+  is 1011 assertions and about 7 seconds; there is no reason to skip it. Use `test <suite>` while iterating
   (`test bundle` when editing `BundledResourceStore`, `test event` when editing `Event`).
 - Add new tests to the suite registry (see "Adding a suite" in this document) rather than starting a
   parallel test entry point.

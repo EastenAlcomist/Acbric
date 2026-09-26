@@ -5,6 +5,9 @@ First setup
 1. Extract the whole Acbric folder to a writable location. Install the game separately.
 2. Open Setup.cmd. Use Find game in Steam, or Browse to the game folder containing Airships.json.
 3. Usually keep the default instance folder. Select Check folders, then Save & create launcher.
+First-time setup does not need Load saved setup (formerly Load existing instance); saving creates the configuration.
+If loading on an older version reports a missing configuration, select Check folders, then save after checks pass.
+If checking also fails, preserve the files and send the displayed log. Do not create an empty configuration.
 
 Play next time
 Double-click Start Acbric.cmd in this folder. You do not need to run setup again.
@@ -17,7 +20,7 @@ Acbric API is included; do not add a duplicate. Restart after adding or enabling
 Old layouts/User folders are not imported automatically; close the game before copying wanted MODs.
 
 Update or restore
-1. Obtain a new Acbric-external.zip from a source you trust. Do not extract it over the old folder.
+1. Obtain a new Acbric-external-<version>.zip from a source you trust. Do not extract it over the old folder.
 2. Close the game and Setup. Open Update Acbric.cmd and select the existing Acbric folder.
 3. Choose Yes, select the ZIP, review the version and target, and update.
    MODs, instances, saves and settings are preserved. Failed updates attempt automatic restoration.

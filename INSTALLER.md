@@ -1,8 +1,12 @@
-# Acbric setup and launch (dev.29)
+# Acbric setup and launch (dev.32)
+
+dev.32 saving: a new setup is written to a temporary directory and then atomically renamed to `acbric-launcher`. Access denial triggers up to six attempts with about 3.1 seconds of waiting, without per-file copy fallback. Persistent failure reports `SETUP_PUBLISH_DENIED`, paths, source/target state and initial/final exceptions. An existing or uninspectable target stops publication without overwrite. Send the complete displayed log; do not delete the instance or create an empty configuration. If occupancy also blocks cleanup, temporary files remain and the cleanup failure is included in that log. The reusable `.acbric-instance.lock` file alone does not mean a process still holds the instance.
+
+For first-time setup, use **Find game in Steam → Check folders → Save & create launcher**. Do not use Load saved setup (formerly Load existing instance): Steam discovery only fills the game path; `acbric-launcher/instance.json` is created when saving. In dev.31, loading a fresh empty folder shows guidance without creating files or clearing paths. Missing configuration in an existing managed folder, invalid JSON, files over 64 KiB and legacy data still cause an error and are preserved. Verify the original instance location; do not create an empty JSON file to bypass checks.
 
 [中文](INSTALLER.zh-CN.md)
 
-Extract `Acbric-external.zip` and open its `Acbric` folder. **Setup.cmd, Start Acbric.cmd and mods now sit together.**
+Extract `Acbric-external-<version>.zip` and open its `Acbric` folder. **Setup.cmd, Start Acbric.cmd and mods now sit together.**
 
 ```text
 Acbric/
@@ -40,7 +44,7 @@ The dev.27 sibling mods folder, old instance `mods`/`userdata/mods`, and the ori
 
 ## Local ZIP updates and restoration
 
-Close the game and Setup. Open **Update Acbric.cmd**, select the existing Acbric folder, choose Yes and select a trusted new `Acbric-external.zip`. Review the target and version before confirming. Choose No to restore the framework from before the last update. Do not extract an update over the old directory.
+Close the game and Setup. Open **Update Acbric.cmd**, select the existing Acbric folder, choose Yes and select a trusted new `Acbric-external-<version>.zip`. Review the target and version before confirming. Choose No to restore the framework from before the last update. Do not extract an update over the old directory.
 
 For the first update from dev.28, extract the new release elsewhere, run its updater and select the old folder. Older releases without a recognized manifest require fresh extraction and setup. Use a Java-bundled update for an installation with bundled Java; a minimal package cannot remove its runtime.
 
@@ -54,7 +58,7 @@ For automation, use `update.ps1 -TargetDir <folder> -PackagePath <ZIP> -CheckOnl
 
 ## Relocation or a fresh extracted folder
 
-After extracting a new package, run Setup from its new location, select the existing instance, Load existing instance, confirm the game path, check and save. Saves and settings remain intact. Relocate the whole Acbric folder, which now includes mods. If the game or an external instance moves, select its new path and save again.
+After extracting a new package, run Setup from its new location, select the existing instance, Load saved setup, confirm the game path, check and save. Saves and settings remain intact. Relocate the whole Acbric folder, which now includes mods. If the game or an external instance moves, select its new path and save again.
 
 Internal instance bindings use relative paths; external instances use absolute paths. After relocation, Setup must still update the framework path recorded in the instance. Before first setup, Start explains how to configure it. Missing instances and invalid bindings are diagnosed without guessing another instance.
 

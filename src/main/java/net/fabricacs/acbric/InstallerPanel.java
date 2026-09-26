@@ -35,7 +35,8 @@ final class InstallerPanel extends JPanel {
         center.add(form, BorderLayout.NORTH); status.setEditable(false); status.setLineWrap(true); status.setWrapStyleWord(true);
         center.add(new JScrollPane(status), BorderLayout.CENTER); add(center, BorderLayout.CENTER);
         JPanel actions = new JPanel(new GridLayout(0, 3, 10, 10));
-        for (JButton button : new JButton[]{steam, load, check, save, openMods, open, logs, play}) actions.add(button);
+        // 第一行按首次安装顺序排列，读取已保存配置单列到下一行。
+        for (JButton button : new JButton[]{steam, check, save, load, openMods, open, logs, play}) actions.add(button);
         add(actions, BorderLayout.SOUTH);
         instance.setText(bundle.resolve("instances/default").toString());
         DocumentListener invalidate = new DocumentListener() {
@@ -63,7 +64,13 @@ final class InstallerPanel extends JPanel {
         load.addActionListener(e -> {
             Path path;
             try { path = path(instance); } catch (Exception ex) { failed(ex); return; }
-            work(() -> InstanceSetup.read(path), config -> {
+            work(() -> InstanceSetup.loadSaved(path), loaded -> {
+                if (loaded.isEmpty()) {
+                    status.setText(text("此目录尚未保存配置。首次安装请先选择游戏目录（或从 Steam 查找），再点击“检查目录”→“保存并生成入口”。如果此前已配置过，请选择原来的实例目录。当前路径和文件保持不变。",
+                            "No saved setup in this folder. For first-time setup, select the game folder (or find it in Steam), then select Check folders → Save & create launcher. If you configured an instance before, select its original folder. Your paths and files are unchanged."));
+                    return;
+                }
+                var config = loaded.orElseThrow();
                 game.setText(config.game().toString()); language.setSelectedIndex(config.language().equals("zh") ? 0 : 1);
                 status.setText(text("已读取已有实例。请检查并保存，以绑定当前框架和 Java。", "Instance loaded. Check and save to bind this framework and Java."));
             });
@@ -128,11 +135,12 @@ final class InstallerPanel extends JPanel {
         browseGame.setText(text("浏览…", "Browse…")); browseInstance.setText(text("浏览…", "Browse…"));
         hint.setText(text("选择包含 Airships.json 的游戏目录；实例用于存档和设置；MOD 放在 Setup.cmd 同目录的 mods。", "Select the game folder containing Airships.json; saves/settings stay in the instance; MODs go in mods beside Setup.cmd."));
         steam.setText(text("从 Steam 查找游戏", "Find game in Steam"));
-        load.setText(text("读取已有实例", "Load existing instance")); check.setText(text("检查目录", "Check folders"));
+        load.setText(text("读取已保存配置", "Load saved setup")); check.setText(text("检查目录", "Check folders"));
+        load.setToolTipText(text("仅用于以前保存过的实例；首次安装请先检查目录，再保存。", "For previously saved instances; for first-time setup, check folders, then save."));
         save.setText(text("保存并生成入口", "Save & create launcher")); open.setText(text("打开实例目录", "Open instance folder"));
         openMods.setText(text("打开 MOD 目录", "Open MOD folder"));
         logs.setText(text("打开日志目录", "Open logs")); play.setText(text("启动游戏", "Launch game"));
-        status.setText(text("选择目录后先检查，再保存。不会导入旧版数据。", "Select folders, check, then save. Legacy data is not imported.")); updateEnabled();
+        status.setText(text("首次安装：选择游戏和实例目录 → 检查目录 → 保存并生成入口。“读取已保存配置”仅用于以前配置过的实例。不会导入旧版数据。", "First-time setup: select game and instance folders → Check folders → Save & create launcher. Load saved setup is for previously configured instances. Legacy data is not imported.")); updateEnabled();
     }
     private void updateEnabled() {
         for (JComponent field : new JComponent[]{game, instance, language, browseGame, browseInstance, steam, load, check}) field.setEnabled(!working);

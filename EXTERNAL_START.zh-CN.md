@@ -54,7 +54,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "C:/Tools/Acbric/start.ps1" 
 .\gradlew.bat externalDistZip -PexternalGameDir="C:/Games/Airships" -PbundleRuntime
 ```
 
-产物为 `build/external-dist/Acbric-external.zip`，递归内容扫描报告为同目录 `verification.json`。不要分享旧 `distZip`，它仍含本地游戏内容，仅保留旧布局开发使用。
+产物为 `build/external-dist/Acbric-external-<version>.zip`，递归内容扫描报告为同目录 `verification.json`。不要分享旧 `distZip`，它仍含本地游戏内容，仅保留旧布局开发使用。
 
 模板位于 `acbric-mod-template/`。复制 `local.properties.example` 为 `local.properties`，填入本机 `gameInstallDir`、本框架发行的 `frameworkDir` 和目标 `instanceDir`，使用 JDK 21 构建。只引用依赖，不复制游戏到模板；个人路径和旧 libs 均排除在 Git/发行清单之外。模板 `installMod` 仅在显式配置目标实例后执行。
 

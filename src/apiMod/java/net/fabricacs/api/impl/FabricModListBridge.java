@@ -87,6 +87,15 @@ public final class FabricModListBridge {
         return mod != null && mod.id != null && mod.id.startsWith(SYNTHETIC_ID_PREFIX);
     }
 
+    /** 仅用于 MOD 界面的空列表判断；Java 行可显示，但仍不属于原版可加载资源 MOD。 */
+    public static ArrayList<Mod> modsForListVisibility() {
+        ArrayList<Mod> visible = Mod.getAvailableMods();
+        for (Mod mod : Mod.mods) {
+            if (isSyntheticFabricMod(mod) && !visible.contains(mod)) visible.add(mod);
+        }
+        return visible;
+    }
+
     public static String rowName(Mod mod, boolean selected) {
         String name = mod.getName() + " [65c0f9]Fabric";
         return selected ? com.zarkonnen.airships.MyDraw.SELECTED_C + name : name;

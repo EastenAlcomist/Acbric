@@ -62,10 +62,23 @@ final class InstanceSetup {
         return null;
     }
 
+    /** 读取按钮允许尚未配置的空目录；已有文件或不完整的管理目录仍按原规则拒绝接管。 */
+    static Optional<Saved> loadSaved(Path instance) throws IOException {
+        ModSelection.rejectLinks(instance);
+        Path dir = instance.resolve(DIRECTORY);
+        ModSelection.rejectLinks(dir);
+        if (Files.notExists(dir) && (Files.notExists(instance) || Files.isDirectory(instance))) {
+            existing(instance);
+            return Optional.empty();
+        }
+        return Optional.of(read(instance));
+    }
+
     static Saved read(Path instance) throws IOException {
         Path config = instance.resolve(DIRECTORY).resolve(CONFIG);
         ModSelection.rejectLinks(config);
-        if (!Files.isRegularFile(config) || Files.size(config) > 65536) throw new IOException("INSTANCE_CONFIG_INVALID / 实例配置缺失或过大: " + config);
+        if (!Files.isRegularFile(config)) throw new IOException("INSTANCE_CONFIG_INVALID / Missing or non-file instance configuration / 实例配置缺失或不是文件，请保留现场并核对实例目录: " + config);
+        if (Files.size(config) > 65536) throw new IOException("INSTANCE_CONFIG_INVALID / Instance configuration exceeds 64 KiB / 实例配置超过 64 KiB，未覆盖: " + config);
         Map<String, String> fields = new HashMap<>();
         try (var json = new JsonReader(Files.newBufferedReader(config, StandardCharsets.UTF_8))) {
             json.beginObject();
@@ -80,7 +93,7 @@ final class InstanceSetup {
             String java = fields.get("javaHome");
             if (!game.isAbsolute() || !framework.isAbsolute() || (!java.isEmpty() && !Path.of(java).isAbsolute())) throw new IOException("Paths must be absolute");
             return new Saved(game, framework, java, fields.get("language"));
-        } catch (RuntimeException | IOException ex) { throw new IOException("INSTANCE_CONFIG_INVALID / 实例配置损坏，未覆盖: " + config, ex); }
+        } catch (RuntimeException | IOException ex) { throw new IOException("INSTANCE_CONFIG_INVALID / Corrupt instance configuration; preserved / 实例配置损坏，未覆盖: " + config, ex); }
     }
 
     static Path save(Preview preview) throws IOException {
@@ -101,12 +114,14 @@ final class InstanceSetup {
                     Files.writeString(temporary.resolve(CONFIG), content, StandardCharsets.UTF_8);
                     for (String name : SCRIPTS) Files.write(temporary.resolve(name), script(name));
                     // 同一卷内一次发布目录；失败只移除本次临时文件，不删除任何用户目录。
-                    Files.move(temporary, dir, StandardCopyOption.ATOMIC_MOVE);
-                } finally {
-                    if (Files.exists(temporary)) {
+                    SetupDirectoryPublisher.publish(temporary, dir);
+                } catch (IOException | RuntimeException | Error failure) {
+                    // 清理若同样被占用，不得遮盖最初的保存失败；日志同时保留两者。
+                    try {
                         for (String name : SCRIPTS) Files.deleteIfExists(temporary.resolve(name));
                         Files.deleteIfExists(temporary.resolve(CONFIG)); Files.delete(temporary);
-                    }
+                    } catch (IOException | RuntimeException cleanup) { failure.addSuppressed(cleanup); }
+                    throw failure;
                 }
             } else {
                 Path temp = Files.createTempFile(dir, "config-", ".tmp");

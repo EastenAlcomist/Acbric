@@ -54,7 +54,7 @@ First launch creates local texture caches. Do not share instances, caches or gam
 .\gradlew.bat externalDistZip -PexternalGameDir="C:/Games/Airships" -PbundleRuntime
 ```
 
-Output: `build/external-dist/Acbric-external.zip`; recursive content verification: `verification.json` alongside it. Do not share legacy `distZip`: it still includes local game content and remains only for legacy development.
+Output: `build/external-dist/Acbric-external-<version>.zip`; recursive content verification: `verification.json` alongside it. Do not share legacy `distZip`: it still includes local game content and remains only for legacy development.
 
 In `acbric-mod-template/`, copy `local.properties.example` to `local.properties`. Set local `gameInstallDir`, this distribution's `frameworkDir`, and target `instanceDir`; build using JDK 21. Dependencies are referenced without copying the game into the template. Private paths and legacy libs are excluded from Git/distribution lists. `installMod` requires an explicitly configured target instance.
 

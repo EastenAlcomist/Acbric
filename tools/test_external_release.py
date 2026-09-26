@@ -16,9 +16,11 @@ def main():
     parser.add_argument('--java-home', type=Path, required=True)
     parser.add_argument('--tag', required=True)
     parser.add_argument('--arc-jar', type=Path)
+    parser.add_argument('--java-only', action='store_true', help='No native MODs; exercise actual ModsScreen rendering and disabled-Java restart')
     parser.add_argument('--installer', action='store_true', help='Create and rebind an instance through setup, then use its saved launcher')
     parser.add_argument('--upgrade-from', type=Path, help='Extract this previous release, upgrade with the current ZIP, then restore and launch it again')
     args = parser.parse_args()
+    if args.java_only and (args.arc_jar or args.upgrade_from): parser.error('--java-only cannot combine with ARC or upgrade mode')
     project = Path(__file__).resolve().parents[1]
     if not args.tag.isalnum(): parser.error('Use a fresh alphanumeric tag')
     run = project / 'build/external-release-tests' / args.tag
@@ -26,7 +28,8 @@ def main():
     run.mkdir(parents=True)
     install = args.game_dir.resolve()
     before = snapshot(install)
-    bundle_zip = project / 'build/external-dist/Acbric-external.zip'
+    version = json.loads((project / 'src/apiMod/resources/fabric.mod.json').read_text(encoding='utf-8'))['version']
+    bundle_zip = project / f'build/external-dist/Acbric-external-{version}.zip'
     unpack = run / '中文 & 空格发行'
     if args.upgrade_from and not args.installer: parser.error('--upgrade-from requires --installer')
     with zipfile.ZipFile(args.upgrade_from or bundle_zip) as archive: archive.extractall(unpack)
@@ -52,11 +55,20 @@ def main():
     with zipfile.ZipFile(mods / 'public-test.jar', 'w') as jar:
         jar.write(project / f'build/classes/java/regressionTest/{name}.class', name + '.class')
         jar.writestr('fabric.mod.json', json.dumps({'schemaVersion': 1, 'id': 'public_launch_test', 'version': '1', 'mixins': ['public-test.mixins.json']}))
-        jar.writestr('acbric_vanilla/info.json', json.dumps({'id': 'public_launch_test', 'name': 'Bundled shared test'}))
+        if not args.java_only: jar.writestr('acbric_vanilla/info.json', json.dumps({'id': 'public_launch_test', 'name': 'Bundled shared test'}))
+        if args.java_only:
+            for helper in ('fixtures/ModListDrawFixture', 'JavaOnlyModListChecks'):
+                path = f'net/fabricacs/regression/{helper}.class'
+                jar.write(project / 'build/classes/java/regressionTest' / path, path)
         jar.writestr('public-test.mixins.json', json.dumps({'required': True, 'package': 'net.fabricacs.regression.fixtures',
-            'compatibilityLevel': 'JAVA_21', 'mixins': ['PublicLaunchFixture'], 'injectors': {'defaultRequire': 1}}))
-    (mods / 'native_test').mkdir()
-    (mods / 'native_test/info.json').write_text(json.dumps({'id': 'native_test', 'name': 'Shared native test'}), encoding='utf-8')
+            'compatibilityLevel': 'JAVA_21', 'mixins': ['PublicLaunchFixture'] + (['ModListDrawFixture'] if args.java_only else []), 'injectors': {'defaultRequire': 1}}))
+    if args.java_only:
+        (instance / 'java-only-test').write_text('zero native mods', encoding='utf-8')
+        with zipfile.ZipFile(mods / 'java-only-example.jar', 'w') as jar:
+            jar.writestr('fabric.mod.json', json.dumps({'schemaVersion': 1, 'id': 'java_only_example', 'version': '1'}))
+    else:
+        (mods / 'native_test').mkdir()
+        (mods / 'native_test/info.json').write_text(json.dumps({'id': 'native_test', 'name': 'Shared native test'}), encoding='utf-8')
     (instance / 'userdata/mods/old_path_test').mkdir(parents=True, exist_ok=True)
     (instance / 'userdata/mods/old_path_test/info.json').write_text(json.dumps({'id': 'old_path_test', 'name': 'Old path ignored'}), encoding='utf-8')
     if args.arc_jar: shutil.copy2(args.arc_jar, mods / 'arc.jar')
@@ -136,6 +148,8 @@ def main():
                 try:
                     deadline = time.monotonic() + 90
                     while not checkpoint.exists():
+                        failure = instance / 'java-only-failure.txt'
+                        if failure.exists(): raise AssertionError(failure.read_text(encoding='utf-8'))
                         if child.poll() is not None or time.monotonic() > deadline: raise AssertionError('Public menu did not reach checkpoint')
                         time.sleep(.25)
                     if index == 0:
@@ -180,6 +194,8 @@ def main():
         if (template / 'libs').exists(): raise AssertionError('Template copied game dependencies')
         summary.update(status='PASS', scenarios=results, logs=[str(p.relative_to(run)) for p in logs],
             limits='Actual production launcher and Main; optional installer uses setup CLI and saved entry, GUI behavior covered separately; test MOD observes 30 menu frames then exits. No child JVM write/network guard; isolated environment and before/after installation hashes. No full campaign in this harness.')
+        if args.java_only:
+            summary['javaOnlyChecks'] = [(instance / f'java-only-result-{phase}.txt').read_text(encoding='utf-8').strip() for phase in ('first', 'restart')]
     finally:
         after = snapshot(install)
         changes = {'added': sorted(after.keys() - before.keys()), 'removed': sorted(before.keys() - after.keys()),

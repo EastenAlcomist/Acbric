@@ -6,6 +6,10 @@ API `0.3.3-dev.12` adds Java/Fabric mod controls to the game's mod list. **Chang
 
 ## Workflow
 
+Since dev.30, Acbric API and Java MOD rows remain visible even when no vanilla MOD is installed, including disabled Java MODs after restart. Only the screen's empty-list check changes; Java rows remain outside vanilla resource loading, Apply and Reload collections.
+
+To reproduce, use a freshly extracted framework and a new instance with Java MODs that contain no `acbric_vanilla` resources and no native `info.json` folders. Check API/Java rows, refresh, reopening and disabling/restarting. Automated entry: `python tools/test_external_release.py --game-dir <game> --java-home <JDK21> --tag <fresh-name> --installer --java-only`. Old dev.29 fails to enter the list drawing branch. Dev.30 passes 26 actual-screen assertions across two processes, covering empty lists, unavailable native rows, mixed rows, refresh/reopen and disabled restart while keeping Java rows out of native available/enabled collections. Also passes 988 standard checks; all 5,325 source game files are unchanged. This does not cover full campaigns, multiplayer or manual clicking of every button.
+
 Open the mod screen and use **Disable** or **Enable** on a Fabric row. The selection is saved immediately; the status shows the pending restart action. Click again to undo. Restart the game to apply it. Disabled archives remain listed and can be enabled again.
 
 Vanilla Apply, Reload, Reset and Disable All still apply only to vanilla data mods. They neither apply nor undo Java mod selections. Synthetic Java rows remain outside vanilla hot reload. Mod settings, saves and resources are preserved; whether a save works without a gameplay mod depends on that mod.
