@@ -49,7 +49,7 @@ public final class FabricModInstallBridge {
             return InstallResult.notHandled();
         }
 
-        Path modsDir = FabricLoader.getInstance().getGameDir().resolve("mods").toAbsolutePath().normalize();
+        Path modsDir = net.fabricacs.api.util.AirshipsPaths.modsDir();
         Path target = modsDir.resolve(source.getName()).toAbsolutePath().normalize();
         if (!target.startsWith(modsDir)) {
             return InstallResult.handled(false, translate("unable_to_install_mod"));

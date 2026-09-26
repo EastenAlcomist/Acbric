@@ -1,8 +1,12 @@
 # 外部游戏安装：实现与验证记录（dev.25）
 
+2026-09-26 dev.28：按用户要求，Setup.cmd、根目录 Start Acbric.cmd 与 mods 统一位于 Acbric 内同一层。安装器保存时更新默认实例绑定，根入口启动最近保存的实例；原实例入口兼容保留。dev.27 外层 mods 请手动复制到 Acbric/mods。启动绑定缺失/损坏、实例缺失和框架搬迁均明确诊断；不自动猜测实例。双语提示、路径 API 文档和模板安装目标已同步。下方 dev.27 及更早记录为历史。
+
+dev.27：Java MOD 的 `.jar` 和原版 MOD 文件夹统一放到 **Acbric 同级的 `mods`**。安装器显示完整路径并提供“打开 MOD 目录”。核心 API 仍从 `Acbric/core` 自动加载；存档、配置、日志留在实例中。多个实例使用同一框架时共用 MOD 文件，但保留各自设置；同一 MOD 目录只允许一个游戏会话，避免配套资源被并发修改。旧目录不自动搬迁，手动复制需要的 MOD 即可。下方 dev.26 及更早记录为历史。
+
 [English](EXTERNAL_INSTALL.md)
 
-原型已实现 **安装定位与预检查、实例启动设置及纹理缓存隔离**。dev.24 在隔离测试中验证真实菜单绘制与音频初始化，并修复中文安装路径的 OpenAL 加载。现有 `run.bat`、开发启动和 legacy 布局仍沿用原流程。预检查工具不启动游戏，不是安装器；战役及媒体功能场景已完成定向验收，已知 GL 异常按用户决定暂缓处理；dev.25 已提供正式启动入口和干净发行包，操作见 [外部启动说明](EXTERNAL_START.zh-CN.md)。尚未实现安装器和旧数据迁移。
+原型已实现 **安装定位与预检查、实例启动设置及纹理缓存隔离**。dev.24 在隔离测试中验证真实菜单绘制与音频初始化，并修复中文安装路径的 OpenAL 加载。现有 `run.bat`、开发启动和 legacy 布局仍沿用原流程。预检查工具不启动游戏，不是安装器；战役及媒体功能场景已完成定向验收，已知 GL 异常按用户决定暂缓处理；dev.25 已提供正式启动入口和干净发行包，操作见 [外部启动说明](EXTERNAL_START.zh-CN.md)。dev.26 已提供基础实例配置向导，见 [安装器说明](INSTALLER.zh-CN.md)；按用户决定不开发旧数据自动迁移，玩家按新版说明重新配置。
 
 
 本轮验证：935 项标准回归通过（两项既有符号链接权限跳过），36 项真实外部加载检查通过；另测解析后核心缺失/版本错配在 preLaunch 前拒绝、Java 8 引导拒绝。解压包在中文/空格路径下用正式入口启动两次，每次真实菜单绘制 30 帧并创建音频，第二次验证包内 Java 优先；另有 API + ARC 两次菜单启动记录。实例占用、核心哈希损坏、错误游戏路径、独立模板 UTF-8 本地路径构建均通过。6 项发行扫描对抗测试通过；所有运行场景源安装 5,325 文件内容未变。证据：工作区 99-研究工具/Acbric正式外部发行-dev25-20260926。此轮不重跑完整战役/媒体；此前 dev.24 结果保留其原边界，不扩张为跨设备/Workshop/全部 MOD 验收。
@@ -44,7 +48,7 @@ java -cp "build/preflight/loader-libs/*" net.fabricacs.acbric.ExternalPreflight 
 
 Provider 接收成对的 `acbric.external.install` / `acbric.external.instance` 属性，严格使用所选安装；缺路径或错误安装不会静默回到旧 `libs`。dev.25 正常入口调用游戏 `Main`，须显式提供并核对发行核心 API；缺少核心会报 `CORE_REQUIRED`，核心版本或实际来源不匹配会在 preLaunch 前拒绝。内部 `ExternalRuntimeProbe` 仅保留供回归。这些属性及测试入口不是公开 MOD API，也不是权限边界；不要向玩家提供绕过限制的启动命令。
 
-原型在真实 Knot 中直接读取安装 A/B 与 `lib`，Fabric `gameDir` 指向实例；新增路径 Mixin 在 API preLaunch 之前生效，`AGame.getStaticGameDirectory()` 指向安装，`AGame.getGameDirectory()` 指向实例 `userdata/`。Java MOD/配置/框架日志留在实例，配套原版资源落在实例 `userdata/mods`。旧模式不触发路径覆盖。`AirshipsPaths.staticDataDir()` 等公开方法保持原来的实例侧语义，尚未新增只读安装资源 API。
+原型在真实 Knot 中直接读取安装 A/B 与 `lib`，Fabric `gameDir` 指向实例；新增路径 Mixin 在 API preLaunch 之前生效，`AGame.getStaticGameDirectory()` 指向安装，`AGame.getGameDirectory()` 指向实例 `userdata/`。正式入口自 dev.28 起将 Java MOD 与原生 MOD 指向框架内、与 Setup 同级的 `mods`；配置/框架日志留在实例。内部旧布局回归探针可保留实例 MOD 路径。旧模式不触发路径覆盖。`AirshipsPaths.staticDataDir()` 等公开方法保持原来的实例侧语义，尚未新增只读安装资源 API。
 
 ## 启动设置与用户输出隔离
 
@@ -151,4 +155,4 @@ python tools/test_external_menu.py --media --tag media-check --game-dir "D:/Game
 
 相关 1.2.15.3 class 已与已有 1.2.15.2 反编译资料对照，变化类另行核查。这是定向源码/字节码审查加运行时写入观测，不是对任意 MOD 或全部游戏分支的证明。
 
-上述战役与媒体功能场景已通过；原生地形绘制的 GL 严格检查未通过，已按用户决定列为暂缓、不阻塞本次重构的已知问题。dev.25 已完成正式外部入口及干净发行/模板；下一步实现迁移及安装器。当前旧 `distZip` 仍会包含本地游戏依赖，**不能作为干净框架发行包分享**；`preflightTools` 仅包含框架启动层、明确启动依赖、脚本和说明。
+上述战役与媒体功能场景已通过；原生地形绘制的 GL 严格检查未通过，已按用户决定列为暂缓、不阻塞本次重构的已知问题。dev.25 已完成正式外部入口及干净发行/模板；dev.26 已提供基础配置向导；后续推进框架更新/卸载，旧数据自动迁移已从计划中移除。当前旧 `distZip` 仍会包含本地游戏依赖，**不能作为干净框架发行包分享**；`preflightTools` 仅包含框架启动层、明确启动依赖、脚本和说明。

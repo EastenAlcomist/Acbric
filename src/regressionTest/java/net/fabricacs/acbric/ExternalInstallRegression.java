@@ -41,7 +41,7 @@ public final class ExternalInstallRegression {
             }
         }
     }
-    private static Path installation(Path root) throws Exception {
+    static Path installation(Path root) throws Exception {
         Files.createDirectories(root.resolve("lib/native"));
         Files.writeString(root.resolve("Airships.json"), "{\"mainClass\":\"com.zarkonnen.airships.Main\",\"classPath\":[\"asplit-A.zip\",\"asplit-B.zip\"],\"other\":{\"array\":[1,true,null,\"escaped \\\" text\"]}}");
         archive(root.resolve("asplit-A.zip"), "com/zarkonnen/airships/Main", "com/zarkonnen/airships/AGame");

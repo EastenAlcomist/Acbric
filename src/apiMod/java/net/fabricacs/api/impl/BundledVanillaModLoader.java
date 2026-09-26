@@ -20,8 +20,8 @@ public final class BundledVanillaModLoader {
      * 为已加载的 Fabric MOD 准备内嵌资源；在 preLaunch 或之后调用。
      */
     public static void extractAll() {
-        // 原版只在 AGame 用户数据的 mods 下扫描 info.json，不能解包到 Fabric 的 game/mods。
-        Path gameModsDir = AGame.getGameDirectory().toPath().resolve("mods").toAbsolutePath().normalize();
+        // 外部发行统一到框架旁的 mods；旧布局继续使用原生用户数据 mods。
+        Path gameModsDir = LocalModPaths.nativeMods();
         try {
             BundledResourceStore.rejectLinks(gameModsDir);
             Files.createDirectories(gameModsDir);

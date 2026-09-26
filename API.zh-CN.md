@@ -118,7 +118,7 @@ public final class ExampleMod implements AcbricInitializer {
 | --- | --- |
 | `gameDir()` | `<运行包>/game` |
 | `configDir()` | Fabric 配置根目录，通常为 `game/config` |
-| `modsDir()` | `game/mods`，Java/Fabric JAR |
+| `modsDir()` | 实际 Fabric MOD 目录；外部发行是 Setup.cmd 同级 `mods`，旧布局默认 `game/mods` |
 | `staticDataDir()` | `game/data`，游戏静态数据 |
 | `generatedDir()` | `game/generated` |
 | `cacheDir()` | `game/.fabric/acbric/cache` |
@@ -127,7 +127,7 @@ public final class ExampleMod implements AcbricInitializer {
 
 对应创建方法为 `ensureConfigDir()`、`ensureModsDir()`、`ensureGeneratedDir()`、`ensureCacheDir()`、`ensureModConfigDir(modId)`、`ensureModDataDir(modId)`。`ensureDirectory(Path)` 可创建指定目录；I/O 失败抛出 `UncheckedIOException`。普通路径 getter 不创建目录，传入 ID 的路径方法也不负责校验任意外部输入。
 
-**原版 MOD 和存档另由游戏 `AGame.getGameDirectory()` 定位**，通常是用户数据目录，亦可由 `launch_settings.json` 的 `customDataDirectoryLocation` 指定。原版目录 MOD 应放在其 `mods/<目录>/` 下，而不是 Fabric 的 `game/mods/`。`context.dataDir()` 不等于存档目录，把文件写入那里也不会自动让游戏加载它。
+**外部发行的本地原版 MOD 与 Java MOD 共用 `AirshipsPaths.modsDir()`**，原版 MOD 是直接含 `info.json` 的子目录。存档仍由 `AGame.getGameDirectory()` 指向实例 userdata；不能再假定它下面的 mods 是有效扫描目录。旧布局仍用原生用户数据下的 mods。`context.dataDir()` 不等于存档目录，把文件写入那里也不会自动让游戏加载它。
 
 ## 4. 事件订阅与注销
 
@@ -242,7 +242,7 @@ example-mod.jar
     └── <原版 MOD 数据及资源>
 ```
 
-首次启动解包到 `<AGame用户数据>/mods/<Fabric MOD ID>/`，缺少 `info.json` 时生成最小元数据。顶层 JAR/ZIP 来源受支持；嵌套 JAR 和展开的目录来源暂不处理。资源型 MOD 可省略 Java 入口，不需要凭空声明一个 Mixin。
+首次启动解包到本地原版 MOD 根下的 `<Fabric MOD ID>/`（外部发行是 Setup.cmd 同级 `mods`；旧布局是 `<AGame用户数据>/mods`），缺少 `info.json` 时生成最小元数据。顶层 JAR/ZIP 来源受支持；嵌套 JAR 和展开的目录来源暂不处理。资源型 MOD 可省略 Java 入口，不需要凭空声明一个 Mixin。
 
 资源更新依据 `.acbric-bundle.json` 中的 SHA-256 归属记录：未改动的受管理文件可更新/移除；用户修改、删除、未归属碰撞保留并报告。没有归属记录的旧目录不自动接管，损坏记录会停止该次更新。原目录备份保存在 `<用户数据>/.acbric-bundles/<id>/backups/`；事务日志用于恢复进程中断，不代表硬件故障下的完整持久化保证。
 

@@ -14,7 +14,7 @@ Statuses distinguish loaded code, failed Acbric entrypoints, disabled mods and p
 
 ## Scope and dependencies
 
-- Manages regular, visible, lowercase `.jar` files directly in the mod directory, normally `game/mods`; `fabric.modsFolder` is recognized.
+- Manages regular, visible, lowercase `.jar` files directly in the mod directory, `mods` beside Setup.cmd inside Acbric in external releases, or normally `game/mods` in legacy layouts; `fabric.modsFolder` is recognized.
 - Protects `acbric_api`, `fabricloader`, `airships`, `java` and `mixinextras`. Nested mods, development directories, multiple-path and external classpath origins are read-only. Manage embedded libraries through their parent mod.
 - Prechecks required `depends`, versions, `provides` aliases and hard `breaks` conflicts. Disable dependents first; enable libraries first. Other mods are never changed automatically.
 - Reads declared nested metadata within size, count and depth limits so parents with embedded dependencies can be enabled again. Complex candidate/version selection, cyclic groups and unscanned external sources may not be adjustable one row at a time. Fabric remains the final dependency resolver.
@@ -24,7 +24,7 @@ This release does not implement removal, downloads, upgrades, automatic dependen
 
 ## Bundled vanilla resources
 
-On the next launch, a disabled Java mod's resource directory under vanilla user data `mods/<Java mod ID>` is blocked when it has valid `.acbric-bundle.json` ownership. Original resource bytes and native enable preferences remain intact. Re-enabling Java code restores normal native enable checks; it does not force a previously disabled native resource mod on.
+On the next launch, a disabled Java mod's resource directory `<Java mod ID>` under the local native MOD root (`mods` beside Setup.cmd inside Acbric in external releases) is blocked when it has valid `.acbric-bundle.json` ownership. Original resource bytes and native enable preferences remain intact. Re-enabling Java code restores normal native enable checks; it does not force a previously disabled native resource mod on.
 
 Ownership is checked by directory, so a different native ID in `info.json` works. Legacy unowned bundles require [explicit resource migration](BUNDLED_RESOURCES.md) first; the UI refuses to assume they are safely disabled. Unrelated same-named native directories are not adopted. Copies relocated elsewhere, cached copies and unowned resources are outside this filter.
 

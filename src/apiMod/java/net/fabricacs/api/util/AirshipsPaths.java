@@ -1,6 +1,6 @@
 /*
  * AirshipsPaths.java — 提供 Fabric 游戏根目录下的路径与显式创建目录方法。
- * modsDir 是 Java MOD 目录，不是 AGame 用户数据下的原版 MOD 目录。
+ * modsDir 遵循实际 Fabric 扫描目录；外部发行与本地原版 MOD 共用目录。
  */
 package net.fabricacs.api.util;
 
@@ -24,9 +24,9 @@ public final class AirshipsPaths {
         return FabricLoader.getInstance().getConfigDir();
     }
 
-    /** Java/Fabric JAR 的安装目录；原版 MOD 另由 AGame 定位。 */
+    /** Java/Fabric JAR 的实际扫描和安装目录；外部发行同时用于本地原版 MOD。 */
     public static Path modsDir() {
-        return gameDir().resolve("mods");
+        return Path.of(System.getProperty("fabric.modsFolder", gameDir().resolve("mods").toString())).toAbsolutePath().normalize();
     }
 
     public static Path staticDataDir() {

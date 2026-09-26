@@ -108,7 +108,7 @@ public final class ExternalPreflight {
             }
         }
         void prepareDirectories(Path root) throws IOException {
-            for (String name : List.of("mods", "config", "userdata", "logs/acbric", ".fabric", "data/acbric", "generated")) {
+            for (String name : List.of("config", "userdata", "logs/acbric", ".fabric", "data/acbric", "generated")) {
                 Path dir = root.resolve(name);
                 try {
                     ModSelection.rejectLinks(dir); Files.createDirectories(dir);

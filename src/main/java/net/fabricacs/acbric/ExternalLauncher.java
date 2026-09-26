@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.zip.ZipFile;
 
 public final class ExternalLauncher {
-    static final String CORE_VERSION = "0.3.3-dev.25";
+    static final String CORE_VERSION = "0.3.3-dev.28";
     private ExternalLauncher() {}
 
     public static void main(String[] args) { System.exit(run(args)); }
@@ -85,12 +85,10 @@ public final class ExternalLauncher {
             List<Path> loaders = verifyBundle(bundle);
             Path core = requireCore(bundle.resolve("core/acbric-api.jar").toString());
             var plan = ExternalGameInstallation.inspect(Path.of(options.get("--game-dir")), Path.of(options.get("--instance-dir")));
-            if (plan.instance().equals(bundle) || bundle.startsWith(plan.instance())
-                    || plan.instance().startsWith(bundle.resolve("loader-libs")) || plan.instance().startsWith(bundle.resolve("core"))
-                    || plan.instance().startsWith(bundle.resolve("runtime")))
-                throw new IOException("INSTANCE_OVERLAPS_FRAMEWORK / 实例不能包含框架或使用框架核心目录");
+            InstanceSetup.checkFrameworkPath(bundle, plan.instance());
+            Path mods = ExternalMods.directory(bundle, plan);
             // 预检查锁释放后由子进程重新获取并持有整个会话；并发竞争只能有一个游戏进程胜出。
-            try (var lease = ExternalPreflight.InstanceLease.open(plan)) { lease.prepareDirectories(plan.instance()); }
+            try (var lease = ExternalPreflight.InstanceLease.open(plan); var shared = ExternalMods.open(mods, plan)) { lease.prepareDirectories(plan.instance()); }
             Path logDir = plan.instance().resolve("logs/acbric/launcher");
             ModSelection.rejectLinks(logDir); Files.createDirectories(logDir);
             Path log = Files.createTempFile(logDir, "launch-", ".log");
@@ -99,10 +97,11 @@ public final class ExternalLauncher {
                     "-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8",
                     "--add-opens=java.base/java.util=ALL-UNNAMED",
                     "-Dacbric.external.install=" + plan.install(), "-Dacbric.external.instance=" + plan.instance(),
+                    "-Dacbric.external.mods=" + mods, "-Dfabric.modsFolder=" + mods,
                     "-Dacbric.external.core=" + core, "-Dfabric.addMods=" + core,
                     "-cp", String.join(File.pathSeparator, loaders.stream().map(Path::toString).toList()),
                     "net.fabricmc.loader.impl.launch.knot.KnotClient"));
-            Files.writeString(early, "install=" + plan.install() + "\ninstance=" + plan.instance() + "\nlog=" + log + "\n", StandardCharsets.UTF_8);
+            Files.writeString(early, "install=" + plan.install() + "\ninstance=" + plan.instance() + "\nmods=" + mods + "\nlog=" + log + "\n", StandardCharsets.UTF_8);
             System.out.println("Game log / 游戏启动日志: " + log);
             for (String warning : plan.warnings()) System.out.println(warning);
             ProcessBuilder builder = new ProcessBuilder(command).directory(plan.instance().toFile())

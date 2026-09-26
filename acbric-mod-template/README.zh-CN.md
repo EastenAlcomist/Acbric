@@ -9,7 +9,7 @@
 .\gradlew.bat installMod
 ```
 
-`build` 只引用游戏 A/B、游戏 lib、框架启动依赖和核心 API；不复制依赖进 MOD JAR。`installMod` 需要显式目标，将产物复制到 `<instanceDir>/mods`。复制或分享模板时不携带游戏内容、`libs/` 或个人 `local.properties`。
+`build` 只引用游戏 A/B、游戏 lib、框架启动依赖和核心 API；不复制依赖进 MOD JAR。`installMod` 需要显式目标，将产物复制到 `<frameworkDir>/mods`。复制或分享模板时不携带游戏内容、`libs/` 或个人 `local.properties`。
 
 旧开发环境的 `libs/` 仍可作为兼容编译输入；`syncModTemplateLibs` 仅用于本机，不再属于外部发行流程。不要分享其生成的依赖目录。
 

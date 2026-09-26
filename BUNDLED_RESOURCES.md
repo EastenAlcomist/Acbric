@@ -1,7 +1,9 @@
 # Bundled vanilla resource management
 
 JAR mods may supply `acbric_vanilla/`. At preLaunch, Acbric installs these files into
-the vanilla user-data directory `mods/<fabric-id>/`, not Fabric's `game/mods/`.
+`<local native MOD root>/<fabric-id>/`. External releases (dev.28+) use the shared `mods` folder beside Setup.cmd inside Acbric; legacy mode uses the vanilla user-data `mods` folder.
+
+外部发行 dev.28 起，配套资源与 Java MOD 共用 Setup.cmd 同级的 `mods`；旧布局仍用原生用户数据下的 mods。
 Top-level JAR/ZIP origins are supported; nested or exploded mod resources are not.
 
 New installations contain `.acbric-bundle.json` with an ownership map of SHA-256 hashes,

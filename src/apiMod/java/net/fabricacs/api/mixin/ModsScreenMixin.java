@@ -19,6 +19,11 @@ import java.io.File;
 
 @Mixin(value = ModsScreen.class, remap = false)
 public abstract class ModsScreenMixin implements net.fabricacs.api.impl.ModManagerScreenAccess {
+    @org.spongepowered.asm.mixin.injection.Redirect(method = "doInstall", at = @At(value = "NEW", target = "(Ljava/io/File;Ljava/lang/String;)Ljava/io/File;"))
+    private java.io.File acbric$localMods(java.io.File parent, String child) {
+        return net.fabricacs.api.impl.LocalModPaths.file(parent, child);
+    }
+
     @Shadow private AirshipGame g;
 
     @Override public void acbric$managerMessage(String message) { g.showError(message); }

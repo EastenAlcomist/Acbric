@@ -37,6 +37,7 @@ public final class FrameworkRegression {
         checks += net.fabricacs.acbric.GameIdentityRegression.run(root.resolve("game-identity"));
         checks += net.fabricacs.acbric.ExternalInstallRegression.run(root.resolve("external-install"));
         checks += net.fabricacs.acbric.ExternalLauncherRegression.run(root.resolve("external-launcher"));
+        checks += net.fabricacs.acbric.InstanceSetupRegression.run(root.resolve("instance-setup"));
         checks += net.fabricacs.api.impl.ExternalCacheRegression.run(root.resolve("external-cache"));
         checks += net.fabricacs.api.impl.StartupDiagnosticsRegression.run(root.resolve("startup-diagnostics"));
         checks += CampaignDataRegression.run(root.resolve("campaign-data"));

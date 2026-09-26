@@ -69,7 +69,7 @@ def main():
     for path in inputs:
         if path.stat().st_size:
             with path.open('rb') as stream: forbidden.add(hashlib.file_digest(stream, 'sha256').hexdigest())
-    allowed = {'LICENSE', 'start.ps1', 'check-install.ps1', 'bundle.properties', 'EXTERNAL_INSTALL.md', 'EXTERNAL_INSTALL.zh-CN.md', 'EXTERNAL_START.md', 'EXTERNAL_START.zh-CN.md'}
+    allowed = {'INSTALLER.md', 'INSTALLER.zh-CN.md', 'Setup.cmd', 'setup.ps1', 'Start Acbric.cmd', 'start-configured.ps1', 'mods/README.md', 'LICENSE', 'start.ps1', 'check-install.ps1', 'bundle.properties', 'EXTERNAL_INSTALL.md', 'EXTERNAL_INSTALL.zh-CN.md', 'EXTERNAL_START.md', 'EXTERNAL_START.zh-CN.md'}
     loader_names = {'Acbric-1.0-SNAPSHOT.jar', 'fabric-loader-0.19.3.jar', 'sponge-mixin-0.17.3+mixin.0.8.7.jar'}
     loader_names |= {f'asm{x}-9.8.jar' for x in ('', '-analysis', '-commons', '-tree', '-util')}
     with zipfile.ZipFile(args.archive) as archive:

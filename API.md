@@ -120,7 +120,7 @@ The static methods in `net.fabricacs.api.util.AirshipsPaths` use the Fabric game
 | --- | --- |
 | `gameDir()` | `<runtime package>/game` |
 | `configDir()` | Fabric configuration root, normally `game/config` |
-| `modsDir()` | `game/mods`, for Java/Fabric JARs |
+| `modsDir()` | Actual Fabric MOD directory; external release: `mods` beside Setup.cmd inside Acbric; legacy default: `game/mods` |
 | `staticDataDir()` | `game/data`, for static game data |
 | `generatedDir()` | `game/generated` |
 | `cacheDir()` | `game/.fabric/acbric/cache` |
@@ -129,7 +129,7 @@ The static methods in `net.fabricacs.api.util.AirshipsPaths` use the Fabric game
 
 The corresponding creation methods are `ensureConfigDir()`, `ensureModsDir()`, `ensureGeneratedDir()`, `ensureCacheDir()`, `ensureModConfigDir(modId)` and `ensureModDataDir(modId)`. `ensureDirectory(Path)` creates a specified directory; I/O failures throw `UncheckedIOException`. Plain path getters do not create directories. Path methods accepting an ID do not validate arbitrary external input.
 
-**Native mods and saves are located separately through the game's `AGame.getGameDirectory()`**. This normally points to the user data directory and can be configured with `customDataDirectoryLocation` in `launch_settings.json`. Native directory mods belong under its `mods/<directory>/`, not Fabric's `game/mods/`. `context.dataDir()` is not the save directory, and writing files there does not make the game load them automatically.
+**In external releases, local native MODs share `AirshipsPaths.modsDir()` with Java MODs**, as subfolders directly containing `info.json`. Saves still use instance userdata through `AGame.getGameDirectory()`; do not assume its mods subfolder is scanned. Legacy layouts keep the native user-data mods location. `context.dataDir()` is not the save directory, and writing files there does not make the game load them automatically.
 
 ## 4. Event subscription and removal
 
@@ -245,7 +245,7 @@ example-mod.jar
     └── <native mod data and assets>
 ```
 
-On first launch, resources are extracted to `<AGame user data>/mods/<Fabric mod ID>/`. Minimal metadata is generated if `info.json` is absent. Top-level JAR/ZIP sources are supported; nested JARs and unpacked directory sources are not currently processed. Resource-only mods can omit a Java entrypoint and do not need to declare a mixin they do not use.
+On first launch, resources are extracted to `<Fabric mod ID>/` under the local native MOD root (`mods` beside Setup.cmd inside Acbric in external releases; `<AGame user data>/mods` in legacy layouts). Minimal metadata is generated if `info.json` is absent. Top-level JAR/ZIP sources are supported; nested JARs and unpacked directory sources are not currently processed. Resource-only mods can omit a Java entrypoint and do not need to declare a mixin they do not use.
 
 Updates use the SHA-256 ownership records in `.acbric-bundle.json`. Unchanged managed files may be updated or removed; user edits, deletions and collisions with unowned files are preserved and reported. Old directories without ownership records are not adopted automatically, and corrupt records stop that update. Original directory backups are kept under `<user data>/.acbric-bundles/<id>/backups/`. The transaction journal supports recovery from process interruption; it does not guarantee full durability against hardware failures.
 

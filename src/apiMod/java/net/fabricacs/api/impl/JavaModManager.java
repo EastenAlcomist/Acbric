@@ -163,7 +163,7 @@ public final class JavaModManager {
     private static void verifyBundledResources(Entry entry) throws IOException {
         try (ZipFile zip = new ZipFile(entry.archive().toFile())) {
             if (zip.stream().noneMatch(e -> e.getName().startsWith("acbric_vanilla/") && !e.isDirectory())) return;
-            Path target = com.zarkonnen.airships.AGame.getGameDirectory().toPath().resolve("mods").resolve(entry.id());
+            Path target = LocalModPaths.nativeMods().resolve(entry.id());
             if (!Files.exists(target, LinkOption.NOFOLLOW_LINKS)) return;
             if (!BundledResourceStore.hasOwnership(target, entry.id()))
                 throw new IOException("Unmanaged bundled resources; explicit resource migration required / 配套资源尚无归属记录，请先显式迁移：" + entry.id());

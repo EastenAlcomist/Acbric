@@ -306,9 +306,10 @@ tasks.register('externalDistDir', Sync) {
     description = 'Assembles a framework-only external distribution (bring Java 21 or bundle it explicitly).'
     dependsOn tasks.named('jar'), tasks.named('apiModJar')
     into externalRoot
-    from('src/dist/start.ps1', 'src/dist/check-install.ps1', 'LICENSE')
-    from('EXTERNAL_INSTALL.md', 'EXTERNAL_INSTALL.zh-CN.md', 'EXTERNAL_START.md', 'EXTERNAL_START.zh-CN.md')
+    from('src/dist/start.ps1', 'src/dist/check-install.ps1', 'src/dist/setup.ps1', 'src/dist/Setup.cmd', 'src/dist/Start Acbric.cmd', 'src/dist/start-configured.ps1', 'LICENSE')
+    from('EXTERNAL_INSTALL.md', 'EXTERNAL_INSTALL.zh-CN.md', 'EXTERNAL_START.md', 'EXTERNAL_START.zh-CN.md', 'INSTALLER.md', 'INSTALLER.zh-CN.md')
     into('docs') { from fileTree(projectDir) { include '*.md'; exclude 'AGENTS.md' } }
+    into('mods') { from('src/dist/mods/README.md') }
     into('core') { from(tasks.named('apiModJar')) { rename { 'acbric-api.jar' } } }
     into('loader-libs') { from tasks.named('jar'); from configurations.fabricLoaderRuntime }
     into('acbric-mod-template') {

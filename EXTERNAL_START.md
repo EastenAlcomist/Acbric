@@ -1,10 +1,27 @@
-# Acbric external distribution launcher (dev.25)
+# Acbric external distribution launcher (dev.28)
 
 [中文](EXTERNAL_START.zh-CN.md)
 
-Experimental Windows x64 framework distribution. Bring a complete local game installation and Java 21. No game code, resources, game libraries or player data are included. GUI installation, migration and automatic updates are not implemented yet.
+Experimental Windows x64 framework distribution. Bring a complete local game installation and Java 21. No game code, resources, game libraries or player data are included. The graphical instance setup wizard is available; automatic updates are not implemented yet. Use a fresh instance and follow these instructions to reinstall MODs and configure settings; automatic migration from legacy layouts is not provided.
 
-## Launch
+```text
+Acbric/
+├─ Setup.cmd             配置 / Setup
+├─ Start Acbric.cmd      启动 / Play
+├─ mods/
+│  ├─ arc-overhaul.jar
+│  └─ native-mod/info.json
+├─ core/acbric-api.jar
+└─ instances/default/...
+```
+
+Old instance `mods`, `userdata/mods` and the original User folder are not scanned for local MODs. Close the game and copy MODs manually; native folders must directly contain `info.json`. Import native `.amod` archives using the game’s Install MOD action.
+
+## Recommended: setup wizard
+
+Double-click **Setup.cmd**, select game and instance folders, check and save. Use `Start Acbric.cmd` beside Setup afterwards without entering paths again. See [setup and relocation](INSTALLER.md).
+
+## Manual launch
 
 Extract the package and run in PowerShell, replacing paths with your local paths:
 
@@ -14,14 +31,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "C:/Tools/Acbric/start.ps1" 
 
 `GameDir` contains `Airships.json` and `asplit-A.zip`. `InstanceDir` is a separate writable directory; neither may contain the other. Pass both paths on each launch without copying the game. If `JavaHome` is omitted, the optional bundled `runtime` takes precedence over `JAVA_HOME`. Do not use the game's Java 8. After moving directories, pass their new paths.
 
-The launcher verifies SHA-256 hashes of the core and launch dependencies, rechecks the game, then starts a child JVM with the instance as its working directory. The API loads from `core/acbric-api.jar` in the package; **do not copy another API into instance mods**. The manifest detects missing/changed files; it is not a digital signature. Do not distribute hand-built Knot or internal probe commands as player launchers.
+The launcher verifies SHA-256 hashes of the core and launch dependencies, rechecks the game, then starts a child JVM with the instance as its working directory. The API loads from `core/acbric-api.jar` in the package; **do not copy another API into mods**. The manifest detects missing/changed files; it is not a digital signature. Do not distribute hand-built Knot or internal probe commands as player launchers.
 
 Only one game process can use an instance at a time. Original installation settings stay unchanged; instances are isolated and do not automatically import existing saves.
 
 ## MODs, settings and logs
 
-- Java MODs: `<InstanceDir>/mods/`.
-- Native resource MODs: `<InstanceDir>/userdata/mods/`.
+- Java MODs, native MODs and bundled resources: `<Acbric framework folder>/mods/`.
 - Saves and native settings: `<InstanceDir>/userdata/`.
 - MOD configuration: `<InstanceDir>/config/`.
 - Launch overrides: `<InstanceDir>/config/launch-settings.json`; native data and GIF output paths remain forced inside the instance.
@@ -44,7 +60,7 @@ In `acbric-mod-template/`, copy `local.properties.example` to `local.properties`
 
 ## Known limits
 
-See [external validation](EXTERNAL_INSTALL.md) for menu, campaign and media evidence and limitations. The terrain GL error also reproduced in the legacy layout is deferred by user decision and does not block the installation refactor; it is not fixed. Workshop, arbitrary MODs, other devices and GPU combinations need further acceptance. Migration, installer and update/uninstall workflows are later phases.
+See [external validation](EXTERNAL_INSTALL.md) for menu, campaign and media evidence and limitations. The terrain GL error also reproduced in the legacy layout is deferred by user decision and does not block the installation refactor; it is not fixed. Workshop, arbitrary MODs, other devices and GPU combinations need further acceptance. Basic instance setup is available; update/uninstall workflows are later phases; automatic legacy-data migration is outside the development plan.
 
 ## Developer acceptance
 

@@ -87,6 +87,7 @@ def main():
         guarded = [f'-Dacbric.external.install={install}', f'-Dacbric.external.instance={isolated}', f'-Dacbric.external.core={api}']
         missing = command('resolved-core-missing', common[:1] + guarded + common[1:] + ['net.fabricmc.loader.impl.launch.knot.KnotClient'], 1)
         if 'CORE_MISSING' not in missing: raise AssertionError('Unloaded core was accepted')
+        (isolated / 'mods').mkdir(exist_ok=True)
         with zipfile.ZipFile(isolated / 'mods/wrong-core.jar', 'w') as jar:
             jar.writestr('fabric.mod.json', json.dumps({'schemaVersion': 1, 'id': 'acbric_api', 'version': '99.0.0'}))
         mismatch = command('resolved-core-mismatch', common[:1] + guarded + common[1:] + ['net.fabricmc.loader.impl.launch.knot.KnotClient'], 1)

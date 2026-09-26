@@ -45,6 +45,7 @@ public final class AirshipsGameProvider implements GameProvider {
     private GameBuildIdentity buildIdentity = GameBuildIdentity.unknown();
     private LaunchDiagnostics diagnostics;
     private ExternalPreflight.InstanceLease externalLease;
+    private ExternalMods externalMods;
 
     @Override
     public String getGameId() {
@@ -315,10 +316,19 @@ public final class AirshipsGameProvider implements GameProvider {
             var plan = ExternalGameInstallation.inspect(Path.of(install), Path.of(instance));
             externalLease = ExternalPreflight.InstanceLease.open(plan);
             externalLease.prepareDirectories(plan.instance());
+            String mods = System.getProperty(ExternalMods.PROPERTY);
+            if (mods != null) {
+                Path root = Path.of(mods).toAbsolutePath().normalize();
+                externalMods = ExternalMods.open(root, plan);
+                System.setProperty(ExternalMods.PROPERTY, root.toString());
+                System.setProperty("fabric.modsFolder", root.toString());
+                System.out.println("[Acbric] MOD directory / MOD 目录: " + root);
+            }
             Path settings = ExternalLaunchSettings.prepare(plan);
             System.setProperty("acbric.internal.launchSettings", settings.toString());
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 try { externalLease.close(); } catch (IOException ignored) { }
+                if (externalMods != null) try { externalMods.close(); } catch (IOException ignored) { }
             }, "acbric-instance-release"));
             gameDirectory = plan.instance();
             libsDirectory = plan.install().resolve("lib");
@@ -336,6 +346,7 @@ public final class AirshipsGameProvider implements GameProvider {
             return true;
         } catch (IOException | RuntimeException ex) {
             if (externalLease != null) try { externalLease.close(); } catch (IOException ignored) { }
+            if (externalMods != null) try { externalMods.close(); } catch (IOException ignored) { }
             if (diagnostics != null) diagnostics.phase("EXTERNAL_LOCATE_FAILED", ex);
             throw new RuntimeException("External game lookup failed / 外部游戏定位失败: " + ex.getMessage(), ex);
         }

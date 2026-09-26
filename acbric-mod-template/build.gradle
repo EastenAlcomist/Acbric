@@ -28,6 +28,7 @@ def airshipsJarA = new File(externalMode ? installDir : templateLibsDir, 'asplit
 def airshipsJarB = new File(externalMode ? installDir : templateLibsDir, 'asplit-B.zip')
 def installTarget = pathOption('instanceDir') ?: pathOption('gameDir')
 def gameDir = file(installTarget ?: 'missing-instance')
+def modsDir = externalMode ? new File(frameworkDir, 'mods') : new File(gameDir, 'mods')
 
 // 编译前明确列出缺失依赖，便于复制模板后定位配置错误。
 tasks.register('verifyAcbricTemplateInputs') {
@@ -84,10 +85,10 @@ jar {
 
 tasks.register('installMod', Copy) {
     group = 'acbric'
-    description = 'Builds this template mod and copies it into gameDir/mods.'
+    description = 'Builds this template mod and copies it into the active MOD folder.'
     dependsOn tasks.named('jar'), tasks.named('verifyInstallTarget')
     from tasks.named('jar')
-    into new File(gameDir, 'mods')
+    into modsDir
     rename { "${findProperty('modArchiveName') ?: project.name}.jar" }
 }
 
@@ -110,6 +111,6 @@ tasks.register('printTemplateInfo') {
         println "gameInstallDir=${installDir.absolutePath}"
         println "frameworkDir=${frameworkDir.absolutePath}"
         println "gameDir=${gameDir.absolutePath}"
-        println "installTarget=${new File(gameDir, 'mods').absolutePath}"
+        println "installTarget=${modsDir.absolutePath}"
     }
 }

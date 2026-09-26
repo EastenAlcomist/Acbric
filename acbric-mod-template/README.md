@@ -9,7 +9,7 @@ Standalone Gradle project using JDK 21. Copy `local.properties.example` to `loca
 .\gradlew.bat installMod
 ```
 
-`build` references local game A/B, game libraries, framework launch dependencies and API without including them in the MOD JAR. `installMod` requires an explicit target and copies output to `<instanceDir>/mods`. Do not share game files, `libs/` or private `local.properties` with the template.
+`build` references local game A/B, game libraries, framework launch dependencies and API without including them in the MOD JAR. `installMod` requires an explicit target and copies output to `<frameworkDir>/mods`. Do not share game files, `libs/` or private `local.properties` with the template.
 
 Legacy local `libs/` remains a compile fallback. `syncModTemplateLibs` is for local development only and is no longer part of external distribution packaging. Do not distribute its copied dependencies.
 

@@ -1,10 +1,27 @@
-# Acbric 外部发行启动（dev.25）
+# Acbric 外部发行启动（dev.28）
 
 [English](EXTERNAL_START.md)
 
-这是 Windows x64 的实验性框架发行包。请自备完整游戏和 Java 21；包内不含游戏代码、资源、游戏依赖或玩家数据。尚未提供图形安装器、数据迁移及自动更新。
+这是 Windows x64 的实验性框架发行包。请自备完整游戏和 Java 21；包内不含游戏代码、资源、游戏依赖或玩家数据。已提供图形实例配置向导，自动更新尚未实现。新版采用全新实例，由玩家按本说明重新安装 MOD、配置设置；不提供旧布局自动数据迁移。
 
-## 启动
+```text
+Acbric/
+├─ Setup.cmd             配置 / Setup
+├─ Start Acbric.cmd      启动 / Play
+├─ mods/
+│  ├─ arc-overhaul.jar
+│  └─ native-mod/info.json
+├─ core/acbric-api.jar
+└─ instances/default/...
+```
+
+旧实例 `mods`、`userdata/mods` 和原来的 User 目录不会参与本地 MOD 扫描。请在关闭游戏后手动复制到新目录；原版 MOD 文件夹下应直接有 `info.json`。原版 `.amod` 压缩包请用游戏“安装 MOD”导入。
+
+## 推荐：使用配置向导
+
+双击框架目录中的 **Setup.cmd**，选择游戏和实例目录，检查后保存。今后使用与 Setup 同目录的 `Start Acbric.cmd` 启动，不用每次填写路径。完整流程与重新定位见 [安装器说明](INSTALLER.zh-CN.md)。
+
+## 手动启动
 
 解压后打开 PowerShell，执行（路径换成本机路径）：
 
@@ -14,14 +31,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "C:/Tools/Acbric/start.ps1" 
 
 `GameDir` 是包含 `Airships.json` 和 `asplit-A.zip` 的完整游戏根目录；`InstanceDir` 是独立可写目录，两者不能互相包含。每次启动明确传入路径，不需要复制游戏。`JavaHome` 可省略：优先使用包内可选 `runtime`，否则使用 `JAVA_HOME`。不要选游戏自带 Java 8。移动目录后传入新路径即可。
 
-启动器验证核心与启动依赖的 SHA-256 清单，重新检查游戏，随后在实例工作目录启动子 JVM。核心 API 由包内 `core/acbric-api.jar` 加载；**不要再把 API 复制到实例 mods**。清单用于检测缺失/损坏，不是数字签名。不要手工拼接 Knot 或内部探针命令作为玩家启动方式。
+启动器验证核心与启动依赖的 SHA-256 清单，重新检查游戏，随后在实例工作目录启动子 JVM。核心 API 由包内 `core/acbric-api.jar` 加载；**不要再把 API 复制到 mods**。清单用于检测缺失/损坏，不是数字签名。不要手工拼接 Knot 或内部探针命令作为玩家启动方式。
 
 同一实例只允许一个游戏进程使用。框架不改变原安装设置；实例默认独立，不自动读取或导入原有存档。
 
 ## MOD、配置和日志
 
-- Java MOD：`<InstanceDir>/mods/`。
-- 原生资源 MOD：`<InstanceDir>/userdata/mods/`。
+- Java MOD、原生资源 MOD、Java 配套资源：`<Acbric框架目录>/mods/`。
 - 存档及原生设置：`<InstanceDir>/userdata/`。
 - MOD 配置：`<InstanceDir>/config/`。
 - 启动设置覆盖：`<InstanceDir>/config/launch-settings.json`；原生数据和 GIF 输出路径仍强制位于实例。
@@ -44,7 +60,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "C:/Tools/Acbric/start.ps1" 
 
 ## 已知边界
 
-菜单、战役和媒体的详细证据及限制见 [外部安装验证](EXTERNAL_INSTALL.zh-CN.md)。旧布局也能复现的地形 GL 异常已按用户决定暂缓，不阻塞安装重构；不表示异常已经修复。Workshop、所有第三方 MOD、跨设备和多种显卡仍需进一步验收。迁移、安装器及更新/卸载将在后续阶段实现。
+菜单、战役和媒体的详细证据及限制见 [外部安装验证](EXTERNAL_INSTALL.zh-CN.md)。旧布局也能复现的地形 GL 异常已按用户决定暂缓，不阻塞安装重构；不表示异常已经修复。Workshop、所有第三方 MOD、跨设备和多种显卡仍需进一步验收。已提供基础实例配置向导，后续推进更新/卸载；旧布局自动数据迁移不在开发计划内。
 
 ## 开发者复验
 

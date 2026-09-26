@@ -24,7 +24,7 @@ public final class DisabledBundledMods {
     }
     private static boolean inspect(Mod mod) {
         Path directory = mod.dir.toPath().toAbsolutePath().normalize();
-        Path root = AGame.getGameDirectory().toPath().resolve("mods").toAbsolutePath().normalize();
+        Path root = LocalModPaths.nativeMods();
         if (!root.equals(directory.getParent())) return false;
         try {
             String id = directory.getFileName().toString();

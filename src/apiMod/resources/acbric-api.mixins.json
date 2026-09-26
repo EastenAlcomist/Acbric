@@ -6,6 +6,9 @@
   "client": [
     "ExternalMainMixin",
     "ExternalPathsMixin",
+    "ExternalOpenFleetMissionMixin",
+    "ExternalSaveFleetMissionMixin",
+    "ExternalFleetModsBackendMixin",
     "ExternalLaunchSettingsMixin",
     "ExternalTextureMixin",
     "ExternalGifMixin",

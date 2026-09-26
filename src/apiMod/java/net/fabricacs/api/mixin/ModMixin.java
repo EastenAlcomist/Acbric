@@ -12,6 +12,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = Mod.class, remap = false)
 public abstract class ModMixin {
+    @org.spongepowered.asm.mixin.injection.Redirect(method = "refreshMods", at = @At(value = "NEW", target = "(Ljava/io/File;Ljava/lang/String;)Ljava/io/File;"))
+    private static java.io.File acbric$localMods(java.io.File parent, String child) {
+        return net.fabricacs.api.impl.LocalModPaths.file(parent, child);
+    }
+
     @Inject(method = "refreshMods", at = @At("HEAD"), remap = false)
     private static void acbric$refreshBundleState(CallbackInfo ci) {
         net.fabricacs.api.impl.DisabledBundledMods.invalidate();

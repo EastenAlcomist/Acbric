@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--java-home', type=Path, required=True)
     parser.add_argument('--tag', required=True)
     parser.add_argument('--arc-jar', type=Path)
+    parser.add_argument('--installer', action='store_true', help='Create and rebind an instance through setup, then use its saved launcher')
     args = parser.parse_args()
     project = Path(__file__).resolve().parents[1]
     if not args.tag.isalnum(): parser.error('Use a fresh alphanumeric tag')
@@ -25,21 +26,40 @@ def main():
     install = args.game_dir.resolve()
     before = snapshot(install)
     bundle_zip = project / 'build/external-dist/Acbric-external.zip'
-    unpack = run / '中文 空格发行'
+    unpack = run / '中文 & 空格发行'
     with zipfile.ZipFile(bundle_zip) as archive: archive.extractall(unpack)
     bundle = unpack / 'Acbric'
     instance = run / '独立 中文实例'
-    (instance / 'mods').mkdir(parents=True)
-    (instance / 'config').mkdir()
+    # Fresh root entry must explain setup requirements instead of guessing an instance.
+    fresh = subprocess.run(['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(bundle / 'start-configured.ps1')], capture_output=True, timeout=30)
+    (run / 'unconfigured-entry.log').write_bytes(fresh.stdout + fresh.stderr)
+    if fresh.returncode != 2 or b'SETUP_REQUIRED' not in fresh.stdout: raise AssertionError('Missing first-run setup instruction')
+    if args.installer:
+        setup_log = run / 'setup.log'
+        with setup_log.open('w', encoding='utf-8') as output:
+            result = subprocess.run(['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(bundle / 'setup.ps1'),
+                '-GameDir', str(install), '-InstanceDir', str(instance)], stdout=output, stderr=subprocess.STDOUT, timeout=60)
+        if result.returncode != 0: raise AssertionError('Installer failed; see setup.log')
+    mods = bundle / 'mods'
+    mods.mkdir(parents=True, exist_ok=True)
+    instance.mkdir(parents=True, exist_ok=True)
+    (instance / 'config').mkdir(exist_ok=True)
     (instance / 'config/launch-settings.json').write_text(json.dumps({'useCustomWindow': True, 'customWindowW': 960,
         'customWindowH': 640, 'customWindowFullscreen': False, 'customWindowFullscreenWindow': False, 'customWindowBorderless': False}), encoding='utf-8')
     name = 'net/fabricacs/regression/fixtures/PublicLaunchFixture'
-    with zipfile.ZipFile(instance / 'mods/public-test.jar', 'w') as jar:
+    with zipfile.ZipFile(mods / 'public-test.jar', 'w') as jar:
         jar.write(project / f'build/classes/java/regressionTest/{name}.class', name + '.class')
         jar.writestr('fabric.mod.json', json.dumps({'schemaVersion': 1, 'id': 'public_launch_test', 'version': '1', 'mixins': ['public-test.mixins.json']}))
+        jar.writestr('acbric_vanilla/info.json', json.dumps({'id': 'public_launch_test', 'name': 'Bundled shared test'}))
         jar.writestr('public-test.mixins.json', json.dumps({'required': True, 'package': 'net.fabricacs.regression.fixtures',
             'compatibilityLevel': 'JAVA_21', 'mixins': ['PublicLaunchFixture'], 'injectors': {'defaultRequire': 1}}))
-    if args.arc_jar: shutil.copy2(args.arc_jar, instance / 'mods/arc.jar')
+    (mods / 'native_test').mkdir()
+    (mods / 'native_test/info.json').write_text(json.dumps({'id': 'native_test', 'name': 'Shared native test'}), encoding='utf-8')
+    (instance / 'userdata/mods/old_path_test').mkdir(parents=True, exist_ok=True)
+    (instance / 'userdata/mods/old_path_test/info.json').write_text(json.dumps({'id': 'old_path_test', 'name': 'Old path ignored'}), encoding='utf-8')
+    if args.arc_jar: shutil.copy2(args.arc_jar, mods / 'arc.jar')
+    (instance / 'userdata/prefs.json').write_text(json.dumps({'language': 'en', 'phoneHomeWithErrors': False,
+        **{'mod_known_' + name: True for name in ['native_test', 'public_launch_test', 'installed_native', 'arc_overhaul']}}), encoding='utf-8')
     for directory in ['cwd', 'appdata', 'localappdata', 'home', 'tmp']: (run / directory).mkdir()
     env = dict(os.environ, APPDATA=str(run / 'appdata'), LOCALAPPDATA=str(run / 'localappdata'), USERPROFILE=str(run / 'home'),
         TEMP=str(run / 'tmp'), TMP=str(run / 'tmp'), JAVA_HOME=str(args.java_home.resolve()))
@@ -47,6 +67,9 @@ def main():
     startup = subprocess.STARTUPINFO(); startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW; startup.wShowWindow = subprocess.SW_HIDE
     command = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(bundle / 'start.ps1'),
         '-GameDir', str(install), '-InstanceDir', str(instance), '-JavaHome', str(args.java_home.resolve())]
+    if args.installer:
+        (run / 'invoke-entry.ps1').write_text('param([string]$Entry)\n& $Entry\nexit $LASTEXITCODE\n', encoding='utf-8-sig')
+        command = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(bundle / 'start-configured.ps1')]
     results = []
     def execute(label, cmd, expected=0):
         with (run / (label + '.log')).open('w', encoding='utf-8') as out:
@@ -56,12 +79,38 @@ def main():
         return (run / (label + '.log')).read_text(encoding='utf-8', errors='replace')
     summary = {'status': 'FAILED', 'packageSha256': digest(bundle_zip)}
     try:
+        results.append('unconfigured-entry-diagnosed')
+        if args.installer:
+            results.append('setup-created-instance')
+            binding = bundle / '.acbric-active-instance.json'
+            saved_binding = binding.read_bytes()
+            try:
+                binding.write_text('{broken', encoding='utf-8')
+                if 'LAUNCH_CONFIG_INVALID' not in execute('broken-root-binding', command, 2): raise AssertionError('Bad root config accepted')
+                binding.write_text(json.dumps({'schema': '1', 'instanceDir': str(run / 'missing-instance')}), encoding='utf-8')
+                if 'INSTANCE_NOT_FOUND' not in execute('missing-root-instance', command, 2): raise AssertionError('Missing instance accepted')
+            finally: binding.write_bytes(saved_binding)
         for index in range(2):
+            if args.installer and index == 1:
+                relocated = run / '重定位 & 框架' / 'Acbric'
+                relocated.parent.mkdir()
+                # Only move the exact freshly extracted bundle inside this test workspace.
+                if not bundle.resolve().is_relative_to(run.resolve()) or not relocated.resolve().is_relative_to(run.resolve()): raise AssertionError('Unsafe test relocation')
+                if not mods.resolve().is_relative_to(run.resolve()): raise AssertionError('Unsafe MOD relocation')
+                bundle.rename(relocated)
+                bundle = relocated; mods = relocated / 'mods'
+                command = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(bundle / 'start-configured.ps1')]
+                if 'FRAMEWORK_MOVED' not in execute('moved-framework-diagnosed', command, 2): raise AssertionError('Missing relocation diagnosis')
+                execute('rebind-instance', ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(bundle / 'setup.ps1'),
+                    '-GameDir', str(install), '-InstanceDir', str(instance), '-Language', 'en'])
+                if not (mods / 'public-test.jar').is_file(): raise AssertionError('Rebinding lost MOD')
             checkpoint = instance / 'public-checkpoint.txt'
             checkpoint.unlink(missing_ok=True)
             (instance / 'allow-test-exit').unlink(missing_ok=True)
             with (run / f'public-{index}.log').open('w', encoding='utf-8') as out:
-                launch = command[:-2] if index == 1 and (bundle / 'runtime/bin/java.exe').is_file() else command
+                launch = command[:-2] if not args.installer and index == 1 and (bundle / 'runtime/bin/java.exe').is_file() else command
+                if args.installer:
+                    launch = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(run / 'invoke-entry.ps1'), '-Entry', str(bundle / 'Start Acbric.cmd')]
                 child = subprocess.Popen(launch, cwd=run / 'cwd', env=env, stdout=out, stderr=subprocess.STDOUT, startupinfo=startup)
                 try:
                     deadline = time.monotonic() + 90
@@ -71,6 +120,10 @@ def main():
                     if index == 0:
                         text = execute('busy-instance', command, 2)
                         if 'INSTANCE_BUSY' not in text: raise AssertionError('Missing busy diagnosis')
+                        other = run / 'other-instance'
+                        busy_command = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(bundle / 'start.ps1'),
+                            '-GameDir', str(install), '-InstanceDir', str(other)]
+                        if 'MODS_BUSY' not in execute('busy-shared-mods', busy_command, 2): raise AssertionError('Missing shared MOD lock')
                     (instance / 'allow-test-exit').write_text('test completed', encoding='utf-8')
                     if child.wait(timeout=20) != 0: raise AssertionError('Public game did not exit successfully')
                 finally:
@@ -80,7 +133,8 @@ def main():
             results.append(f'public-menu-{index}: ' + checkpoint.read_text(encoding='utf-8').strip())
             if launch != command and str(bundle / 'runtime') not in checkpoint.read_text(encoding='utf-8'):
                 raise AssertionError('Bundled runtime did not take precedence')
-        if (instance / 'mods/acbric-api.jar').exists(): raise AssertionError('Core was copied into mods')
+        if (mods / 'acbric-api.jar').exists(): raise AssertionError('Core was copied into mods')
+        if (instance / 'mods').exists(): raise AssertionError('Unused instance mods folder created')
         if any((run / 'appdata').iterdir()): raise AssertionError('Global APPDATA fallback')
         logs = list((instance / 'logs/acbric/launcher').glob('*.log'))
         if len(logs) != 2 or not all('ENTERING_MAIN' in p.read_text(encoding='utf-8') or 'Loading Airships' in p.read_text(encoding='utf-8') for p in logs):
@@ -91,14 +145,16 @@ def main():
             core.write_bytes(original + b'corruption')
             if 'BUNDLE_CHANGED' not in execute('changed-core', command, 2): raise AssertionError('Changed core accepted')
         finally: core.write_bytes(original)
-        bad = command.copy(); bad[bad.index('-GameDir') + 1] = str(run / 'missing-game')
+        bad = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(bundle / 'start.ps1'), '-GameDir', str(run / 'missing-game'), '-InstanceDir', str(instance)]
         if 'INSTALL_NOT_FOUND' not in execute('missing-game', bad, 2): raise AssertionError('Missing install accepted')
         template = bundle / 'acbric-mod-template'
         (template / 'local.properties').write_text('gameInstallDir=' + install.as_posix() + '\nframeworkDir=' + bundle.as_posix() + '\ninstanceDir=' + instance.as_posix() + '\n', encoding='utf-8')
         execute('independent-template', [str(args.java_home.resolve() / 'bin/java.exe'), '-cp', str(template / 'gradle/wrapper/gradle-wrapper.jar'), 'org.gradle.wrapper.GradleWrapperMain', '-p', str(template), 'build'])
+        execute('template-install', [str(args.java_home.resolve() / 'bin/java.exe'), '-cp', str(template / 'gradle/wrapper/gradle-wrapper.jar'), 'org.gradle.wrapper.GradleWrapperMain', '-p', str(template), 'installMod'])
+        if not (mods / 'acbric-template-mod.jar').is_file() or (instance / 'mods').exists(): raise AssertionError('Template installed to wrong MOD root')
         if (template / 'libs').exists(): raise AssertionError('Template copied game dependencies')
         summary.update(status='PASS', scenarios=results, logs=[str(p.relative_to(run)) for p in logs],
-            limits='Actual production launcher and Main; test MOD observes 30 menu frames then exits. No child JVM write/network guard; isolated environment and before/after installation hashes. No full campaign in this harness.')
+            limits='Actual production launcher and Main; optional installer uses setup CLI and saved entry, GUI behavior covered separately; test MOD observes 30 menu frames then exits. No child JVM write/network guard; isolated environment and before/after installation hashes. No full campaign in this harness.')
     finally:
         after = snapshot(install)
         changes = {'added': sorted(after.keys() - before.keys()), 'removed': sorted(before.keys() - after.keys()),

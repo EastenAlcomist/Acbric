@@ -16,7 +16,7 @@
 
 ## 管理范围与依赖
 
-- 支持有效 MOD 扫描目录直属的普通、小写 `.jar` 文件；默认是 `game/mods`，也识别 `fabric.modsFolder`。隐藏文件不作为候选。
+- 支持有效 MOD 扫描目录直属的普通、小写 `.jar` 文件；外部发行是 Setup.cmd 同级 `mods`；旧布局默认 `game/mods`，也识别 `fabric.modsFolder`。隐藏文件不作为候选。
 - `acbric_api`、`fabricloader`、`airships`、`java`、`mixinextras` 为保护组件。嵌套 MOD、开发目录、多路径和外部类路径来源只读；通过父 MOD 管理其内嵌依赖。
 - 预检查必需依赖 `depends`、版本、`provides` 别名和硬冲突 `breaks`。停用时先停依赖者，启用时先启依赖库；不自动连带修改其他 MOD。
 - 检查父 JAR 声明的嵌套元数据，便于重新启用带内嵌库的 MOD。嵌套读取有深度、数量和大小限制。复杂候选版本选择、循环依赖组合和未扫描的外部来源不保证可在界面中逐项调整；最终依赖解析由 Fabric 执行。
@@ -26,7 +26,7 @@
 
 ## 配套原版资源
 
-停用 Java MOD 后，已解包在原版用户目录 `mods/<Java MOD ID>` 且具有有效 `.acbric-bundle.json` 归属记录的资源，在下次启动被屏蔽。普通原生启用偏好和资源字节不改写；重新启用 Java MOD 后恢复正常的原生启用判断，**不会强制打开玩家原来关闭的资源 MOD**。
+停用 Java MOD 后，已解包在本地原生 MOD 根下 `<Java MOD ID>`（外部发行是 Setup.cmd 同级 mods） 且具有有效 `.acbric-bundle.json` 归属记录的资源，在下次启动被屏蔽。普通原生启用偏好和资源字节不改写；重新启用 Java MOD 后恢复正常的原生启用判断，**不会强制打开玩家原来关闭的资源 MOD**。
 
 屏蔽按目录归属判定，因此 `info.json` 的原生 ID 可以不同。旧版无归属记录的配套资源必须先按 [资源迁移说明](BUNDLED_RESOURCES.md) 显式迁移，界面不会假定这些目录已经安全停用。仅与 Java MOD 同名的独立原生目录不会自动被接管。手动移到其他目录的副本、缓存副本及没有归属记录的资源不属于该屏蔽机制。
 
