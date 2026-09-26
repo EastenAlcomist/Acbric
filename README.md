@@ -1,5 +1,7 @@
 # Acbric — Airships Fabric Mod Framework
 
+dev.18 adds explicit MOD settings forms, numeric/choice controls and controlled text binding, with draft apply/cancel/defaults/reload and memory/disk conflict protection. New APIs: ModConfig.defaults()/save(expected,data), ConfigField, ConfigEditor and SettingsUi. MOD code implements effect timing; configuration is not automatically synchronized and existing campaigns are not rewritten. See [settings API](SETTINGS.md).
+
 dev.17 corrects shared-UI hit testing when Slick click-event coordinates drift from the current cursor. Native clicks still trigger actions; hit testing uses the polled cursor with scaling, masking and missing-cursor fallback preserved. Title-bar close now uses the supported X glyph. Offset replay passes; Windows focus switching still needs a real-game retest.
 
 dev.16 fixes text-field caret measurement and vertical alignment. Intermittent ignored clicks remain unconfirmed; bounded input diagnostics are included, not a claimed fix. Keep showcase 0.1.1.
@@ -32,7 +34,7 @@ native JSON data-mod system.
 
 - [Runtime diagnostics and event scopes](EVENT_SCOPES.md): MOD attribution, grouped cleanup and error reporting.
 
-The current API build is **0.3.3-dev.17**. This release adds shared UI components and MOD tool entries. Restart-based Java MOD management remains available. Saved-rule preflight and explicit conversion continue to support previewing old-save adoption/migrations and writing a separate save. Campaign lobbies check startup code and declared gameplay rules before preparation/start. New campaigns freeze the confirmed rules; resumed campaigns read saved values. Peers need matching framework/game/MOD code; this is not state synchronization or support for mixed framework versions. Runtime event diagnostics and managed subscription scopes remain available. Campaign lifecycle and native save/recovery integration remain available. Existing public members and event semantics remain compatible.
+The current API build is **0.3.3-dev.18**. This release adds shared UI components and MOD tool entries. Restart-based Java MOD management remains available. Saved-rule preflight and explicit conversion continue to support previewing old-save adoption/migrations and writing a separate save. Campaign lobbies check startup code and declared gameplay rules before preparation/start. New campaigns freeze the confirmed rules; resumed campaigns read saved values. Peers need matching framework/game/MOD code; this is not state synchronization or support for mixed framework versions. Runtime event diagnostics and managed subscription scopes remain available. Campaign lifecycle and native save/recovery integration remain available. Existing public members and event semantics remain compatible.
 
 - [Complete API guide](API.md) / [中文](API.zh-CN.md): entrypoints, context, paths, events and resources.
 - [Change record (Chinese)](CHANGELOG.zh-CN.md) / [English changelog](CHANGELOG.md).
@@ -142,7 +144,7 @@ See [unreleased changes](CHANGELOG.md) for behavior changes and remaining limita
 For resource conflicts, backups and old-directory migration, see [bundled resources](BUNDLED_RESOURCES.md).
 
 New UI events, cancellation/order and legacy migration: [event contract](EVENTS.md).
-The current API build is `0.3.3-dev.17`; the template requires `>=0.3.3-dev.10`; the template includes an opt-in campaign-data example.
+The current API build is `0.3.3-dev.18`; the template requires `>=0.3.3-dev.10`; the template includes an opt-in campaign-data example.
 
 ## 4. Project layout
 

@@ -1,5 +1,7 @@
 # MOD configuration API
 
+dev.18 adds explicit MOD settings forms, numeric/choice controls and controlled text binding, with draft apply/cancel/defaults/reload and memory/disk conflict protection. New APIs: ModConfig.defaults()/save(expected,data), ConfigField, ConfigEditor and SettingsUi. MOD code implements effect timing; configuration is not automatically synchronized and existing campaigns are not rewritten. See [settings API](SETTINGS.md).
+
 > See [dev.11 conversion](RULE_SAVE_MIGRATION.md) for save preflight, explicit adoption/migration and save-as boundaries. Normal loading still does not migrate.
 
 > dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
@@ -99,4 +101,4 @@ Configuration is not a save, is not checksummed or broadcast, and has no file wa
 
 Matching MODs do not imply matching configuration. Without authoritative parameter transfer, peers must not derive shared state from their own files. The independent v3 demo freezes `newCampaignIncrement` for new singleplayer campaigns. Old-schema migration, missing data on load and new multiplayer campaigns use deterministic 1; existing saved rules are retained. F11 reloads local settings only; F6/F8 multiplayer writes remain blocked. RESTORED still only rebinds and reads.
 
-This revision adds no configuration GUI, automatic broadcast/migration or general network-command API. See [campaign data](CAMPAIGN_DATA.md) and [lifecycle](CAMPAIGN_LIFECYCLE.md).
+dev.5 originally provided no configuration GUI; dev.18 settings forms are linked above. Automatic broadcast/migration and a general network-command API remain out of scope. See [campaign data](CAMPAIGN_DATA.md) and [lifecycle](CAMPAIGN_LIFECYCLE.md).

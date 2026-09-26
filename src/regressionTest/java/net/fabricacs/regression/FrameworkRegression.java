@@ -39,6 +39,7 @@ public final class FrameworkRegression {
         checks += CampaignDataRegression.run(root.resolve("campaign-data"));
         checks += CampaignLifecycleRegression.run();
         checks += ConfigRegression.run(root.resolve("configs"));
+        checks += SettingsRegression.run(root.resolve("settings"));
         checks += net.fabricacs.api.event.EventScopeRegression.run();
         checks += net.fabricacs.api.impl.RuntimeEventDiagnosticsRegression.run(root.resolve("runtime-events"));
         checks += net.fabricacs.api.impl.CodeManifestRegression.run(root.resolve("code-manifests"));

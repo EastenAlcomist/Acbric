@@ -1,5 +1,13 @@
 # Changelog
 
+2026-09-26 player acceptance: the user reported no problems testing dev.18 and requested a commit. All 28 changed files matched the build-validation snapshot before acceptance notes were added. Code is unchanged; the existing 769 standard checks and 304 integration checks across two game versions remain the validation evidence. No detailed manual test matrix was supplied, so this feedback does not establish coverage of every GPU, IME or third-party MOD combination.
+
+Final validation: 769 standard checks (57 new) and 304 checks across two game versions covering Fabric/UI, showcase saving, fresh-process reload and corrupt-config startup; dev.17 public signatures retain 71 types/354 members. English/Chinese UI and settings examples are compiled. Drawing terminals are GPU-free; player feedback is recorded above, and automated checks do not cover OS display, IME or focus switching.
+
+## Development build — API 0.3.3-dev.18
+
+dev.18 adds explicit MOD settings forms, numeric/choice controls and controlled text binding, with draft apply/cancel/defaults/reload and memory/disk conflict protection. New APIs: ModConfig.defaults()/save(expected,data), ConfigField, ConfigEditor and SettingsUi. MOD code implements effect timing; configuration is not automatically synchronized and existing campaigns are not rewritten. See [settings API](SETTINGS.md).
+
 2026-09-26 player feedback: the user accepted the dev.17 UI fixes and approved proceeding. This stage includes shared components, details/tool entries, English/Chinese support, text positioning, focus-return hit testing, and the close glyph. Existing validation: 712 standard checks and 230 integration checks across two game versions. All 34 changed files matched the tested snapshot before this commit; only acceptance notes were then added. Unchanged code was not retested. This does not establish coverage of every GPU, IME, or third-party MOD combination.
 
 ## Development build — API 0.3.3-dev.17

@@ -35,6 +35,8 @@ public final class ModConfig {
     }
     public Path path() { return file.path(); }
     public Path backupPath() { return file.backupPath(); }
+    /** 声明的默认值副本，不读取或修改文件。 */
+    public ConfigSnapshot defaults() { return new ConfigSnapshot(version, defaults); }
     /** 首次读取磁盘；已加载则返回当前快照，不丢弃尚未保存的修改。 */
     public synchronized ConfigSnapshot load() throws IOException { writable(); return current == null ? reload() : read(); }
     public synchronized ConfigSnapshot read() {
@@ -90,6 +92,19 @@ public final class ModConfig {
         file.save(disk, bytes);
         disk = bytes;
         envelope = candidate;
+    }
+    /** 草稿提交：expected 必须是此句柄当前 read/load 返回的原始快照；验证、写盘成功后才更新内存。
+     * 保留旧 update/save 语义。另一个编辑者 update/reload/迁移后，旧快照不可覆盖新值。 */
+    public synchronized ConfigSnapshot save(ConfigSnapshot expected, JSONObject data) throws IOException {
+        writable(); requireCurrentVersion();
+        if (Objects.requireNonNull(expected) != current)
+            throw new ConfigException(ConfigException.Code.CONFLICT, "Config changed since editing began: " + path());
+        ConfigSnapshot next = new ConfigSnapshot(version, prepare(data));
+        JSONObject candidate = CampaignJson.copy(envelope, 72).put("version", version).put("data", next.data());
+        byte[] bytes = (candidate.toString(2) + "\n").getBytes(StandardCharsets.UTF_8);
+        file.save(disk, bytes);
+        disk = bytes; envelope = candidate; current = next;
+        return next;
     }
     private void requireCurrentVersion() {
         if (read().dataVersion() != version) throw new IllegalStateException("Explicit migration required before update/save: " + path());

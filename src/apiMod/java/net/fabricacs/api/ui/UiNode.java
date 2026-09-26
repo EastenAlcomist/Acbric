@@ -18,6 +18,7 @@ public final class UiNode {
     final BooleanSupplier enabled;
     final String tip;
     final int width;
+    boolean boundText;
 
     UiNode(Kind kind, List<UiNode> children, Supplier<String> text, Consumer<UiWindowHandle> action,
            BooleanSupplier checked, Consumer<Boolean> change, Consumer<String> edit, int size, Ui.Align alignment,
@@ -27,7 +28,8 @@ public final class UiNode {
         this.enabled=enabled;this.tip=tip;this.width=width;
     }
     private UiNode copy(BooleanSupplier enabled,String tip,int width) {
-        return new UiNode(kind,children,text,action,checked,change,edit,size,alignment,enabled,tip,width);
+        UiNode next=new UiNode(kind,children,text,action,checked,change,edit,size,alignment,enabled,tip,width);
+        next.boundText=boundText;return next;
     }
     public UiNode enabled(BooleanSupplier value) { return copy(Objects.requireNonNull(value),tip,width); }
     public UiNode tooltip(String value) { return copy(enabled,Objects.requireNonNull(value),width); }

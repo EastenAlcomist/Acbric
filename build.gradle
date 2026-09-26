@@ -78,6 +78,9 @@ tasks.register('regressionTest', JavaExec) {
     def sandbox = layout.buildDirectory.dir('regression-sandbox')
     workingDir = sandbox
     systemProperty 'java.awt.headless', 'true'
+    // 原版 JSON 的小数格式化依赖 sun.misc.FloatingDecimal2。普通 JDK 测试类加载器
+    // 不搜索该模块包中的 classpath 类；仅测试进程补丁加载，游戏仍由 Knot 加载 FloatIO。
+    jvmArgs '--patch-module', "jdk.unsupported=${file('libs/FloatIO.jar').absolutePath}"
     systemProperty 'file.encoding', 'UTF-8'
     systemProperty 'stdout.encoding', 'UTF-8'
     systemProperty 'stderr.encoding', 'UTF-8'
@@ -214,6 +217,7 @@ tasks.register('distDir', Sync) {
     from 'RULE_SAVE_MIGRATION.md', 'RULE_SAVE_MIGRATION.zh-CN.md'
     from 'MOD_MANAGEMENT.md', 'MOD_MANAGEMENT.zh-CN.md'
     from 'UI.md', 'UI.zh-CN.md'
+    from 'SETTINGS.md', 'SETTINGS.zh-CN.md'
     from 'CONFIG.md', 'CONFIG.zh-CN.md'
     from 'CAMPAIGN_DATA.md', 'CAMPAIGN_DATA.zh-CN.md'
     from 'CAMPAIGN_LIFECYCLE.md', 'CAMPAIGN_LIFECYCLE.zh-CN.md'

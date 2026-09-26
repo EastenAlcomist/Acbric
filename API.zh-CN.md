@@ -1,8 +1,10 @@
 # Acbric API 开发手册
 
+dev.18 新增显式字段的 MOD 设置页、数字/选项组件和受控文本绑定；草稿应用、取消、默认值、重读及双重冲突保护。新增 ModConfig.defaults()/save(expected,data)、ConfigField、ConfigEditor、SettingsUi。生效时机由 MOD 处理，不自动同步配置或修改已有战役。详见 [设置 API](SETTINGS.zh-CN.md)。
+
 [English](API.md) | **中文**
 
-适用版本：**`acbric_api 0.3.3-dev.17`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
+适用版本：**`acbric_api 0.3.3-dev.18`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
 
 - 安装、编译和启动：[README.zh-CN.md](README.zh-CN.md)。
 - 本次兼容性调整：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。

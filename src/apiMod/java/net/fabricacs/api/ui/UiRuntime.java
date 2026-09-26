@@ -122,7 +122,7 @@ public final class UiRuntime {
             case PANEL -> {s.boxes.add(new Box(n,r,visible,enabled,"",false));layout(s,n.children.getFirst(),new Rect(r.x+pad,r.y+pad,Math.max(0,r.w-pad*2),Math.max(0,r.h-pad*2)),visible,enabled,c,values);}
             case SCROLL -> {int contentW=Math.max(0,r.w-px(c.scale(),10));int h=height(n.children.getFirst(),contentW,c,values);int max=Math.max(0,h-r.h);int offset=Math.clamp(s.offsets.getOrDefault(n,0),0,max);s.offsets.put(n,offset);s.scrolls.add(new Scroll(n,visible,max));layout(s,n.children.getFirst(),new Rect(r.x,r.y-offset,contentW,h),visible,enabled,c,values);}
             case SPACE -> {}
-            default -> {String value=text(n,values);if(n.kind==UiNode.Kind.TEXT)s.editors.computeIfAbsent(n,k->new Editor(value));s.boxes.add(new Box(n,r,visible,enabled,value,n.kind==UiNode.Kind.TOGGLE&&n.checked.getAsBoolean()));}
+            default -> {String value=text(n,values);if(n.kind==UiNode.Kind.TEXT)editor(s,n,value);s.boxes.add(new Box(n,r,visible,enabled,value,n.kind==UiNode.Kind.TOGGLE&&n.checked.getAsBoolean()));}
         }
     }
     public void render(Canvas canvas,int width,int height){
@@ -201,8 +201,14 @@ public final class UiRuntime {
     }
     private static boolean interactive(UiNode node){return node.kind==UiNode.Kind.BUTTON||node.kind==UiNode.Kind.TOGGLE||node.kind==UiNode.Kind.TEXT;}
     private void activate(State s,Box box){if(box.node.kind==UiNode.Kind.BUTTON)box.node.action.accept(s.handle);else if(box.node.kind==UiNode.Kind.TOGGLE)box.node.change.accept(!box.node.checked.getAsBoolean());}
+    private Editor editor(State s,UiNode node,String value){
+        if(value.codePointCount(0,value.length())>node.size||value.codePoints().anyMatch(Character::isISOControl))throw new IllegalArgumentException("Invalid bound single-line text");
+        Editor e=s.editors.computeIfAbsent(node,k->new Editor(value));
+        if(node.boundText&&!value.equals(e.text)){e.text=value;e.caret=value.length();e.selected=false;}
+        return e;
+    }
     private void edit(State s,UiNode node,Input in){
-        Editor e=s.editors.get(node);String before=e.text;
+        Editor e=node.boundText?editor(s,node,Objects.requireNonNull(node.text.get())):s.editors.get(node);String before=e.text;
         if(in.selectAll)e.selected=true;
         if(in.home){e.caret=0;e.selected=false;}if(in.end){e.caret=e.text.length();e.selected=false;}
         if(in.left){e.caret=e.caret==0?0:e.text.offsetByCodePoints(e.caret,-1);e.selected=false;}

@@ -1,5 +1,7 @@
 # MOD 配置 API
 
+dev.18 新增显式字段的 MOD 设置页、数字/选项组件和受控文本绑定；草稿应用、取消、默认值、重读及双重冲突保护。新增 ModConfig.defaults()/save(expected,data)、ConfigField、ConfigEditor、SettingsUi。生效时机由 MOD 处理，不自动同步配置或修改已有战役。详见 [设置 API](SETTINGS.zh-CN.md)。
+
 > dev.11 的存档预检查、显式接纳/迁移及另存边界见 [转换契约](RULE_SAVE_MIGRATION.zh-CN.md)；普通加载仍不执行迁移。
 
 > dev.10：显式声明共享规则、生成前固化及续局检查见 [共享规则](SHARED_RULES.zh-CN.md)。原有本地配置/存储写入仍不自动广播；下文分版本验证记录保留为历史。
@@ -99,4 +101,4 @@ JSONObject settings = config.read().data();
 
 双方 MOD 一样不代表配置一样。缺少权威参数传递时，不应让联机各端从本地文件生成共享状态。独立示例 v3 对新单机战役固化 `newCampaignIncrement`；旧战役迁移、加载缺失数据和新联机战役使用确定值 1，已有存档规则保留。示例 F11 只重载本地配置，F6/F8 联机写入仍被阻止；RESTORED 仍只重新绑定读取。
 
-本轮不提供配置 GUI、自动广播、自动迁移或通用网络指令 API。参见 [战役数据](CAMPAIGN_DATA.zh-CN.md) 与 [生命周期](CAMPAIGN_LIFECYCLE.zh-CN.md)。
+dev.5 当时不提供配置 GUI；dev.18 设置页见上方入口。仍无自动广播、自动迁移或通用网络指令 API。参见 [战役数据](CAMPAIGN_DATA.zh-CN.md) 与 [生命周期](CAMPAIGN_LIFECYCLE.zh-CN.md)。

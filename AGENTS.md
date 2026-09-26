@@ -1,5 +1,11 @@
 # AGENTS.md — Acbric
 
+2026-09-26 实机验收：用户确认 dev.18 测试没有发现问题，并要求提交。提交前全部 28 个变更文件与构建验证快照一致；本次只补充验收说明，沿用 769 项标准检查和两版共 304 项集成检查，不重复测试未改动的代码。未提供逐项实机测试矩阵，此反馈不代表全部 GPU、输入法或第三方 MOD 组合均已覆盖。
+
+最终验证：769 项标准检查（57 项新增）、两版共 304 项真实 Fabric/界面/示例保存/新进程重启及损坏配置启动检查通过，保留 dev.17 的 71 个公开类型/354 个成员。UI 与设置双语文档示例编译检查。绘制终端无 GPU；用户实机反馈见上方，自动化验证不覆盖操作系统显示、输入法和切屏。
+
+dev.18 设置界面：设置契约入口 SETTINGS.md / SETTINGS.zh-CN.md。字段显式声明，草稿独立；ModConfig.save(expected,data) 使用同句柄快照身份检查内存冲突，磁盘保存成功才发布新内存。失败保留草稿，不自动迁移/同步/改已有战役。Ui.textField Supplier 重载须同步写回，默认值/重读用绑定刷新。标准 769 项；SettingsUiRegression 依赖原生语言资源，由真实 Fabric 探针执行。普通 JDK 回归为 FloatIO 单独补丁 jdk.unsupported，生产 Knot 启动不变。展示 MOD 0.2.0，入口“打开设置/查看设置生效状态”，future 仅模拟，不做真实战役试点。用户已确认测试正常并授权本轮提交；未要求推送。
+
 2026-09-26 实机反馈：用户确认 dev.17 本轮 UI 修复可以继续推进。本阶段包含公共组件、详情/工具入口、中英文、输入框定位、切屏坐标与关闭字形修复。已有 712 项标准检查、两版共 230 项集成检查；本次提交前 34 个变更文件与已验证快照完全一致，仅补充验收记录，不重复运行未变更代码的测试。此确认不扩大为全部 GPU/输入法/第三方 MOD 组合已验收。
 
 Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Skies》(Java,
@@ -44,7 +50,7 @@ Fabric 风格的 MOD 加载框架,面向策略游戏《Airships: Conquer the Ski
 | 层 | 位置 | 职责 | 依赖 |
 |---|---|---|---|
 | 启动层 | `src/main` | `AirshipsGameProvider` 把游戏塞进 Fabric(解析 `game/Airships.json`、拼类路径、反射调 `Main.main`) | Fabric Loader；不依赖游戏 API 或 Acbric API |
-| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.3-dev.17（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、21 个 hook mixin | 游戏 + fabric-loader |
+| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.3-dev.18（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、21 个 hook mixin | 游戏 + fabric-loader |
 
 功能 MOD 不属于本仓库:使用者在自己的项目里编写(可以 `acbric-mod-template/` 为起点),
 编译期依赖 API JAR，通常还依赖 `libs/asplit-*.zip`。独立模板使用其本地 API JAR；同工程 source set 才可直接依赖 `apiMod.output`。
@@ -135,11 +141,11 @@ Fabric 略有差异:
   `javap -p -c` 反编译 `libs/asplit-*.zip` 里的目标 class 核对。
 - dev.12 的 `disabledMods` 在 Provider 定位阶段读取，交由固定 Loader 候选过滤；必须同时更新启动器和 API。Java 启停重启后生效，原生热重载按钮不影响此选择，见 MOD_MANAGEMENT.md。不可实现成只跳过 acbric 入口，否则 Mixin 仍生效。
 - 真实入口是 `src/main` 的 GameProvider + ServiceLoader 注册,不是任何 `fabric.mod.json`。
-- API 版本号 `acbric_api` = 0.3.3-dev.17（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
+- API 版本号 `acbric_api` = 0.3.3-dev.18（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
 
 ## 最近验证状态
 
-当前标准构建通过 712 项无界面回归。游戏 1.2.15.2 / 1.2.14 的真实 Fabric 探针各通过 10 项新增战役存储检查，包括原生二进制往返和实际 StoredState 恢复。用户已确认 dev.1、dev.2 运行正常，并对 dev.4 测试反馈“暂时没有发现问题”；未提供逐项测试记录，不推断全部联机和恢复场景已验收。详细边界以 CHANGELOG.md 为准；不能据此声称完整战役、双机联机和全部第三方 MOD 兼容。
+当前标准构建通过 769 项无界面回归。游戏 1.2.15.2 / 1.2.14 的真实 Fabric 探针各通过 10 项新增战役存储检查，包括原生二进制往返和实际 StoredState 恢复。用户已确认 dev.1、dev.2 运行正常，并对 dev.4 测试反馈“暂时没有发现问题”；未提供逐项测试记录，不推断全部联机和恢复场景已验收。详细边界以 CHANGELOG.md 为准；不能据此声称完整战役、双机联机和全部第三方 MOD 兼容。
 
 - dev.4 生命周期见 `CAMPAIGN_LIFECYCLE.md` / 中文版。CREATED 在生成的 setupPlayer 后、首次自动保存前；LOADED 只挂 JSON 战役构造成功出口；RESTORED 不执行初始化/迁移。EXITED 在客户端 input 边界或正常退出时发出，不保证强杀回调。
 - 独立工作区示例在相邻 `../acbric-campaign-demo/`，不加入框架 source set 或默认 MOD。用户对 dev.4 反馈暂未发现问题，完整逐场景覆盖仍未确认。
@@ -156,7 +162,7 @@ Fabric 略有差异:
 
 - dev.10 用户已批准共享规则声明和一致性检查；见 `SHARED_RULES.md` / 中文版。规则只显式声明，不自动接管配置；新战役 WorldGenScreen 构造 RETURN 固化，续局读存档，缺失/版本不符拒绝加载，不补默认或迁移。保留 `acbric_api` 存储命名空间。总计 541 项回归，两版 14 轮/204 项网络探针通过，完整 GUI/生成/跨机器仍待验收。模板最低 API dev.10，但规则示例默认不调用。不要把未声明字段或状态同步说成已覆盖。
 
-- dev.11 用户批准显式旧档接纳/规则迁移和独立测试 MOD。见 `RULE_SAVE_MIGRATION.md` / 中文版。普通加载依旧不迁移，OpenGameMission 文件入口预检查；转换 API 仅支持原生目录存档，快照→显式预览→新目录发布，原档从不改写。缺失值必须明确传入，较旧版本必须有注册转换器。独立 `../acbric-rules-test` 提供互斥 legacy/v1/v2，不能作为框架默认 MOD。597 项标准检查，六进程 136 项原生规则/存档检查、四轮 54 项网络检查；不声称已完整程序生成世界/GUI/跨机器验收。
+- dev.11 用户批准显式旧档接纳/规则迁移和独立测试 MOD。见 `RULE_SAVE_MIGRATION.md` / 中文版。普通加载依旧不迁移，OpenGameMission 文件入口预检查；转换 API 仅支持原生目录存档，快照→显式预览→新目录发布，原档从不改写。缺失值必须明确传入，较旧版本必须有注册转换器。独立 `../acbric-rules-test` 提供互斥 legacy/v1/v2，不能作为框架默认 MOD。597 项标准检查，六进程 136 项原生规则/存档检查、四轮 57 项网络检查；不声称已完整程序生成世界/GUI/跨机器验收。
 
 - dev.12 Java MOD 管理：顶层 JAR 启停、待重启状态、依赖预检查和受管理配套资源屏蔽。`src/shared/java` 是两层共用的无游戏依赖配置协议，不共享可变静态状态。核心/嵌套/外部来源只读；无归属配套资源须先显式迁移，普通原生偏好保留。用户暂缓运行期同步和反作弊；本轮未新增公开 API。详见 MOD_MANAGEMENT.md / 中文版。
 
