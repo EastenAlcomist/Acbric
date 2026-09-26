@@ -138,6 +138,8 @@ tasks.register('regressionTest', JavaExec) {
     // "-Pacbric.suites=event" 到不了 Gradle；环境变量没有这个问题，且两端脚本写法一致。
     // 套件名与覆盖范围见 BUILDING.zh-CN.md，或跑 regressionTest -Pacbric.suites=list。
     def suiteSelection = (findProperty('acbric.suites') ?: System.getenv('ACBRIC_SUITES') ?: '').toString().trim()
+    // 完整构建/检查不能被终端遗留的快速测试选择缩小范围。
+    if (gradle.startParameter.taskNames.any { it.tokenize(':').last() in ['build', 'check'] }) suiteSelection = ''
     if (!suiteSelection.isEmpty()) {
         setArgs(suiteSelection.split(',')*.trim().findAll { !it.isEmpty() })
     }
@@ -450,4 +452,10 @@ tasks.register('externalDistZip', Zip) {
             environment 'PYTHONUTF8', '1'
         }
     }
+}
+
+// 这些维护任务仍在执行阶段使用 Project 服务；保留日常编译/回归的配置缓存，
+// 对它们显式停用缓存，防止快速构建设置破坏 jlink 和正式发行流程。
+['compareCodeManifests', 'createBundledJre', 'distDir', 'externalDistDir', 'externalDistZip'].each { name ->
+    tasks.named(name) { notCompatibleWithConfigurationCache('Uses execution-time project services for distribution or maintenance') }
 }

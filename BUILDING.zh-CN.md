@@ -40,7 +40,7 @@
 1. **真正的反馈环是「改代码 → 启动游戏（约 72 s）→ 读日志」。** 编译前的每一步都是纯开销，
    能砍就砍。这个项目的正确性只有在运行期才暴露（mixin 是加载期字节码注入），所以迭代次数多。
 2. **`build` 原本没有"只编译"的语义。** 上游把 `check` 接到了 `regressionTest` 上，
-   所以 `gradlew build` = 编译 + 872 项断言。想只编译必须记住 `assemble` 这个 Gradle 内部名。
+   所以 `gradlew build` = 编译 + 987 项断言。想只编译必须记住 `assemble` 这个 Gradle 内部名。
    现在 `build` 就是"编译"，`build full` 才是"编译 + 测试"。
 3. **145 行测试噪声会把编译错误埋掉。** 回归会打印大量 `[Acbric] Bundle conflict …`，
    而编译错误只有几行。默认只编译，错误一眼可见。
@@ -77,17 +77,18 @@
 
 ### 2.2 `libs/`（编译必需，约 13 MB）
 
-**不随仓库分发**（版权原因）。从你自己的 Airships 安装目录复制：
+游戏文件不随仓库分发。新版原版安装通常是根目录的 `asplit-A.zip` / `asplit-B.zip` 加 `lib/*.jar`；编译依赖统一复制到本仓库 `libs`。Fabric Loader 来自 Acbric 框架发行包的 `loader-libs`，不是游戏自带依赖：
 
 ```powershell
-# Windows
-Copy-Item '<你的 Airships>\libs' .\libs -Recurse -Force
+$gameInstall = 'C:/Games/Airships Conquer the Skies'
+$framework = 'C:/Acbric'
+New-Item -ItemType Directory -Path ./libs -Force | Out-Null
+Copy-Item -LiteralPath "$gameInstall/asplit-A.zip", "$gameInstall/asplit-B.zip" -Destination ./libs
+Copy-Item -Path "$gameInstall/lib/*.jar" -Destination ./libs
+Copy-Item -LiteralPath "$framework/loader-libs/fabric-loader-0.19.3.jar" -Destination ./libs
 ```
 
-```sh
-# Linux / macOS
-cp -r "<your Airships>/libs" ./libs
-```
+其他布局请按 `Airships.json` 的 classPath 定位相应文件；POSIX 系统同样将这些归档复制到 `libs`，不要假设原版有一个同名 `libs` 目录。
 
 至少需要这三个文件，缺任何一个都会在编译前被 `verifyFrameworkInputs` 拦下来：
 
@@ -109,7 +110,9 @@ cp -r "<your Airships>/libs" ./libs
 约 1.3 GB：`Airships.json`、`data/`、`lib/native` 等。
 **编译和无界面回归都不需要它**；只有 `gradlew startAirships` 需要，缺了会被 `verifyGameInputs` 拦下并给出提示。
 
-不想复制 1.3 GB 的话，可以只让 `mods/` 独立、其余用 junction/符号链接共享一份现成的游戏目录 —— 具体做法见 `tools/reports/06-build-and-test.md`（本机实测路线）。
+新版开发运行优先使用外部安装方式：构建 `externalDistZip -PbundleRuntime` 后运行包中的 Setup，直接选择自有游戏目录，不复制游戏到仓库。详见 [INSTALLER.zh-CN.md](INSTALLER.zh-CN.md)。上述 `startAirships` 是保留的旧布局开发任务。
+
+对外分享只使用 **externalDistZip**；旧 `distZip` 会带入本地游戏内容，不能作为干净框架包发布。
 
 ---
 
@@ -145,7 +148,7 @@ cp -r "<your Airships>/libs" ./libs
 | `org.gradle.caching=true` | 任务输出按内容复用，换分支、重跑更快 |
 | `org.gradle.daemon=true` | **必须保留**：`--no-daemon` 会让 `assemble` 变成 12.4s |
 
-配置缓存已逐一验证与 `build` / `regressionTest` / `apiModJar` / `installApiMod` / `startAirships` / `distDir` / `syncModTemplateLibs` 全部兼容，无告警。
+日常编译与回归保留配置缓存。`createBundledJre`、`distDir`、`externalDistDir`、`externalDistZip` 和 `compareCodeManifests` 使用执行期项目服务，已显式声明不兼容配置缓存；运行这些任务时 Gradle 自动丢弃本次配置缓存，不影响其他构建。
 万一某个环境上出现意外，单次关掉即可：
 
 ```sh
@@ -157,7 +160,7 @@ cp -r "<your Airships>/libs" ./libs
 ## 4. 测试
 
 ```sh
-./test.sh all          # 全部套件（当前 872 项断言）
+./test.sh all          # 全部套件（当前 987 项断言）
 ./test.sh event        # 只跑 event
 ./test.sh ev           # 唯一前缀也行
 ./test.sh data rename  # 多选，按给定顺序执行
@@ -172,6 +175,7 @@ cp -r "<your Airships>/libs" ./libs
 | `data` | 3 | `DATA_LOADED` 原样传递游戏结果：不清理诊断、不把失败改成成功 | F01 |
 | `bundle` | 44 | 内嵌原版资源归属存储：9 种路径穿越、更新、保留用户改动、冲突、备份与中断恢复 | F02 / F05 |
 | `classpath` | 2 | 启动类路径按**归档内容**排除 Loader/Mixin/ASM/垫片，保留游戏库，且不重复 | F03 |
+| `external` | 115 | 外部安装/启动、实例配置、Steam 识别、维护锁和缓存隔离（当前全量验收要求 Windows） | `EXTERNAL_INSTALL.md` · `INSTALLER.md` |
 | `event` | 12 | 事件总线：`registerOnce` 只执行一次、句柄身份、重复注册 | F04 / F12 |
 | `rename` | 7 | 重命名面板新旧事件的顺序与取消契约 | F06 |
 | `mods` | 67 | Fabric MOD 安装校验与 Java JAR 启停管理：非法 schema / id / 缺字段、依赖预检查 | F07 · `MOD_MANAGEMENT.md` |
@@ -185,7 +189,7 @@ cp -r "<your Airships>/libs" ./libs
 | `ui` | 107 | 公共 UI 组件、文本选择/编辑、输入遮蔽与中英文选择 | `UI.md` |
 | `devtools` | 56 | 开发者工具与控制台：命令绑定、执行与有界诊断缓冲 | `DEVELOPMENT.md` · `COMMANDS.md` · `DEVELOPER_TOOLS.md` |
 
-**合计 872 项**；表里的数字是实测值，加完套件请重跑 `test list` 核对。
+**16 个套件，合计 987 项**；表里的数字是实测值，加完套件请运行 `test list` 核对注册表，再用 `test all` 核对断言数量。
 
 选择规则：精确名 → 别名 → **唯一**前缀 → 唯一子串。歧义或未知会直接报错并列出可选套件，
 不会静默跑错东西。常见同义词已登记为别名：`cp`/`classes` → `classpath`、`settings` → `config`、
@@ -200,7 +204,7 @@ cp -r "<your Airships>/libs" ./libs
 ### CI 语义没有变
 
 `check` 仍然依赖 `regressionTest`，而不传选择参数时 `regressionTest` **跑全部套件**。
-所以 `gradlew build`、`build full`、CI 的行为与以前完全一致 —— 选套件只影响本地手动运行。
+显式调用 `gradlew build` / `check`（含 `build full`）时会忽略快速测试选择，保证全量。`test` 无参数与 `test all` 会清空继承的 `ACBRIC_SUITES`；直接运行 `regressionTest` 才读取选择参数或环境变量。
 
 ```sh
 ./build.sh full                                        # = gradlew build = 编译 + 全部套件
@@ -278,7 +282,7 @@ gradlew regressionTest -Pacbric.suites=event,rename    # IDE / CI 里的等价�
   `Ac source/tools` 里的 `acbric.cmd verify`（静态校验注入目标与 `@At` 调用点）。
 - **不要把逻辑写进 `build.cmd` / `build.sh` / `test.cmd` / `test.sh`**：
   它们只是"找 JDK + 转发"。要加行为就加 Gradle 任务，这样 IDE 和 CI 都受益。
-- **先跑覆盖你改动的那一套，收尾前再跑 `test all`。** 全量只有 872 项断言、约 7 秒，
+- **先跑覆盖你改动的那一套，收尾前再跑 `test all`。** 全量只有 987 项断言、约 7 秒，
   没有理由跳过。迭代过程中用 `test <套件>` 更快：改 `BundledResourceStore` 跑 `test bundle`，
   改 `Event` 跑 `test event`。
 - 新增测试请加进套件注册表（见下文 "加一个新套件"），不要新建平行的测试入口。

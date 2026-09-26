@@ -27,7 +27,7 @@ if [ ! -f "$BUILD" ]; then
 fi
 
 case "${1:-}" in
-    ""|help|-h|--help)
+    help|-h|--help)
         cat <<'EOF'
   ./test.sh                 跑全部套件 / run every suite
   ./test.sh all             同上 / same as above
@@ -42,15 +42,18 @@ EOF
 esac
 
 SEL=""
+RUN_ALL=""
 for a in "$@"; do
     case $a in
-        all) SEL="" ;;
+        all) RUN_ALL=1 ;;
         *)   if [ -z "$SEL" ]; then SEL="$a"; else SEL="$SEL,$a"; fi ;;
     esac
 done
 
-if [ -z "$SEL" ]; then
+if [ -n "$RUN_ALL" ] || [ -z "$SEL" ]; then
     echo "[test] running all regression suites"
+    ACBRIC_SUITES=""
+    export ACBRIC_SUITES
     exec "$BUILD" regressionTest
 fi
 

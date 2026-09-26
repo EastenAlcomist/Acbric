@@ -43,7 +43,7 @@ Four reasons:
    launch is pure overhead, and correctness here only shows up at runtime (mixins are load-time bytecode
    injection), so the loop runs often.
 2. **`build` had no compile-only meaning.** Upstream wired `check` to `regressionTest`, so
-   `gradlew build` = compile + 872 assertions. Compiling alone meant remembering Gradle's internal
+   `gradlew build` = compile + 987 assertions. Compiling alone meant remembering Gradle's internal
    `assemble` name. Now `build` compiles and `build full` compiles and tests.
 3. **145 lines of test noise bury compile errors.** The regression prints a lot of
    `[Acbric] Bundle conflict …`; a compile error is a couple of lines. Compiling only keeps it visible.
@@ -80,17 +80,18 @@ Gradle stack trace.
 
 ### 2.2 `libs/` (required to compile, ~13 MB)
 
-**Not redistributed** (copyright). Copy it from your own Airships installation:
+Game files are not redistributed. A current vanilla installation normally contains `asplit-A.zip` / `asplit-B.zip` at its root and dependencies under `lib/*.jar`. Copy these into this repository's `libs`. Fabric Loader comes from an Acbric framework release's `loader-libs`, not the vanilla game:
 
 ```powershell
-# Windows
-Copy-Item '<your Airships>\libs' .\libs -Recurse -Force
+$gameInstall = 'C:/Games/Airships Conquer the Skies'
+$framework = 'C:/Acbric'
+New-Item -ItemType Directory -Path ./libs -Force | Out-Null
+Copy-Item -LiteralPath "$gameInstall/asplit-A.zip", "$gameInstall/asplit-B.zip" -Destination ./libs
+Copy-Item -Path "$gameInstall/lib/*.jar" -Destination ./libs
+Copy-Item -LiteralPath "$framework/loader-libs/fabric-loader-0.19.3.jar" -Destination ./libs
 ```
 
-```sh
-# Linux / macOS
-cp -r "<your Airships>/libs" ./libs
-```
+For another layout, locate archives using `Airships.json` classPath. On POSIX systems copy the same archives into `libs`; do not assume the vanilla game has a directory named `libs`.
 
 Three files are mandatory; `verifyFrameworkInputs` stops the build before compilation if any is missing:
 
@@ -112,8 +113,9 @@ checks it when you run `test`/`check`, so a compile-only `build` still works wit
 About 1.3 GB: `Airships.json`, `data/`, `lib/native`, … **Neither compilation nor the headless
 regression needs it.** Only `gradlew startAirships` does, and `verifyGameInputs` reports it clearly.
 
-If you would rather not copy 1.3 GB, keep only `mods/` separate and junction/symlink the rest to an
-existing game directory — see `tools/reports/06-build-and-test.md` for a verified recipe.
+Prefer the new external installation workflow: build `externalDistZip -PbundleRuntime`, then use the package's Setup to select your own game directory, without copying the game into the repository. See [INSTALLER.md](INSTALLER.md). `startAirships` above remains a legacy-layout development task.
+
+Share **externalDistZip** only. Legacy `distZip` includes local game content and is not a clean framework release.
 
 ---
 
@@ -149,8 +151,7 @@ Three settings in `gradle.properties`, each backed by a measurement:
 | `org.gradle.caching=true` | content-addressed task output reuse — faster rebuilds and branch switches |
 | `org.gradle.daemon=true` | **must stay on**: `--no-daemon` turns `assemble` into 12.4 s |
 
-The configuration cache was verified against `build`, `regressionTest`, `apiModJar`, `installApiMod`,
-`startAirships`, `distDir` and `syncModTemplateLibs` — no warnings, no incompatibilities.
+Daily compilation and regression retain configuration caching. `createBundledJre`, `distDir`, `externalDistDir`, `externalDistZip` and `compareCodeManifests` use execution-time project services and explicitly opt out. Gradle discards that invocation's configuration cache without disabling caching for other builds.
 If it ever misbehaves on your machine, disable it for one run:
 
 ```sh
@@ -162,7 +163,7 @@ If it ever misbehaves on your machine, disable it for one run:
 ## 4. Testing
 
 ```sh
-./test.sh all          # every suite (currently 872 assertions)
+./test.sh all          # every suite (currently 987 assertions)
 ./test.sh event        # one suite
 ./test.sh ev           # unique prefix works too
 ./test.sh data rename  # several suites, run in the order given
@@ -177,6 +178,7 @@ If it ever misbehaves on your machine, disable it for one run:
 | `data` | 3 | `DATA_LOADED` reports the game's real result: no log clearing, no failure-to-success rewriting | F01 |
 | `bundle` | 44 | bundled vanilla resource store: 9 traversal cases, updates, user-edit preservation, conflicts, backups, interrupted-transaction recovery | F02 / F05 |
 | `classpath` | 2 | launcher classpath excluded **by archive content** (Loader/Mixin/ASM/shim), game libraries kept, no duplicates | F03 |
+| `external` | 115 | external installation/launch, instance setup, Steam discovery, maintenance lock and cache isolation (full acceptance currently requires Windows) | `EXTERNAL_INSTALL.md` · `INSTALLER.md` |
 | `event` | 12 | event bus: `registerOnce` fires exactly once, handle identity, duplicate registrations | F04 / F12 |
 | `rename` | 7 | rename-panel legacy vs new event ordering and cancellation contract | F06 |
 | `mods` | 67 | Fabric mod install validation and Java JAR enable/disable: bad schema / id / missing fields, dependency pre-check | F07 · `MOD_MANAGEMENT.md` |
@@ -190,7 +192,7 @@ If it ever misbehaves on your machine, disable it for one run:
 | `ui` | 107 | public UI components, text selection/editing, input masking, zh/en language selection | `UI.md` |
 | `devtools` | 56 | developer tools and console: command binding, execution, bounded diagnostics buffer | `DEVELOPMENT.md` · `COMMANDS.md` · `DEVELOPER_TOOLS.md` |
 
-**872 checks in total**; the table is measured, not estimated — re-run `test list` after adding a suite.
+**16 suites, 987 checks in total**. After adding a suite, run `test list` to check registration and `test all` to verify assertion counts.
 
 Resolution order: exact name → alias → **unique** prefix → unique substring. An ambiguous or unknown
 selector fails loudly with the list of valid names — it never silently runs the wrong thing.
@@ -207,8 +209,7 @@ deleted at any time.
 ### CI semantics are unchanged
 
 `check` still depends on `regressionTest`, and with no selector `regressionTest` **runs every suite**.
-So `gradlew build`, `build full` and CI behave exactly as before — suite selection only affects local
-manual runs.
+Explicit `gradlew build` / `check` (including `build full`) ignore quick-test selectors and always run the full registry. No-argument `test` and `test all` clear inherited `ACBRIC_SUITES`; direct `regressionTest` reads the property or environment selector.
 
 ```sh
 ./build.sh full                                        # = gradlew build = compile + every suite
@@ -291,7 +292,7 @@ This entry point is designed so that it does not break on another machine. The h
 - **Never put logic in `build.cmd` / `build.sh` / `test.cmd` / `test.sh`.** They only find a JDK and
   forward. Add a Gradle task instead so the IDE and CI benefit too.
 - **Run the suite that covers what you touched, then `test all` before you call it done.** A full run
-  is 872 assertions and about 7 seconds; there is no reason to skip it. Use `test <suite>` while iterating
+  is 987 assertions and about 7 seconds; there is no reason to skip it. Use `test <suite>` while iterating
   (`test bundle` when editing `BundledResourceStore`, `test event` when editing `Event`).
 - Add new tests to the suite registry (see "Adding a suite" in this document) rather than starting a
   parallel test entry point.

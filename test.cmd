@@ -22,14 +22,17 @@ rem
 rem  ASCII-only and CRLF on purpose -- see build.cmd for why.
 rem ===========================================================================
 setlocal
+rem Keep the entry location before SHIFT changes the batch parameters.
+set "ACBRIC_TEST_BUILD=%~dp0build.cmd"
 set "SEL="
+set "RUN_ALL="
 
 :parse
 if "%~1"=="" goto :run
 if /i "%~1"=="help"   goto :usage
 if /i "%~1"=="-h"     goto :usage
 if /i "%~1"=="--help" goto :usage
-if /i "%~1"=="all"    goto :parse_next
+if /i "%~1"=="all"    goto :all
 if not defined SEL goto :first
 set "SEL=%SEL%,%~1"
 goto :parse_next
@@ -39,16 +42,22 @@ set "SEL=%~1"
 shift
 goto :parse
 
+:all
+set "RUN_ALL=1"
+goto :parse_next
+
 :run
+if defined RUN_ALL goto :run_all
 if not defined SEL goto :run_all
 echo [test] suites: %SEL%
 set "ACBRIC_SUITES=%SEL%"
-call "%~dp0build.cmd" regressionTest
+call "%ACBRIC_TEST_BUILD%" regressionTest
 exit /b %ERRORLEVEL%
 
 :run_all
 echo [test] running all regression suites
-call "%~dp0build.cmd" regressionTest
+set "ACBRIC_SUITES="
+call "%ACBRIC_TEST_BUILD%" regressionTest
 exit /b %ERRORLEVEL%
 
 :usage

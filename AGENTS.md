@@ -1,5 +1,7 @@
 # AGENTS.md — Acbric
 
+2026-09-26 远端合并：用户明确授权拉取并合并 origin/dev（e405c96，含 fa1e335）。保留快速构建与具名套件，将本地新增的 115 项外部安装/启动/配置/Steam/缓存检查注册为 external；完整回归仍为 16 套件、987 项。修正 test all/无参数对继承选择的处理、Windows SHIFT 后入口定位；build/check 强制全量。日常编译/回归保留配置缓存，使用执行期 Project 服务的发行与维护任务显式不兼容缓存，避免打包失败。Windows/Git Bash 14 项入口路由、实际 list/未知选择拒绝/定向115/全量987及正式发行扫描通过。双语 BUILDING 已适配新版外部安装，产品 Java/API/发行脚本未改，本轮不重复游戏实机测试。合并已获授权，未要求推送；下方不自动合并/历史分歧记录已由本决定取代。
+
 2026-09-26 dev.29 提交核验：本轮用户要求提交并讨论后续方向。31 个变更文件与已验收源码快照逐项哈希一致，发行 ZIP 匹配验证记录；仅新增本条提交说明，沿用 987 标准、25 更新事务、6 扫描、2 入口路径及三次真实菜单结果，不重复测试未改代码。本阶段纳入 dev 分支，未要求推送；不自动合并远端分歧。后续功能尚在讨论，未授权本轮直接实现。下方未提交状态为历史记录。
 
 dev.29 验收：987 标准、25 更新事务、6 扫描对抗和2入口路由检查通过；Steam 实际只读识别到 H 盘安装，双语面板已检查。dev.28 → dev.29 升级、搬迁、回退后的带 ARC 三次真实菜单均为 30 帧/音频正常，再次升级和模板构建安装通过。玩家数据逐项保留，5,325 游戏文件未改。更新逻辑在 src/dist/maintenance.ps1，入口 Update Acbric.cmd；全量发行清单 release-files.properties，dev.28 初次升级基线为文件哈希、不含游戏数据。保留 .acbric-maintenance；异常不跳过保护，不回退存档格式；不得将维护记录作为公开 MOD API。证据：99-研究工具/Acbric更新与Steam识别-dev29-20260926。未自动操作原生更新弹窗/目录选择器，未重跑战役/联机/Workshop。未提交/推送，未改玩家运行副本。下方为历史。
@@ -92,7 +94,7 @@ build <任意 gradle 任务>            # 其余参数原样透传，如 build i
 日常测试同理，别每次都跑全量：
 
 ```powershell
-test all             # 全部套件 872 项断言（收尾前必跑）
+test all             # 全部套件 987 项断言（收尾前必跑）
 test event           # 只跑 event（改 Event.java 时）
 test ui              # 只跑 ui（改 UiRuntime / 输入遮蔽时）
 test devtools        # 只跑 devtools（改控制台 / 命令绑定时）
@@ -101,9 +103,9 @@ test list            # 列出套件与覆盖范围
 ./test.sh event      # Linux / macOS / Git Bash
 ```
 
-套件 15 个、共 872 项断言：原有 `data` `bundle` `classpath` `event` `rename` `mods`
+套件 16 个、共 987 项断言：原有 `data` `bundle` `classpath` `event` `rename` `mods`
 （对应 CHANGELOG 的 F01–F12），加上 dev 功能线的 `campaign` `config` `scopes`
-`manifest` `handshake` `rules` `identity` `ui` `devtools`；每个套件的覆盖范围与断言数见
+`manifest` `handshake` `rules` `identity` `ui` `devtools` 和外部安装 `external`；每个套件的覆盖范围与断言数见
 `BUILDING.zh-CN.md` 的套件表（实测值，加完套件要更新）。选择支持唯一前缀（`test ev`）
 与别名；未知或歧义会直接报错。
 **`check` 仍然依赖 `regressionTest`，不带选择参数时跑全部套件，所以 CI 行为没变。**
