@@ -1,5 +1,11 @@
 # Changelog
 
+2026-09-27 dev.33: adds the Windows Acbric.exe player launcher, automatic Steam discovery, combined check/save and a reusable play home. Chinese/English selection persists. Ordinary failures show readable guidance; technical details and bounded diagnostic exports are opt-in. Settings retain advanced setup and hand off updates/restoration to a temporary helper after the launcher exits, preserving existing transactions and locks. Legacy CMD entries move to advanced; existing instance scripts remain compatible. No gameplay/API contract changes.
+
+dev.33 verification: 1040 checks across 16 suites pass. The real Windows GUI EXE with bundled Java was tested for first setup, reopening in English, starting the actual game (30 menu frames and native audio), and returning to the launcher. Source game files remain unchanged. dev.32→dev.33→restore matches all owned files and preserves player markers; native maintenance waits for the parent, reopens after update, and recovers a simulated interrupted transaction. UI fixtures are test-only; full campaigns, networking and other devices were not rerun.
+
+2026-09-27 documentation cleanup: moved 46 root-level topic documents into docs with bilingual navigation by purpose. README now describes current usage; agent guidance retains engineering constraints and earlier notes are archived. Updated development versions, external MOD paths, template links, distribution copy rules and player quick starts. Distribution documentation now lives in docs; product API and game behavior are unchanged.
+
 2026-09-26 dev.30: fixes the MOD list disappearing when only Java MODs are installed. Vanilla render gates the entire list on getAvailableMods, which intentionally excludes synthetic Java rows. The screen's visibility check now includes these rows without changing vanilla resource loading, Apply, Reload or restart-based Java selection. Adds an actual-screen regression without native/bundled resource MODs, covering refresh/reopen and disabled-MOD restart.
 
 

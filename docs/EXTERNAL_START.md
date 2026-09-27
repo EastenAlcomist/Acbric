@@ -1,4 +1,4 @@
-# Acbric external distribution launcher (dev.29)
+# Acbric external distribution launcher (dev.33)
 
 [中文](EXTERNAL_START.zh-CN.md)
 
@@ -6,8 +6,8 @@ Experimental Windows x64 framework distribution. Bring a complete local game ins
 
 ```text
 Acbric/
-├─ Setup.cmd             配置 / Setup
-├─ Start Acbric.cmd      启动 / Play
+├─ Acbric.exe            配置与启动 / Setup and play
+├─ advanced/             兼容维护入口 / Compatibility tools
 ├─ mods/
 │  ├─ arc-overhaul.jar
 │  └─ native-mod/info.json
@@ -17,9 +17,9 @@ Acbric/
 
 Old instance `mods`, `userdata/mods` and the original User folder are not scanned for local MODs. Close the game and copy MODs manually; native folders must directly contain `info.json`. Import native `.amod` archives using the game’s Install MOD action.
 
-## Recommended: setup wizard
+## Recommended: unified launcher
 
-Double-click **Setup.cmd**, select game and instance folders, check and save. Use `Start Acbric.cmd` beside Setup afterwards without entering paths again. See [setup and relocation](INSTALLER.md).
+Open **Acbric.exe**, confirm the discovered game and select **Use this game**. Select **Start game** in the same entry thereafter. Ordinary setup requires no instance path or separate check/save steps. The original setup UI is under Settings → Advanced settings; legacy CMD tools are in `advanced/`. See the [player guide](INSTALLER.md).
 
 ## Manual launch
 

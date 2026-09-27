@@ -40,7 +40,7 @@
 1. **真正的反馈环是「改代码 → 启动游戏（约 72 s）→ 读日志」。** 编译前的每一步都是纯开销，
    能砍就砍。这个项目的正确性只有在运行期才暴露（mixin 是加载期字节码注入），所以迭代次数多。
 2. **`build` 原本没有"只编译"的语义。** 上游把 `check` 接到了 `regressionTest` 上，
-   所以 `gradlew build` = 编译 + 1011 项断言。想只编译必须记住 `assemble` 这个 Gradle 内部名。
+   所以 `gradlew build` = 编译 + 1040 项断言。想只编译必须记住 `assemble` 这个 Gradle 内部名。
    现在 `build` 就是"编译"，`build full` 才是"编译 + 测试"。
 3. **145 行测试噪声会把编译错误埋掉。** 回归会打印大量 `[Acbric] Bundle conflict …`，
    而编译错误只有几行。默认只编译，错误一眼可见。
@@ -160,7 +160,7 @@ Copy-Item -LiteralPath "$framework/loader-libs/fabric-loader-0.19.3.jar" -Destin
 ## 4. 测试
 
 ```sh
-./test.sh all          # 全部套件（当前 1011 项断言）
+./test.sh all          # 全部套件（当前 1040 项断言）
 ./test.sh event        # 只跑 event
 ./test.sh ev           # 唯一前缀也行
 ./test.sh data rename  # 多选，按给定顺序执行
@@ -175,7 +175,7 @@ Copy-Item -LiteralPath "$framework/loader-libs/fabric-loader-0.19.3.jar" -Destin
 | `data` | 3 | `DATA_LOADED` 原样传递游戏结果：不清理诊断、不把失败改成成功 | F01 |
 | `bundle` | 44 | 内嵌原版资源归属存储：9 种路径穿越、更新、保留用户改动、冲突、备份与中断恢复 | F02 / F05 |
 | `classpath` | 2 | 启动类路径按**归档内容**排除 Loader/Mixin/ASM/垫片，保留游戏库，且不重复 | F03 |
-| `external` | 138 | 外部安装/启动、实例配置、Steam 识别、维护锁和缓存隔离（当前全量验收要求 Windows） | `EXTERNAL_INSTALL.md` · `INSTALLER.md` |
+| `external` | 167 | 外部安装/启动、实例配置、Steam 识别、维护锁和缓存隔离（当前全量验收要求 Windows） | `EXTERNAL_INSTALL.md` · `INSTALLER.md` |
 | `event` | 12 | 事件总线：`registerOnce` 只执行一次、句柄身份、重复注册 | F04 / F12 |
 | `rename` | 7 | 重命名面板新旧事件的顺序与取消契约 | F06 |
 | `mods` | 68 | Fabric MOD 安装校验与 Java JAR 启停管理：非法 schema / id / 缺字段、依赖预检查 | F07 · `MOD_MANAGEMENT.md` |
@@ -189,7 +189,7 @@ Copy-Item -LiteralPath "$framework/loader-libs/fabric-loader-0.19.3.jar" -Destin
 | `ui` | 107 | 公共 UI 组件、文本选择/编辑、输入遮蔽与中英文选择 | `UI.md` |
 | `devtools` | 56 | 开发者工具与控制台：命令绑定、执行与有界诊断缓冲 | `DEVELOPMENT.md` · `COMMANDS.md` · `DEVELOPER_TOOLS.md` |
 
-**16 个套件，合计 1011 项**；表里的数字是实测值，加完套件请运行 `test list` 核对注册表，再用 `test all` 核对断言数量。
+**16 个套件，合计 1040 项**；表里的数字是实测值，加完套件请运行 `test list` 核对注册表，再用 `test all` 核对断言数量。
 
 选择规则：精确名 → 别名 → **唯一**前缀 → 唯一子串。歧义或未知会直接报错并列出可选套件，
 不会静默跑错东西。常见同义词已登记为别名：`cp`/`classes` → `classpath`、`settings` → `config`、
@@ -278,11 +278,22 @@ gradlew regressionTest -Pacbric.suites=event,rename    # IDE / CI 里的等价�
 ## 7. 给 agent 的约定
 
 - **默认用 `build`** 验证编译，不要用 `gradlew build`（那会连带跑全部测试、刷 167 行）。
-- 改完 mixin / `fabric.mod.json` 之后必须跑全部回归，并且要跑
-  `Ac source/tools` 里的 `acbric.cmd verify`（静态校验注入目标与 `@At` 调用点）。
+- 改完 mixin / `fabric.mod.json` 之后必须跑全部回归，并核对真实字节码注入目标与 `@At` 调用点。
+  历史文档引用的 `Ac source/tools/acbric.cmd verify` 不在本仓库或当前工作区；有该工具时运行它，
+  否则使用现有 ASM/字节码检查和真实 Knot 加载验证，并记录覆盖范围，不声称执行了缺失的工具。
 - **不要把逻辑写进 `build.cmd` / `build.sh` / `test.cmd` / `test.sh`**：
   它们只是"找 JDK + 转发"。要加行为就加 Gradle 任务，这样 IDE 和 CI 都受益。
-- **先跑覆盖你改动的那一套，收尾前再跑 `test all`。** 全量只有 1011 项断言、约 7 秒，
+- **先跑覆盖你改动的那一套，收尾前再跑 `test all`。** 全量只有 1040 项断言、约 7 秒，
   没有理由跳过。迭代过程中用 `test <套件>` 更快：改 `BundledResourceStore` 跑 `test bundle`，
   改 `Event` 跑 `test event`。
 - 新增测试请加进套件注册表（见下文 "加一个新套件"），不要新建平行的测试入口。
+
+## 文档维护
+
+专题说明集中在 `docs/`，入口是 [文档总目录](README.zh-CN.md)。新增或移动文档后，在仓库根目录运行 `python tools/verify_docs.py`，检查本地 Markdown 文件链接；它不检查标题锚点或外部网站。发行包解压后可用 `--root <Acbric目录>` 检查同一套文档入口。历史快照不作为当前构建指引。
+
+## Windows 玩家入口
+
+`externalDistZip` 额外调用 `buildPlayerLauncher`，用 Windows 自带 .NET Framework 4 的 `csc.exe` 编译 `src/launcher/windows/Acbric.cs`。无需安装 WiX。日常 Java 编译和回归不调用该任务。面向玩家使用 `-PbundleRuntime`；EXE 使用包内 Java 21，极简包才需要设置 `JAVA_HOME`。PowerShell 5 脚本和 C# 中文源使用 UTF-8 BOM。
+
+真实 EXE 验收：先运行 `regressionTestClasses` 和 `externalDistZip -PbundleRuntime`，再运行 `python tools/test_player_launcher.py --game-dir "C:/Games/Airships" --tag freshcheck`。仅在 build 下解压；临时类加载器夹具操作 Swing 首页，测试 MOD 验证真实游戏菜单/音频。生成图片与 JSON 证据；不替代人工鼠标、DPI 和跨设备验收。

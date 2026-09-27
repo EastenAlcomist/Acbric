@@ -71,7 +71,7 @@ def main():
             with path.open('rb') as stream: forbidden.add(hashlib.file_digest(stream, 'sha256').hexdigest())
     allowed = {'INSTALLER.md', 'INSTALLER.zh-CN.md', 'Setup.cmd', 'setup.ps1', 'Start Acbric.cmd', 'start-configured.ps1', 'mods/README.md', 'LICENSE', 'start.ps1', 'check-install.ps1', 'bundle.properties', 'EXTERNAL_INSTALL.md', 'EXTERNAL_INSTALL.zh-CN.md', 'EXTERNAL_START.md', 'EXTERNAL_START.zh-CN.md'}
     loader_names = {'Acbric-1.0-SNAPSHOT.jar', 'fabric-loader-0.19.3.jar', 'sponge-mixin-0.17.3+mixin.0.8.7.jar'}
-    allowed |= {'Update Acbric.cmd', 'update.ps1', 'maintenance.ps1', 'QUICK_START.txt', '使用说明.txt', 'release-files.properties'}
+    allowed |= {'Acbric.exe', 'player-maintenance.ps1', 'advanced/Setup.cmd', 'advanced/Start Acbric.cmd', 'advanced/Update Acbric.cmd', 'Update Acbric.cmd', 'update.ps1', 'maintenance.ps1', 'QUICK_START.txt', '使用说明.txt', 'release-files.properties'}
     loader_names |= {f'asm{x}-9.8.jar' for x in ('', '-analysis', '-commons', '-tree', '-util')}
     with zipfile.ZipFile(args.archive) as archive:
         for item in archive.infolist():

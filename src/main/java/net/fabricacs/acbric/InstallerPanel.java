@@ -87,7 +87,7 @@ final class InstallerPanel extends JPanel {
                         + "\n" + text("实例目录：", "Instance: ") + value.plan().instance()
                         + "\n" + text("框架目录：", "Framework: ") + bundle
                         + "\n" + text("统一 MOD 目录：", "Shared MOD folder: ") + bundle.resolve("mods")
-                        + "\n\n" + text("保存配置后，同目录的 Start Acbric.cmd 将启动此实例；MOD 放在同目录 mods。", "After saving, Start Acbric.cmd here launches this instance; MODs go in mods in the same folder.")
+                        + "\n\n" + text("保存配置后，同目录的 Acbric.exe 将启动此实例；MOD 放在同目录 mods。", "After saving, Acbric.exe here launches this instance; MODs go in mods in the same folder.")
                         + "\n" + text("这是实验版本。Workshop 和任意 MOD 组合尚未完整验收。", "Experimental release. Workshop and arbitrary MOD combinations are not fully validated."));
             });
         });
@@ -133,7 +133,7 @@ final class InstallerPanel extends JPanel {
         title.setText(text("Acbric 实例配置", "Acbric instance setup"));
         gameLabel.setText(text("游戏目录", "Game folder")); instanceLabel.setText(text("实例目录", "Instance folder"));
         browseGame.setText(text("浏览…", "Browse…")); browseInstance.setText(text("浏览…", "Browse…"));
-        hint.setText(text("选择包含 Airships.json 的游戏目录；实例用于存档和设置；MOD 放在 Setup.cmd 同目录的 mods。", "Select the game folder containing Airships.json; saves/settings stay in the instance; MODs go in mods beside Setup.cmd."));
+        hint.setText(text("选择包含 Airships.json 的游戏目录；实例用于存档和设置；MOD 放在 Acbric.exe 同目录的 mods。", "Select the game folder containing Airships.json; saves/settings stay in the instance; MODs go in mods beside Acbric.exe."));
         steam.setText(text("从 Steam 查找游戏", "Find game in Steam"));
         load.setText(text("读取已保存配置", "Load saved setup")); check.setText(text("检查目录", "Check folders"));
         load.setToolTipText(text("仅用于以前保存过的实例；首次安装请先检查目录，再保存。", "For previously saved instances; for first-time setup, check folders, then save."));

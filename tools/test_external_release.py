@@ -143,7 +143,9 @@ def main():
             with (run / f'public-{index}.log').open('w', encoding='utf-8') as out:
                 launch = command[:-2] if not args.installer and index == 1 and (bundle / 'runtime/bin/java.exe').is_file() else command
                 if args.installer:
-                    launch = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(run / 'invoke-entry.ps1'), '-Entry', str(bundle / 'Start Acbric.cmd')]
+                    entry = bundle / 'Start Acbric.cmd'
+                    if not entry.exists(): entry = bundle / 'advanced/Start Acbric.cmd'
+                    launch = ['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(run / 'invoke-entry.ps1'), '-Entry', str(entry)]
                 child = subprocess.Popen(launch, cwd=run / 'cwd', env=env, stdout=out, stderr=subprocess.STDOUT, startupinfo=startup)
                 try:
                     deadline = time.monotonic() + 90

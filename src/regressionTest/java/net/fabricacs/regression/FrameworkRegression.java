@@ -56,7 +56,7 @@ public final class FrameworkRegression {
                 FrameworkRegression::suiteBundle);
         register("classpath", "启动类路径按归档内容排除 Loader/Mixin/ASM/垫片，保留游戏库 (F03)",
                 FrameworkRegression::suiteClasspath);
-        register("external", "外部安装/启动、实例配置、Steam 识别、维护锁与缓存隔离 (EXTERNAL_INSTALL.md / INSTALLER.md)",
+        register("external", "外部安装/启动、实例配置、Steam 识别、维护锁与缓存隔离 (docs/EXTERNAL_INSTALL.md / docs/INSTALLER.md)",
                 FrameworkRegression::suiteExternal);
         register("event", "事件总线：registerOnce 只执行一次、句柄身份、重复注册 (F04/F12)",
                 FrameworkRegression::suiteEvent);
@@ -64,23 +64,23 @@ public final class FrameworkRegression {
                 FrameworkRegression::suiteRename);
         register("mods", "Fabric MOD 安装校验与 JAR 启停管理：非法元数据、同名覆盖、依赖预检查 (F07/dev.12)",
                 FrameworkRegression::suiteMods);
-        register("campaign", "战役数据与生命周期：命名空间保留、加载出口、显式迁移 (CAMPAIGN_DATA.md / CAMPAIGN_LIFECYCLE.md)",
+        register("campaign", "战役数据与生命周期：命名空间保留、加载出口、显式迁移 (docs/CAMPAIGN_DATA.md / docs/CAMPAIGN_LIFECYCLE.md)",
                 FrameworkRegression::suiteCampaign);
-        register("config", "MOD 配置与设置界面契约：草稿、冲突检查、显式保存 (CONFIG.md / SETTINGS.md)",
+        register("config", "MOD 配置与设置界面契约：草稿、冲突检查、显式保存 (docs/CONFIG.md / docs/SETTINGS.md)",
                 FrameworkRegression::suiteConfig);
-        register("scopes", "事件订阅范围与运行期诊断：释放监听器、异常原样抛出 (EVENT_SCOPES.md)",
+        register("scopes", "事件订阅范围与运行期诊断：释放监听器、异常原样抛出 (docs/EVENT_SCOPES.md)",
                 FrameworkRegression::suiteScopes);
-        register("manifest", "本地代码清单导出与离线比较 (CODE_MANIFEST.md)",
+        register("manifest", "本地代码清单导出与离线比较 (docs/CODE_MANIFEST.md)",
                 FrameworkRegression::suiteManifest);
-        register("handshake", "代码握手协议与大厅准备门禁 (CODE_HANDSHAKE.md / LOBBY_HANDSHAKE.md)",
+        register("handshake", "代码握手协议与大厅准备门禁 (docs/CODE_HANDSHAKE.md / docs/LOBBY_HANDSHAKE.md)",
                 FrameworkRegression::suiteHandshake);
-        register("rules", "共享规则声明、一致性检查与旧档显式迁移 (SHARED_RULES.md / RULE_SAVE_MIGRATION.md)",
+        register("rules", "共享规则声明、一致性检查与旧档显式迁移 (docs/SHARED_RULES.md / docs/RULE_SAVE_MIGRATION.md)",
                 FrameworkRegression::suiteRules);
-        register("identity", "构建身份与会话启动诊断 (DIAGNOSTICS.md)",
+        register("identity", "构建身份与会话启动诊断 (docs/DIAGNOSTICS.md)",
                 FrameworkRegression::suiteIdentity);
-        register("ui", "公共 UI 组件、文本交互、输入遮蔽与中英文选择 (UI.md)",
+        register("ui", "公共 UI 组件、文本交互、输入遮蔽与中英文选择 (docs/UI.md)",
                 FrameworkRegression::suiteUi);
-        register("devtools", "开发者工具与控制台：命令绑定、执行与诊断缓冲 (DEVELOPMENT.md / COMMANDS.md / DEVELOPER_TOOLS.md)",
+        register("devtools", "开发者工具与控制台：命令绑定、执行与诊断缓冲 (docs/DEVELOPMENT.md / docs/COMMANDS.md / docs/DEVELOPER_TOOLS.md)",
                 FrameworkRegression::suiteDevTools);
 
         ALIASES.put("cp", "classpath");
@@ -233,6 +233,7 @@ public final class FrameworkRegression {
         checks += net.fabricacs.acbric.ExternalInstallRegression.run(root.resolve("external-install"));
         checks += net.fabricacs.acbric.ExternalLauncherRegression.run(root.resolve("external-launcher"));
         checks += net.fabricacs.acbric.InstanceSetupRegression.run(root.resolve("instance-setup"));
+        checks += net.fabricacs.acbric.PlayerLauncherRegression.run(root.resolve("player-launcher"));
         checks += net.fabricacs.acbric.SteamMaintenanceRegression.run(root.resolve("steam-maintenance"));
         checks += net.fabricacs.api.impl.ExternalCacheRegression.run(root.resolve("external-cache"));
     }

@@ -1,4 +1,4 @@
-# Acbric 外部发行启动（dev.29）
+# Acbric 外部发行启动（dev.33）
 
 [English](EXTERNAL_START.md)
 
@@ -6,8 +6,8 @@
 
 ```text
 Acbric/
-├─ Setup.cmd             配置 / Setup
-├─ Start Acbric.cmd      启动 / Play
+├─ Acbric.exe            配置与启动 / Setup and play
+├─ advanced/             兼容维护入口 / Compatibility tools
 ├─ mods/
 │  ├─ arc-overhaul.jar
 │  └─ native-mod/info.json
@@ -17,9 +17,9 @@ Acbric/
 
 旧实例 `mods`、`userdata/mods` 和原来的 User 目录不会参与本地 MOD 扫描。请在关闭游戏后手动复制到新目录；原版 MOD 文件夹下应直接有 `info.json`。原版 `.amod` 压缩包请用游戏“安装 MOD”导入。
 
-## 推荐：使用配置向导
+## 推荐：统一启动器
 
-双击框架目录中的 **Setup.cmd**，选择游戏和实例目录，检查后保存。今后使用与 Setup 同目录的 `Start Acbric.cmd` 启动，不用每次填写路径。完整流程与重新定位见 [安装器说明](INSTALLER.zh-CN.md)。
+双击 **Acbric.exe**，确认找到的游戏后点击“使用此游戏”，以后在同一入口点击“开始游戏”。普通操作无需填写实例目录或手动检查/保存。原配置界面位于“设置 → 高级设置”；原 CMD 在 `advanced/`。完整流程见 [玩家指南](INSTALLER.zh-CN.md)。
 
 ## 手动启动
 

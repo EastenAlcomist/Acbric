@@ -1,6 +1,6 @@
 /*
  * AirshipsCombatUiEvents.java — 舰船状态条与面板事件；BEFORE 可取消，AFTER 只在正常返回时执行。
- * ONE_SHOT 是历史重命名面板接口，新代码使用 RENAME_SHIP；完整契约见 EVENTS.md。
+ * ONE_SHOT 是历史重命名面板接口，新代码使用 RENAME_SHIP；完整契约见 docs/EVENTS.md。
  */
 package net.fabricacs.api.event;
 

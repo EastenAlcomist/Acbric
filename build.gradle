@@ -41,7 +41,7 @@ tasks.register('verifyFrameworkInputs') {
                     missing.collect { '  - ' + it[0] + '   (' + it[2] + ')' }.join('\n') +
                     '\n\nThese files are NOT redistributed with this repository (copyright).' +
                     '\nCopy them from your own Airships: Conquer the Skies installation into this project\'s libs/.' +
-                    '\nSee BUILDING.md / BUILDING.zh-CN.md for the exact list and one-line copy command.')
+                    '\nSee docs/BUILDING.md / docs/BUILDING.zh-CN.md for the exact list and one-line copy command.')
         }
     }
 }
@@ -63,7 +63,7 @@ tasks.register('verifyTestInputs') {
                     missing.collect { '  - ' + it[0] + '   (' + it[2] + ')' }.join('\n') +
                     '\n\nThese files are NOT redistributed with this repository (copyright).' +
                     '\nCopy them from your own Airships: Conquer the Skies installation into this project\'s libs/.' +
-                    '\nSee BUILDING.md / BUILDING.zh-CN.md for the exact list and one-line copy command.')
+                    '\nSee docs/BUILDING.md / docs/BUILDING.zh-CN.md for the exact list and one-line copy command.')
         }
     }
 }
@@ -136,7 +136,7 @@ tasks.register('regressionTest', JavaExec) {
     //   ACBRIC_SUITES=event,rename     启动脚本 test.cmd / test.sh 用
     // 脚本走环境变量是因为 cmd.exe 会把参数里的 '=' 当分隔符拆开，
     // "-Pacbric.suites=event" 到不了 Gradle；环境变量没有这个问题，且两端脚本写法一致。
-    // 套件名与覆盖范围见 BUILDING.zh-CN.md，或跑 regressionTest -Pacbric.suites=list。
+    // 套件名与覆盖范围见 docs/BUILDING.zh-CN.md，或跑 regressionTest -Pacbric.suites=list。
     def suiteSelection = (findProperty('acbric.suites') ?: System.getenv('ACBRIC_SUITES') ?: '').toString().trim()
     // 完整构建/检查不能被终端遗留的快速测试选择缩小范围。
     if (gradle.startParameter.taskNames.any { it.tokenize(':').last() in ['build', 'check'] }) suiteSelection = ''
@@ -235,7 +235,7 @@ tasks.register('verifyGameInputs') {
                     missing.collect { '  - ' + it[0] + '   (' + it[2] + ')' }.join('\n') +
                     '\n\nCopy your Airships game directory (Airships.json, data/, lib/native, ...) into this project\'s game/.' +
                     '\nRun without game files is still possible for library checks: gradlew assemble / gradlew regressionTest.' +
-                    '\nSee BUILDING.md / BUILDING.zh-CN.md.')
+                    '\nSee docs/BUILDING.md / docs/BUILDING.zh-CN.md.')
         }
     }
 }
@@ -275,7 +275,7 @@ tasks.register('preflightTools', Sync) {
     into layout.buildDirectory.dir('preflight')
     from('src/dist/check-install.ps1')
     from('LICENSE')
-    from('EXTERNAL_INSTALL.md', 'EXTERNAL_INSTALL.zh-CN.md')
+    into('docs') { from('docs') { include '*.md'; exclude 'AGENT_HISTORY.md' } }
     into('loader-libs') {
         from tasks.named('jar')
         from configurations.fabricLoaderRuntime
@@ -315,21 +315,8 @@ tasks.register('distDir', Sync) {
         include 'run.bat'
     }
     from 'LICENSE'
-    from 'README.md', 'README.zh-CN.md', 'BUNDLED_RESOURCES.md', 'EVENTS.md', 'CHANGELOG.md', 'CHANGELOG.zh-CN.md', 'API.md', 'API.zh-CN.md', 'DIAGNOSTICS.md', 'DIAGNOSTICS.zh-CN.md'
-    from 'EVENT_SCOPES.md', 'EVENT_SCOPES.zh-CN.md'
-    from 'CODE_MANIFEST.md', 'CODE_MANIFEST.zh-CN.md'
-    from 'CODE_HANDSHAKE.md', 'CODE_HANDSHAKE.zh-CN.md'
-    from 'LOBBY_HANDSHAKE.md', 'LOBBY_HANDSHAKE.zh-CN.md'
-    from 'SHARED_RULES.md', 'SHARED_RULES.zh-CN.md'
-    from 'RULE_SAVE_MIGRATION.md', 'RULE_SAVE_MIGRATION.zh-CN.md'
-    from 'MOD_MANAGEMENT.md', 'MOD_MANAGEMENT.zh-CN.md'
-    from 'UI.md', 'UI.zh-CN.md'
-    from 'SETTINGS.md', 'SETTINGS.zh-CN.md'
-    from 'DEVELOPMENT.md', 'DEVELOPMENT.zh-CN.md', 'COMMANDS.md', 'COMMANDS.zh-CN.md', 'DEVELOPER_TOOLS.md', 'DEVELOPER_TOOLS.zh-CN.md'
-    from 'CONFIG.md', 'CONFIG.zh-CN.md'
-    from 'CAMPAIGN_DATA.md', 'CAMPAIGN_DATA.zh-CN.md'
-    from 'CAMPAIGN_LIFECYCLE.md', 'CAMPAIGN_LIFECYCLE.zh-CN.md'
-    from 'BUILDING.md', 'BUILDING.zh-CN.md'
+    from 'README.md', 'README.zh-CN.md'
+    into('docs') { from('docs') { include '*.md'; exclude 'AGENT_HISTORY.md' } }
     doFirst {
         if (!file('src/dist/run.bat').isFile()) {
             throw new GradleException('Missing distribution launcher: src/dist/run.bat')
@@ -393,17 +380,30 @@ tasks.register('distZip', Zip) {
 }
 
 // 外部发行使用允许清单，不复用旧 distDir 的游戏目录或模板 libs。
+def playerExe = layout.buildDirectory.file('player-launcher/Acbric.exe')
+tasks.register('buildPlayerLauncher', Exec) {
+    inputs.file('src/launcher/windows/Acbric.cs')
+    inputs.file('tools/build_windows_launcher.ps1')
+    outputs.file(playerExe)
+    commandLine 'powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+            file('tools/build_windows_launcher.ps1').absolutePath, '-Output', playerExe.get().asFile.absolutePath
+}
 def externalRoot = layout.buildDirectory.dir('external-dist/Acbric')
 tasks.register('externalDistDir', Sync) {
     group = 'acbric'
     description = 'Assembles a framework-only external distribution (bring Java 21 or bundle it explicitly).'
-    dependsOn tasks.named('jar'), tasks.named('apiModJar')
+    dependsOn tasks.named('jar'), tasks.named('apiModJar'), tasks.named('buildPlayerLauncher')
     into externalRoot
-    from('src/dist/start.ps1', 'src/dist/check-install.ps1', 'src/dist/setup.ps1', 'src/dist/Setup.cmd', 'src/dist/Start Acbric.cmd', 'src/dist/start-configured.ps1', 'LICENSE')
-    from('src/dist/Update Acbric.cmd', 'src/dist/update.ps1', 'src/dist/maintenance.ps1', 'src/dist/QUICK_START.txt', 'src/dist/使用说明.txt')
+    from(playerExe)
+    from('src/dist/start.ps1', 'src/dist/check-install.ps1', 'src/dist/setup.ps1', 'src/dist/start-configured.ps1', 'LICENSE')
+    from('src/dist/player-maintenance.ps1', 'src/dist/update.ps1', 'src/dist/maintenance.ps1', 'src/dist/QUICK_START.txt', 'src/dist/使用说明.txt')
+    into('advanced') {
+        from('src/dist/Setup.cmd', 'src/dist/Start Acbric.cmd', 'src/dist/Update Acbric.cmd')
+        filter { line -> line.replace('%~dp0', '%~dp0..\\') }
+    }
     into('update-baselines') { from('src/dist/update-baselines') }
-    from('EXTERNAL_INSTALL.md', 'EXTERNAL_INSTALL.zh-CN.md', 'EXTERNAL_START.md', 'EXTERNAL_START.zh-CN.md', 'INSTALLER.md', 'INSTALLER.zh-CN.md')
-    into('docs') { from fileTree(projectDir) { include '*.md'; exclude 'AGENTS.md' } }
+    // 保持与仓库一致的文档目录；旧根目录说明由更新器按归属清单移除。
+    into('docs') { from('docs') { include '*.md'; exclude 'AGENT_HISTORY.md' } }
     into('mods') { from('src/dist/mods/README.md') }
     into('core') { from(tasks.named('apiModJar')) { rename { 'acbric-api.jar' } } }
     into('loader-libs') { from tasks.named('jar'); from configurations.fabricLoaderRuntime }

@@ -20,7 +20,7 @@ public final class InstanceSetupRegression {
         try { action.run(); } catch (Exception ex) { check(ex.toString().contains(code), code); return; }
         throw new AssertionError("Expected " + code);
     }
-    private static Path bundle(Path root) throws Exception {
+    static Path bundle(Path root) throws Exception {
         Files.createDirectories(root.resolve("core")); Files.createDirectories(root.resolve("loader-libs"));
         Path api = root.resolve("core/acbric-api.jar"), loader = root.resolve("loader-libs/launcher.jar");
         try (var zip = new ZipOutputStream(Files.newOutputStream(api))) {

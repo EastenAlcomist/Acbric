@@ -1,4 +1,9 @@
-# Developer documentation map
+# Historical entry notes / 历史入口笔记
+
+These notes were removed from current navigation on 2026-09-27. They are historical evidence, not current setup instructions.
+以下保留整理前开发入口的阶段播报，不作为当前安装或开发指引。
+
+## DEVELOPMENT.md
 
 2026-09-26 dev.28: Setup.cmd, root Start Acbric.cmd and mods now share the same directory inside Acbric. Saving in setup updates the default instance binding; the root entry launches the most recently saved instance. Instance-local entries remain compatible. Manually copy dev.27 sibling MODs into Acbric/mods. Missing/invalid bindings, missing instances and framework relocation are diagnosed without guessing another instance. Bilingual prompts, path API docs and template targets are updated; dev.27 and earlier records below are historical.
 
@@ -16,45 +21,20 @@ Validation: 935 standard checks pass (two existing symlink-permission skips), pl
 
 Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physical `GRAVE`; Shift is optional) to open the console with the command field focused. The opening key is consumed. Ctrl/Alt/Meta combinations, inactive displays, native error/help/chat overlays, and existing Acbric windows do not trigger it. Close another Acbric window before using the shortcut. While the console is open this key remains ordinary text; use Esc/X/Close to dismiss. Holding the key cannot repeatedly reopen it. This is a fixed console shortcut, not a general key-binding API.
 
-[中文](DEVELOPMENT.zh-CN.md) · Current source/API: **0.3.3-dev.24**, unreleased.
+## DEVELOPMENT.zh-CN.md
 
-Start here for the current contracts. READMEs cover installation/build; topic documents define behavior. Changelogs and dated workspace research are historical evidence, not alternate current specifications. New interfaces need matching English/Chinese documentation, a minimal example, bounded failure behavior and regression coverage.
+2026-09-26 dev.28：按用户要求，Setup.cmd、根目录 Start Acbric.cmd 与 mods 统一位于 Acbric 内同一层。安装器保存时更新默认实例绑定，根入口启动最近保存的实例；原实例入口兼容保留。dev.27 外层 mods 请手动复制到 Acbric/mods。启动绑定缺失/损坏、实例缺失和框架搬迁均明确诊断；不自动猜测实例。双语提示、路径 API 文档和模板安装目标已同步。下方 dev.27 及更早记录为历史。
 
-## First MOD workflow
+dev.27：Java MOD 的 `.jar` 和原版 MOD 文件夹统一放到 **Acbric 同级的 `mods`**。安装器显示完整路径并提供“打开 MOD 目录”。核心 API 仍从 `Acbric/core` 自动加载；存档、配置、日志留在实例中。多个实例使用同一框架时共用 MOD 文件，但保留各自设置；同一 MOD 目录只允许一个游戏会话，避免配套资源被并发修改。旧目录不自动搬迁，手动复制需要的 MOD 即可。下方 dev.26 及更早记录为历史。
 
-1. Prepare your own game files and JDK 21 as described in [README](README.md). Keep a separate game/user-data directory for testing.
-2. Run `gradlew.bat build syncModTemplateLibs`, copy `acbric-mod-template` to an independent project and follow its [README](acbric-mod-template/README.md). Do not redistribute game classes/resources with MOD source.
-3. Give the MOD a unique ID and an `acbric` entrypoint. Implement both initializer methods when overriding the context form; the old no-argument method remains required for compatibility. See [API](API.md).
-4. Pick the smallest suitable service from the table below. Use an existing event/API before introducing a game-version-specific mixin. Declare the minimum API version actually used; the template's dev.10 minimum does not cover newer UI/settings/command calls.
-5. Build the independent JAR, place one version in the test copy's `game/mods/`, restart, and open **Acbric API → Details → Developer tools**. Check entrypoint status separately from loaded status. Inspect errors and export diagnostics when needed.
-6. Test English and Chinese, unavailable contexts, failure paths and registration cleanup. Save code and logs needed to reproduce the result. GUI acceptance and multiplayer tests are separate from headless unit checks.
+2026-09-26 dev.26：用户批准安装器首版，已实现 Setup.cmd / setup.ps1 中英文实例配置向导，复用外部预检查、发行核心验证和实例锁。可只读检查目录、创建新实例、读取本向导创建的实例并重新绑定路径，原子保存配置及生成 acbric-launcher/Start Acbric.cmd；可启动游戏、打开实例/日志目录。配置和入口损坏/用户修改时拒绝覆盖，过期预览不能覆盖并发保存；不导入旧布局数据。文档入口 INSTALLER.zh-CN.md / INSTALLER.md。暂未实现自动探测、自动桌面快捷方式、升级/回滚或卸载；GL 问题继续暂缓。基于 944435a，尚未提交/推送；下方为历史记录。
 
-## Capabilities and authoritative contracts
+dev.26 验证：961 项标准回归通过（新增 26 项实例配置/界面检查，两项既有符号链接权限跳过）；36 项真实外部加载及核心保护通过；6 项发行扫描对抗测试通过。正式解压包经 setup.ps1 配置，再实际执行生成的 CMD，带 ARC 首次/框架搬迁重新绑定后两次真实菜单各绘制 30 帧并初始化音频。覆盖中文、空格和 & 路径、占用拒绝、坏包、错误安装、UTF-8 模板构建、Java 8 提前拒绝；源安装 5,325 文件内容不变。中英文面板截图已检查；未自动操作原生文件选择器或验证所有 DPI，也未重跑完整战役/媒体/联机。证据在工作区 99-研究工具/Acbric实例安装器-dev26-20260926。
 
-| Need | Contract | Minimum API / boundary |
-|---|---|---|
-| Initialization, context, paths and logging | [API](API.md) | Per-member versions apply. |
-| Events and renamed UI callbacks | [Events](EVENTS.md) | dev.1; old `ONE_SHOT_*` stays historical. |
-| Managed subscriptions and event errors | [Scopes](EVENT_SCOPES.md) | dev.6; exceptions still propagate. |
-| Managed native resources | [Resources](BUNDLED_RESOURCES.md) | Preserve user changes; explicit migration. |
-| Local JSON config | [Config](CONFIG.md) | dev.5; no automatic broadcasting. |
-| Campaign JSON and recovery | [Data](CAMPAIGN_DATA.md), [lifecycle](CAMPAIGN_LIFECYCLE.md) | dev.3 / dev.4; storage is not runtime synchronization. |
-| Shared rule declarations | [Rules](SHARED_RULES.md) | dev.10; freeze at creation, read from save on resume. |
-| Explicit old-save conversion | [Save migration](RULE_SAVE_MIGRATION.md) | dev.11; preview and separate destination. |
-| Java MOD management | [Management](MOD_MANAGEMENT.md) | dev.12; restart-based, not runtime unload. |
-| Shared UI / text / cleanup | [UI](UI.md) | dev.13 base, dev.18 binding/choice, dev.19 editing/footer, dev.20 submit. |
-| Draft-based settings forms | [Settings](SETTINGS.md) | dev.18; MOD defines effect timing. |
-| Commands and help/completion | [Commands](COMMANDS.md) | dev.20; shared gameplay execution reserved. |
-| In-game tools / diagnostic snapshots | [Developer tools](DEVELOPER_TOOLS.md) | dev.20; bounded local capture/export. |
-| Startup identity / reports | [Diagnostics](DIAGNOSTICS.md) | Since dev.2; report layouts are internal. |
-| Code identity and lobby protocol | [Manifests](CODE_MANIFEST.md), [handshake](CODE_HANDSHAKE.md), [lobby](LOBBY_HANDSHAKE.md) | dev.7–9; not authentication or state replication. |
+2026-09-26 dev.25：已实现正式外部启动器 `start.ps1` / `ExternalLauncher` 和不含游戏内容的 `externalDistZip`，核心 API 从发行包 core 加载；启动输出保存到实例日志，所选核心在游戏类路径开放及 preLaunch 前核对。实例锁、显式路径及缓存隔离沿用既有流程。模板改为 UTF-8 local.properties 引用本机游戏/框架，发行允许清单排除本地依赖及个人路径。使用说明见 EXTERNAL_START.zh-CN.md / EXTERNAL_START.md。GL 已知问题继续暂缓、不阻塞；按用户决定不开发旧布局自动迁移；玩家重新配置，下一步为安装器/更新/卸载。本阶段变更已纳入 dev 分支，未推送；旧 distZip 仍不能作为干净框架包分享。下方 dev.24 及更早记录为历史。
 
-Public packages define MOD contracts. Classes in `impl`, `mixin`, `UiRuntime` and `DeveloperConsoleUi` are internal adapters even when Java visibility is public. Diagnostic record APIs are public; JSON/file layouts remain internal. Existing public signatures and documented event ordering must remain compatible unless a separately agreed change says otherwise.
+本轮验证：935 项标准回归通过（两项既有符号链接权限跳过），36 项真实外部加载检查通过；另测解析后核心缺失/版本错配在 preLaunch 前拒绝、Java 8 引导拒绝。解压包在中文/空格路径下用正式入口启动两次，每次真实菜单绘制 30 帧并创建音频，第二次验证包内 Java 优先；另有 API + ARC 两次菜单启动记录。实例占用、核心哈希损坏、错误游戏路径、独立模板 UTF-8 本地路径构建均通过。6 项发行扫描对抗测试通过；所有运行场景源安装 5,325 文件内容未变。证据：工作区 99-研究工具/Acbric正式外部发行-dev25-20260926。此轮不重跑完整战役/媒体；此前 dev.24 结果保留其原边界，不扩张为跨设备/Workshop/全部 MOD 验收。
 
-## Maintainer validation
+2026-09-26 媒体验收：dev.24 基线 `42426a0` 已提交、未推送；后续战役及媒体验收代码/文档尚未提交。新增 DLC/原生 MOD 重载与真实 GIF 测试，两进程各 35 项，共 70 项功能检查通过；普通 960×640/15 帧、半尺寸慢速 480×320/30 帧，共 4 个 GIF，旧文件未覆盖。源安装 5,325 文件内容未变，924 标准回归通过（两项既有权限跳过）。但两进程各记录 454,032 次重复原生 GL 错误，状态为 PASS_WITH_NATIVE_GL_ERRORS；关闭外部适配的旧布局严格对照也在地形绘制处复现（首帧 2,268 次）。这不是完整图形验收通过，未修复/屏蔽该错误。2026-09-26 用户决定将该问题记为低优先级、暂缓处理，不阻塞本次安装重构；旧布局也能复现，但尚无完全不加载 Acbric 的纯原版对照，不能据此断定归因于框架或游戏。当前代码的正常外部入口仍为 EXTERNAL_NOT_READY；下一步实现正式外部入口与干净发行/模板，再推进迁移和安装器。产品 JAR 与 dev.24 相同，ARC 源码和玩家运行副本未改；旧 distZip 仍非干净发行包。
 
-Run `gradlew.bat build` for isolated regression fixtures. `distZip` assembles a local distribution after dependencies are prepared; it is not a public game-content redistribution package. Keep standalone test MODs outside the framework source set/default distribution. Compile documentation examples against the produced API JAR. Compare prior public binary signatures, then exercise new hooks through real Fabric/Mixin on both maintained game builds. Recording-renderer tests do not replace Windows clipboard/IME/focus or OpenGL acceptance.
-
-When adding a command, put the behavior in a reusable service first. Expose bilingual metadata and a closeable registration; query runtime state again when executing. The first console release intentionally limits built-ins to diagnosis and local export. Future settings/save commands must use existing validation and synchronization contracts.
-
-Release history: [English](CHANGELOG.md) / [Chinese](CHANGELOG.zh-CN.md).
+从 dev.21 起，按 **Esc 下方、数字 1 左侧的 ~ 键**（物理键 `GRAVE`，可带 Shift）直接打开控制台并聚焦命令框，开窗按键不会混入文本。Ctrl/Alt/Meta 组合、窗口失焦、原生错误/帮助/聊天覆盖层以及已有 Acbric 窗口时不触发；先关闭其他 Acbric 窗口再使用快捷键。控制台打开后该键仍可输入普通字符，用 Esc/X/关闭退出。长按不会反复开窗。这是固定控制台入口，尚未提供通用改键 API。

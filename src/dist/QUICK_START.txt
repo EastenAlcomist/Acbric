@@ -1,41 +1,15 @@
-Acbric quick start
-==================
+﻿Acbric quick start — dev.33
 
-First setup
-1. Extract the whole Acbric folder to a writable location. Install the game separately.
-2. Open Setup.cmd. Use Find game in Steam, or Browse to the game folder containing Airships.json.
-3. Usually keep the default instance folder. Select Check folders, then Save & create launcher.
-First-time setup does not need Load saved setup (formerly Load existing instance); saving creates the configuration.
-If loading on an older version reports a missing configuration, select Check folders, then save after checks pass.
-If checking also fails, preserve the files and send the displayed log. Do not create an empty configuration.
+1. Fully extract and open Acbric.exe. Keep the EXE with the rest of the folder.
+2. On first use, confirm the Steam game found automatically and select Use this game. Choose its folder manually if needed.
+3. Select Start game. Use the same EXE next time; no repeated setup is needed.
+4. Open MOD folder: add Java .jar MODs or native folders directly containing info.json. The API is included; do not duplicate it.
+5. Restart after changing Java MODs. Old User folders are not imported automatically.
 
-Play next time
-Double-click Start Acbric.cmd in this folder. You do not need to run setup again.
-If you configured several instances, this entry starts the most recently saved one.
+Choose Chinese/English at the top right. Settings can change the game location, install a local update ZIP or restore the previous framework. Close the game first. Do not extract updates over an old folder.
+For help: Help → Export diagnostics. Send the resulting ZIP yourself; saves are excluded and nothing is uploaded automatically.
+Existing save/update protections remain. Do not delete broken configuration or backups to bypass checks.
 
-Install MODs
-Put Java MOD .jar files and native MOD folders together in the mods folder here.
-Native folders must directly contain info.json. Import .amod archives through the game's Install MOD action.
-Acbric API is included; do not add a duplicate. Restart after adding or enabling/disabling Java MODs.
-Old layouts/User folders are not imported automatically; close the game before copying wanted MODs.
-
-Update or restore
-1. Obtain a new Acbric-external-<version>.zip from a source you trust. Do not extract it over the old folder.
-2. Close the game and Setup. Open Update Acbric.cmd and select the existing Acbric folder.
-3. Choose Yes, select the ZIP, review the version and target, and update.
-   MODs, instances, saves and settings are preserved. Failed updates attempt automatic restoration.
-4. To return to the previous framework, open the updater and choose No.
-   After an interrupted update, the updater first offers recovery. Recover before launching the game.
-First upgrade from dev.28: extract the new release elsewhere, run its Update Acbric.cmd, and select the old Acbric folder as the target.
-If the old release has no updater, or its entry is unavailable after interruption, run the updater from a separately extracted new release and select the original folder.
-Manually changed framework files stop the update and are preserved. Read the log; do not discard the backups.
-Rollback restores framework files only, not saves or MOD data. An older framework may not understand data saved after updating.
-
-Files and troubleshooting
-Setup can open MOD, instance and log folders. Saves and native settings are in instance/userdata.
-Launch logs: instance/logs/acbric/launcher. Native game log: instance/userdata/log.txt.
-The updater displays its log path. Backups are kept under Acbric/.acbric-maintenance without automatic cleanup.
-After relocating the framework, game or instance, open Setup at the new location, load the instance, check and save.
-Keep CMD files in place. Create a shortcut to Start Acbric.cmd for desktop access.
-
-Full instructions: INSTALLER.md. 中文：使用说明.txt
+First upgrade from dev.32 or earlier: extract the new package elsewhere, use its advanced/Update Acbric.cmd and select the original folder and new ZIP. Later updates use the EXE.
+Default saves/settings: instances/default/userdata. MODs: mods beside the EXE. Create an Acbric.exe shortcut for desktop access.
+Full guide: docs/INSTALLER.md. 中文：使用说明.txt

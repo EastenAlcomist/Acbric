@@ -32,6 +32,7 @@ function Assert-NoLinks([string]$Path) {
 }
 
 function Test-ReleasePath([string]$Name) {
+    if ($Name -in @('Acbric.exe','player-maintenance.ps1','advanced/Setup.cmd','advanced/Start Acbric.cmd','advanced/Update Acbric.cmd')) { return $true }
     if ($Name -in @('start.ps1','check-install.ps1')) { return $true }
     if ($Name -in @('Setup.cmd','setup.ps1','Start Acbric.cmd','start-configured.ps1','Update Acbric.cmd','update.ps1','maintenance.ps1','LICENSE','bundle.properties','release-files.properties','QUICK_START.txt','使用说明.txt','EXTERNAL_INSTALL.md','EXTERNAL_INSTALL.zh-CN.md','EXTERNAL_START.md','EXTERNAL_START.zh-CN.md','INSTALLER.md','INSTALLER.zh-CN.md','mods/README.md','core/acbric-api.jar')) { return $true }
     if ($Name -match '^loader-libs/(Acbric-[\w.\-]+|fabric-loader-[\w.\-]+|sponge-mixin-[\w.+\-]+|asm(?:-analysis|-commons|-tree|-util)?-[\w.\-]+)\.jar$') { return $true }

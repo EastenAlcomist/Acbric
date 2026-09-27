@@ -131,7 +131,7 @@ final class InstanceSetup {
                 } finally { Files.deleteIfExists(temp); }
             }
             FrameworkEntry.save(fresh.framework(), instance, fresh.previousEntry());
-            return fresh.framework().resolve("Start Acbric.cmd");
+            return fresh.framework().resolve(Files.isRegularFile(fresh.framework().resolve("Acbric.exe")) ? "Acbric.exe" : "Start Acbric.cmd");
         }
     }
 
