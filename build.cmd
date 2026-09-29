@@ -50,7 +50,7 @@ if not defined ACBRIC_JAVA_HOME (
   echo.
   echo   Current JAVA_HOME = "%JAVA_HOME%"
   echo.
-  echo   See BUILDING.md / BUILDING.zh-CN.md.
+  echo   See docs/BUILDING.md / docs/BUILDING.zh-CN.md.
   popd & exit /b 1
 )
 set "JAVA_HOME=%ACBRIC_JAVA_HOME%"

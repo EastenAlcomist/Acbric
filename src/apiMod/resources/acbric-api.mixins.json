@@ -4,8 +4,19 @@
   "package": "net.fabricacs.api.mixin",
   "compatibilityLevel": "JAVA_17",
   "client": [
+    "ExternalMainMixin",
+    "ExternalPathsMixin",
+    "ExternalOpenFleetMissionMixin",
+    "ExternalSaveFleetMissionMixin",
+    "ExternalFleetModsBackendMixin",
+    "ExternalLaunchSettingsMixin",
+    "ExternalTextureMixin",
+    "ExternalGifMixin",
     "MainMixin",
     "AirshipGameMixin",
+    "ClientConnectionMixin",
+    "LobbyNetworkMixin",
+    "StrategicLobbyMixin",
     "LoadableMixin",
     "LoadingScreenMixin",
     "MainMenuMixin",
@@ -16,7 +27,12 @@
     "ShipStatusChromeMixin",
     "CommandButtonsPanelMixin",
     "DirectControlPanelMixin",
-    "RenameShipPanelMixin"
+    "RenameShipPanelMixin",
+    "WorldMapMixin",
+    "WorldGenScreenMixin",
+    "CampaignWorldMixin",
+    "ResumeScreenMixin",
+    "OpenGameMissionMixin"
   ],
   "injectors": {
     "defaultRequire": 1

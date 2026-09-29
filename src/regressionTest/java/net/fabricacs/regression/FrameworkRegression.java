@@ -1,7 +1,7 @@
 /*
  * FrameworkRegression.java — 无界面回归总入口：套件注册表 + 选择器。
  *
- * 每个套件对应一组修复的回归（见 CHANGELOG 的 F01–F07），可以单独运行：
+ * 每个套件对应一组修复（CHANGELOG 的 F01–F12）或一条功能线（dev.N 的对应文档），可以单独运行：
  *   regressionTest                    全部套件（CI 与 check 的默认行为）
  *   regressionTest data event         只跑这两套
  *   -Pacbric.suites=event,rename      Gradle 侧的等价写法
@@ -56,12 +56,32 @@ public final class FrameworkRegression {
                 FrameworkRegression::suiteBundle);
         register("classpath", "启动类路径按归档内容排除 Loader/Mixin/ASM/垫片，保留游戏库 (F03)",
                 FrameworkRegression::suiteClasspath);
+        register("external", "外部安装/启动、实例配置、Steam 识别、维护锁与缓存隔离 (docs/EXTERNAL_INSTALL.md / docs/INSTALLER.md)",
+                FrameworkRegression::suiteExternal);
         register("event", "事件总线：registerOnce 只执行一次、句柄身份、重复注册 (F04/F12)",
                 FrameworkRegression::suiteEvent);
         register("rename", "重命名面板新旧事件顺序与取消契约 (F06)",
                 FrameworkRegression::suiteRename);
-        register("mods", "Fabric MOD 安装校验：非法元数据与同名覆盖一律拒绝 (F07)",
+        register("mods", "Fabric MOD 安装校验与 JAR 启停管理：非法元数据、同名覆盖、依赖预检查 (F07/dev.12)",
                 FrameworkRegression::suiteMods);
+        register("campaign", "战役数据与生命周期：命名空间保留、加载出口、显式迁移 (docs/CAMPAIGN_DATA.md / docs/CAMPAIGN_LIFECYCLE.md)",
+                FrameworkRegression::suiteCampaign);
+        register("config", "MOD 配置与设置界面契约：草稿、冲突检查、显式保存 (docs/CONFIG.md / docs/SETTINGS.md)",
+                FrameworkRegression::suiteConfig);
+        register("scopes", "事件订阅范围与运行期诊断：释放监听器、异常原样抛出 (docs/EVENT_SCOPES.md)",
+                FrameworkRegression::suiteScopes);
+        register("manifest", "本地代码清单导出与离线比较 (docs/CODE_MANIFEST.md)",
+                FrameworkRegression::suiteManifest);
+        register("handshake", "代码握手协议与大厅准备门禁 (docs/CODE_HANDSHAKE.md / docs/LOBBY_HANDSHAKE.md)",
+                FrameworkRegression::suiteHandshake);
+        register("rules", "共享规则声明、一致性检查与旧档显式迁移 (docs/SHARED_RULES.md / docs/RULE_SAVE_MIGRATION.md)",
+                FrameworkRegression::suiteRules);
+        register("identity", "构建身份与会话启动诊断 (docs/DIAGNOSTICS.md)",
+                FrameworkRegression::suiteIdentity);
+        register("ui", "公共 UI 组件、文本交互、输入遮蔽与中英文选择 (docs/UI.md)",
+                FrameworkRegression::suiteUi);
+        register("devtools", "开发者工具与控制台：命令绑定、执行与诊断缓冲 (docs/DEVELOPMENT.md / docs/COMMANDS.md / docs/DEVELOPER_TOOLS.md)",
+                FrameworkRegression::suiteDevTools);
 
         ALIASES.put("cp", "classpath");
         ALIASES.put("classes", "classpath");
@@ -70,6 +90,24 @@ public final class FrameworkRegression {
         ALIASES.put("eventbus", "event");
         ALIASES.put("events", "event");
         ALIASES.put("install", "mods");
+        ALIASES.put("java-mods", "mods");
+        ALIASES.put("management", "mods");
+        ALIASES.put("campaign-data", "campaign");
+        ALIASES.put("campaigns", "campaign");
+        ALIASES.put("settings", "config");
+        ALIASES.put("configuration", "config");
+        ALIASES.put("event-scopes", "scopes");
+        ALIASES.put("code-manifest", "manifest");
+        ALIASES.put("code-handshake", "handshake");
+        ALIASES.put("lobby", "handshake");
+        ALIASES.put("shared-rules", "rules");
+        ALIASES.put("rule-saves", "rules");
+        ALIASES.put("migration", "rules");
+        ALIASES.put("game-identity", "identity");
+        ALIASES.put("ui-input", "ui");
+        ALIASES.put("language", "ui");
+        ALIASES.put("developer-tools", "devtools");
+        ALIASES.put("console", "devtools");
         ALIASES.put("renamepanel", "rename");
     }
 
@@ -153,7 +191,7 @@ public final class FrameworkRegression {
     private static void printSuites() {
         System.out.println("Available regression suites (" + SUITES.size() + "):");
         for (Map.Entry<String, Suite> entry : SUITES.entrySet()) {
-            System.out.println("  " + String.format(Locale.ROOT, "%-10s", entry.getKey())
+            System.out.println("  " + String.format(Locale.ROOT, "%-12s", entry.getKey())
                     + DESCRIPTIONS.get(entry.getKey()));
         }
         System.out.println();
@@ -188,6 +226,61 @@ public final class FrameworkRegression {
 
     private static void suiteMods(Path root) throws Exception {
         checks += ModManagementRegression.run(root.resolve("mod-management"));
+        checks += net.fabricacs.api.impl.JavaModManagerRegression.run(root.resolve("java-mod-manager"));
+    }
+
+    private static void suiteExternal(Path root) throws Exception {
+        checks += net.fabricacs.acbric.ExternalInstallRegression.run(root.resolve("external-install"));
+        checks += net.fabricacs.acbric.ExternalLauncherRegression.run(root.resolve("external-launcher"));
+        checks += net.fabricacs.acbric.InstanceSetupRegression.run(root.resolve("instance-setup"));
+        checks += net.fabricacs.acbric.PlayerLauncherRegression.run(root.resolve("player-launcher"));
+        checks += net.fabricacs.acbric.SteamMaintenanceRegression.run(root.resolve("steam-maintenance"));
+        checks += net.fabricacs.api.impl.ExternalCacheRegression.run(root.resolve("external-cache"));
+    }
+
+    private static void suiteCampaign(Path root) throws Exception {
+        checks += CampaignDataRegression.run(root.resolve("campaign-data"));
+        checks += CampaignLifecycleRegression.run();
+    }
+
+    private static void suiteConfig(Path root) throws Exception {
+        checks += ConfigRegression.run(root.resolve("configs"));
+        checks += SettingsRegression.run(root.resolve("settings"));
+    }
+
+    private static void suiteScopes(Path root) throws Exception {
+        checks += net.fabricacs.api.event.EventScopeRegression.run();
+        checks += net.fabricacs.api.impl.RuntimeEventDiagnosticsRegression.run(root.resolve("runtime-events"));
+    }
+
+    private static void suiteManifest(Path root) throws Exception {
+        checks += net.fabricacs.api.impl.CodeManifestRegression.run(root.resolve("code-manifests"));
+    }
+
+    private static void suiteHandshake(Path root) throws Exception {
+        checks += net.fabricacs.api.impl.CodeHandshakeRegression.run();
+        checks += net.fabricacs.api.impl.LobbyCodeGateRegression.run();
+    }
+
+    private static void suiteRules(Path root) throws Exception {
+        checks += net.fabricacs.api.impl.SharedRulesRegression.run();
+        checks += net.fabricacs.api.impl.RuleSaveRegression.run(root.resolve("rule-saves"));
+    }
+
+    private static void suiteIdentity(Path root) throws Exception {
+        checks += net.fabricacs.acbric.GameIdentityRegression.run(root.resolve("game-identity"));
+        checks += net.fabricacs.api.impl.StartupDiagnosticsRegression.run(root.resolve("startup-diagnostics"));
+    }
+
+    private static void suiteUi(Path root) throws Exception {
+        checks += net.fabricacs.api.ui.UiRegression.run();
+        checks += net.fabricacs.api.ui.TextInteractionRegression.run();
+        checks += net.fabricacs.api.impl.UiInputDiagnosticsRegression.run(root.resolve("ui-input"));
+        checks += net.fabricacs.api.util.LanguageRegression.run();
+    }
+
+    private static void suiteDevTools(Path root) throws Exception {
+        checks += net.fabricacs.api.impl.DeveloperToolsRegression.run(root.resolve("developer-tools"));
     }
 
     // ---- 共用工具 -----------------------------------------------------------

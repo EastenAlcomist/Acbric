@@ -1,0 +1,15 @@
+﻿Acbric quick start — dev.33
+
+1. Fully extract and open Acbric.exe. Keep the EXE with the rest of the folder.
+2. On first use, confirm the Steam game found automatically and select Use this game. Choose its folder manually if needed.
+3. Select Start game. Use the same EXE next time; no repeated setup is needed.
+4. Open MOD folder: add Java .jar MODs or native folders directly containing info.json. The API is included; do not duplicate it.
+5. Restart after changing Java MODs. Old User folders are not imported automatically.
+
+Choose Chinese/English at the top right. Settings can change the game location, install a local update ZIP or restore the previous framework. Close the game first. Do not extract updates over an old folder.
+For help: Help → Export diagnostics. Send the resulting ZIP yourself; saves are excluded and nothing is uploaded automatically.
+Existing save/update protections remain. Do not delete broken configuration or backups to bypass checks.
+
+First upgrade from dev.32 or earlier: extract the new package elsewhere, use its advanced/Update Acbric.cmd and select the original folder and new ZIP. Later updates use the EXE.
+Default saves/settings: instances/default/userdata. MODs: mods beside the EXE. Create an Acbric.exe shortcut for desktop access.
+Full guide: docs/INSTALLER.md. 中文：使用说明.txt

@@ -2,3 +2,6 @@
 build/
 out/
 *.iml
+
+libs/
+local.properties

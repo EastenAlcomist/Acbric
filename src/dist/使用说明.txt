@@ -1,0 +1,15 @@
+﻿Acbric 简明使用流程 — dev.33
+
+1. 完整解压，双击 Acbric.exe。不要单独移动 EXE。
+2. 首次使用会自动查找 Steam 游戏。确认位置后点击“使用此游戏”；找不到时选择游戏文件夹。
+3. 点击“开始游戏”。以后仍使用同一个 EXE，不必重复安装。
+4. “打开 MOD 文件夹”：Java MOD 放 .jar，原版 MOD 放直接含 info.json 的文件夹。API 已内置，不要重复添加。
+5. 增删和启停 Java MOD 后重启游戏。旧 User 目录不会自动导入。
+
+右上角可切换中文/English。设置中可更换游戏位置、安装本地更新 ZIP、恢复上一版；关闭游戏后操作。不要直接覆盖解压旧目录。
+遇到问题：帮助 → 导出诊断，将生成的 ZIP 自行发给开发者；不收集存档、不自动上传。
+保存和更新的原有保护仍生效。不要删除损坏配置或备份来绕过检查。
+
+从 dev.32 或更早版首次升级：另行解压新包，用新包 advanced/Update Acbric.cmd 选择原目录和新 ZIP；之后可在 EXE 内更新。
+存档/设置默认在 instances/default/userdata；MOD 在本目录 mods。需要桌面入口时创建 Acbric.exe 快捷方式。
+完整说明：docs/INSTALLER.zh-CN.md。English: QUICK_START.txt

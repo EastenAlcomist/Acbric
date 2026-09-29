@@ -30,6 +30,20 @@ public final class ModManagementRegression {
     public static int run(Path root) throws Exception {
         checks = 0;
         Files.createDirectories(root);
+        // 不初始化游戏类，直接核对编译用原版字节码中新的 render 挂钩目标。
+        var screen = new org.objectweb.asm.tree.ClassNode();
+        try (var input = ModManagementRegression.class.getResourceAsStream("/com/zarkonnen/airships/ModsScreen.class")) {
+            new org.objectweb.asm.ClassReader(input).accept(screen, 0);
+        }
+        int visibilityCalls = 0;
+        for (var method : screen.methods) if (method.name.equals("render")) {
+            for (var instruction : method.instructions) {
+                if (instruction instanceof org.objectweb.asm.tree.MethodInsnNode call
+                        && call.owner.equals("com/zarkonnen/airships/Mod") && call.name.equals("getAvailableMods")
+                        && call.desc.equals("()Ljava/util/ArrayList;")) visibilityCalls++;
+            }
+        }
+        check(visibilityCalls == 1, "MOD list render has exactly one native availability gate for UI-only redirect");
         AirshipsGameProvider provider = new AirshipsGameProvider();
         Field gameDirectory = AirshipsGameProvider.class.getDeclaredField("gameDirectory");
         gameDirectory.setAccessible(true); gameDirectory.set(provider, root);

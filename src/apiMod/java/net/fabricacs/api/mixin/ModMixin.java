@@ -12,8 +12,27 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = Mod.class, remap = false)
 public abstract class ModMixin {
+    @org.spongepowered.asm.mixin.injection.Redirect(method = "refreshMods", at = @At(value = "NEW", target = "(Ljava/io/File;Ljava/lang/String;)Ljava/io/File;"))
+    private static java.io.File acbric$localMods(java.io.File parent, String child) {
+        return net.fabricacs.api.impl.LocalModPaths.file(parent, child);
+    }
+
+    @Inject(method = "refreshMods", at = @At("HEAD"), remap = false)
+    private static void acbric$refreshBundleState(CallbackInfo ci) {
+        net.fabricacs.api.impl.DisabledBundledMods.invalidate();
+        net.fabricacs.api.impl.ExternalTextureCache.invalidate();
+    }
+
     @Inject(method = "refreshMods", at = @At("RETURN"), remap = false)
     private static void acbric$appendFabricMods(CallbackInfo ci) {
+        for (Mod mod : Mod.mods) {
+            if (mod.preemptedBy == null && net.fabricacs.api.impl.DisabledBundledMods.blocked(mod)) mod.preemptedBy = mod;
+        }
         FabricModListBridge.appendFabricMods();
     }
+    @Inject(method = {"isCurrentlyEnabled", "isAvailable"}, at = @At("HEAD"), cancellable = true, remap = false)
+    private void acbric$blockDisabledBundle(org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+        if (net.fabricacs.api.impl.DisabledBundledMods.blocked((Mod) (Object) this)) cir.setReturnValue(false);
+    }
+
 }

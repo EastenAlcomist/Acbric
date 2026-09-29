@@ -1,173 +1,56 @@
-# Acbric — Airships Fabric Mod Framework
+# Acbric — Airships Java MOD framework
 
-**English** | [中文](README.zh-CN.md)
+[中文](README.zh-CN.md) · [Documentation index](docs/README.md)
 
-A lightweight Fabric-style mod loading framework for *Airships: Conquer the Skies*.
+Acbric connects Fabric Loader to *Airships: Conquer the Skies*. Java MODs extend the game through events, configuration, campaign storage, shared UI, console commands and Mixins, alongside native JSON MODs.
 
-The framework grafts Fabric Loader's `KnotClient` launcher onto the game, so mods can
-extend game logic with Java code and mixins while keeping and integrating the game's
-native JSON data-mod system.
+Current development version: **0.3.3-dev.33**. [fabric.mod.json](src/apiMod/resources/fabric.mod.json) is the version source; see the [changelog](docs/CHANGELOG.md) for history.
 
-## Current development API and documentation
+## Start here
 
-The current API is **0.3.3-dev.1**. This revision preserves existing public members
-and adds accurately named rename-panel events.
+| Goal | Entry |
+| --- | --- |
+| Install, play, add MODs, update or troubleshoot | [Player guide](docs/INSTALLER.md) |
+| Create a first Java MOD | [Development workflow](docs/DEVELOPMENT.md), [standalone template](acbric-mod-template/README.md) |
+| Look up existing interfaces | [API guide](docs/API.md), [topic index](docs/README.md) |
+| Build, test or maintain the framework | [Build guide](docs/BUILDING.md), [agent and maintenance guidance](AGENTS.md) |
 
-- [Complete API guide (Chinese)](API.zh-CN.md): entrypoints, context, paths, events and resources.
-- [Change record (Chinese)](CHANGELOG.zh-CN.md) / [English changelog](CHANGELOG.md).
-- [UI event contract](EVENTS.md) / [Bundled resource updates](BUNDLED_RESOURCES.md).
-- [Standalone mod template](acbric-mod-template/README.md).
+## Player setup
 
-The build runs 80 headless assertions. A separately prepared full runtime was manually
-tested and reported to behave normally, close to the original package. No exhaustive
-scenario/mod list was supplied; save, multiplayer and third-party mod compatibility
-still require their own checks.
+Fully extract `Acbric-external-<version>.zip` with bundled Java and open `Acbric.exe`. Confirm the automatically found Steam game and select **Use this game**, or choose its folder manually. Use the same EXE and **Start game** next time. Java MOD JARs and native MOD folders go in the adjacent `mods` folder. See the [player guide](docs/INSTALLER.md).
 
----
+The framework uses a separate existing game installation. Instances hold saves, settings, caches and logs. Neither this repository nor the external distribution includes game code, game assets or third-party gameplay MODs.
 
-## ⚠️ This repository contains no game content
+## Framework development
 
-It ships **the framework only**. Three things are intentionally absent:
-
-| Absent | Why |
-|---|---|
-| `libs/` | The game's compiled classes (`asplit-A.zip` / `asplit-B.zip`) and the library jars the game ships with. Redistributing them would violate copyright. |
-| `game/` | The game's static data (`data/`, `ships/`, `images/` …) — about 1.3 GB. |
-| Feature mods | Not part of the framework. |
-
-The framework **will not compile or run** until you supply the first two. See below.
-
----
-
-## 1. Prepare the game files
-
-Copy these from your own legitimately owned Airships installation into this project,
-keeping the same relative paths.
-
-### `libs/` — compile + runtime dependencies
-
-```
-libs/
-├── asplit-A.zip                # game classes (compile + runtime)
-├── asplit-B.zip                # game classes (compile + runtime)
-├── fabric-loader-0.19.3.jar    # Fabric Loader 0.19.3 (from Fabric, not the game)
-├── <the game's library jars>
-└── native/                     # native libraries
-```
-
-`libs/` must end up holding the jars and zips the game itself launches with — typically
-`CatEngine.jar`, `CatSlick.jar`, `slick.jar`, `lwjgl.jar`, `lwjgl_util.jar`, `ibxm.jar`,
-`jinput.jar`, `jogg-*.jar`, `jorbis-*.jar`, `commons-*.jar`, `joda-time-*.jar`,
-`steamworks4j-*.jar` and `FloatIO.jar` — plus the game's `asplit-*.zip` class archives.
-
-> `fabric-loader-0.19.3.jar` comes from Fabric, not from the game. Download it and drop it
-> into `libs/`; the build references it as a local file.
-
-### `game/` — the game's own directory
-
-Copy the game directory that contains `Airships.json` (the file the launch shim parses):
-
-```
-game/
-├── Airships.json               # required — the launcher parses it
-├── launch_settings.json        # optional but recommended
-├── data/                       # required — game data
-├── lib/, native libs, ...
-└── mods/                       # installed mods land here
-```
-
-`game/Airships.json` is the file `AirshipsGameProvider` reads to discover `mainClass` and
-`classPath`; without it the launcher cannot locate the game.
-
----
-
-## 2. Requirements
-
-- **JDK 21** — set `JAVA_HOME` to your JDK, or pass `-Dorg.gradle.java.home=<JDK path>` to Gradle. No machine-specific JDK path is committed.
-- Gradle 8.13, via the bundled wrapper.
-
-## 3. Build & Run
-
-Fast entry points (they locate a JDK 21 for you and forward to Gradle):
+Prepare JDK 21 and local compilation dependencies from your own game, following the [build guide](docs/BUILDING.md). Run these commands from the repository root:
 
 ```powershell
-build                 # Windows cmd;  use .\build from PowerShell
-build full            # compile + all regression checks
-./build.sh            # Linux / macOS / Git Bash
-
-test all              # every regression suite (80 assertions)
-test event            # one suite;  test list shows them all
-./test.sh bundle      # Linux / macOS / Git Bash
+.\build.cmd       # Compile
+.\test.cmd all    # Full regression
+.\test.cmd mods   # Select a suite for the change
 ```
 
-See **[BUILDING.md](BUILDING.md)** ([中文](BUILDING.zh-CN.md)) for prerequisites, the measured
-rationale, cross-platform notes and troubleshooting.
+Use `externalDistZip` for redistribution; add `-PbundleRuntime` to include Java 21. Commands are in the [external distribution guide](docs/EXTERNAL_START.md). Legacy `distZip` includes local game content and is only for legacy-layout research, not public distribution.
 
-Everything is still plain Gradle underneath:
+## Directory layout
 
-```powershell
-# Compile both framework layers and run headless regression checks
-.\gradlew.bat build --console=plain
+| Directory | Contents |
+| --- | --- |
+| `docs/` | English/Chinese usage, development, API, mechanisms and history |
+| `src/main/`, `src/shared/` | Launching, installation and protocols shared by both layers |
+| `src/apiMod/` | Core API, game adapters and Mixins |
+| `src/regressionTest/`, `tools/` | Isolated regressions, real-runtime fixtures and acceptance tools |
+| `src/dist/` | Distribution launchers and player quick-start instructions |
+| `acbric-mod-template/` | Template for an independent MOD project |
+| `gradle/` | Build wrapper |
+| `build/`, `.gradle/` | Local outputs, verification records and caches; Git-ignored |
+| `libs/`, `game/` | Locally supplied dependencies and legacy test data; Git-ignored |
 
-# Build the framework and start the game
-.\gradlew.bat startAirships --console=plain
+## Verification and limits
 
-# Build/install just the API jar
-.\gradlew.bat installApiMod --console=plain
+This version adds player workflow, bilingual UI and diagnostic-export checks while retaining setup retries, update protections and existing API behavior. See the [changelog](docs/CHANGELOG.md) for verification scope.
 
-# Build a distribution package (bundled JRE via jlink)
-.\gradlew.bat distZip --console=plain
-```
+Java MOD selection requires a restart. Campaign extension writes do not automatically synchronize over the network. Code matching is neither anti-cheat nor a guarantee for arbitrary MOD combinations. Known native GL errors remain deferred; see the [external installation research](docs/EXTERNAL_INSTALL.md).
 
-`build` includes `apiModJar` and the `regressionTest` task. The latter checks data-result
-reporting, bundled resource extraction and classpath boundaries under `build/regression-sandbox/`.
-It also covers managed resource upgrades/recovery, event subscription semantics and
-Fabric metadata validation. It requires the local compile dependencies but does not start the GUI or use real saves.
-Symbolic-link checks report a skip when the OS does not grant link-creation privileges.
-These checks do not replace gameplay, save or multiplayer testing.
-
-The distribution launcher is `run.bat`. `loader-libs/` contains the launch shim,
-Fabric Loader, Mixin and ASM; `libs/` contains game dependencies. Keep these directories,
-`game/` and `jre/` together. The provider also excludes launcher classes from old combined
-`libs/` layouts by archive contents. The framework LICENSE is included in the distribution.
-Building a ZIP does not verify that you supplied the complete game assets.
-
-See [unreleased changes](CHANGELOG.md) for behavior changes and remaining limitations.
-For resource conflicts, backups and old-directory migration, see [bundled resources](BUNDLED_RESOURCES.md).
-
-New UI events, cancellation/order and legacy migration: [event contract](EVENTS.md).
-The unreleased API is `0.3.3-dev.1`; new templates require this version or newer.
-
-## 4. Project layout
-
-```
-Acbric/
-├── src/
-│   ├── main/            # Launch shim: AirshipsGameProvider + GameProvider service entry
-│   ├── apiMod/          # Runtime API (acbric_api): events, entrypoint bridge,
-│                        # native-mod UI integration, hook mixins
-│   └── regressionTest/  # Headless checks and transformed-panel probe entry
-├── acbric-mod-template/ # Standalone mod project template
-├── gradle/              # Gradle wrapper
-└── build.gradle
-```
-
-### Architecture
-
-| Layer | Location | Responsibility |
-|---|---|---|
-| Launch | `src/main` | `AirshipsGameProvider` pushes the game into Fabric: it parses `game/Airships.json`, assembles the classpath and reflectively calls `Main.main`. Depends on Fabric Loader, not game classes or the Acbric API. |
-| API | `src/apiMod` | `acbric_api` — the event system, the entrypoint bridge, native-mod UI integration and 13 hook mixins. |
-
-**Launch chain**: `KnotClient.main` → ServiceLoader discovers `AirshipsGameProvider` →
-classpath assembled → Fabric runs `preLaunch` → `AcbricApiPreLaunch` walks every `acbric`
-entrypoint and calls `AcbricInitializer.onInitializeAcbric` (individually try/catch) →
-game starts → API mixins fire events → mod listeners run.
-
-## 5. License / credits
-
-The framework code in this repository is released under the **MIT License** — see
-[`LICENSE`](LICENSE).
-
-The game *Airships: Conquer the Skies* and all of its assets are the property of their
-respective owners and are **not** included in this repository.
+Acbric uses the [MIT license](LICENSE). Game and third-party components retain their respective owners and licenses.

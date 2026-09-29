@@ -4,6 +4,11 @@
 package net.fabricacs.api;
 
 import net.fabricacs.api.util.AcbricLogger;
+import net.fabricacs.api.save.CampaignData;
+import net.fabricacs.api.config.ModConfig;
+import net.fabricacs.api.config.ConfigException;
+import net.fabricacs.api.event.EventScope;
+import org.json.JSONObject;
 import net.fabricacs.api.util.AirshipsPaths;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.ModMetadata;
@@ -71,7 +76,30 @@ public final class AcbricModContext {
         return AirshipsPaths.ensureModDataDir(modId());
     }
 
+    /** 当前 MOD 的公共界面入口；注册可在初始化时完成，打开窗口须在游戏线程。 */
+    public net.fabricacs.api.ui.ModUi ui() { return new net.fabricacs.api.ui.ModUi(modId()); }
+    /** 注册本 MOD 的命令；注册不执行命令，不要求游戏界面已经创建。 */
+    public net.fabricacs.api.command.ModCommands commands(){return new net.fabricacs.api.command.ModCommands(modId());}
+
     public AcbricLogger logger() {
         return logger;
+    }
+
+    /** 创建独立订阅范围；同名也不会复用，关闭时机由 MOD 显式管理。 */
+    public EventScope eventScope(String name) { return new EventScope(modId(), name); }
+
+    /** 在 acbric 入口显式声明本 MOD 的玩法规则；本地 UI 偏好不应加入。 */
+    public net.fabricacs.api.rules.SharedRules sharedRules(int version, JSONObject values, net.fabricacs.api.rules.SharedRules.Validator validator) {
+        return net.fabricacs.api.impl.SharedRulesRegistry.register(modId(), version, values, validator);
+    }
+
+    /** 获取指定 WorldMap 的本 MOD 数据；写入不广播，须在模拟线程按同步规则调用。 */
+    public CampaignData campaignData(Object worldMap) {
+        return new CampaignData(worldMap, modId());
+    }
+
+    /** 创建配置句柄，不读写磁盘；名称不含扩展名，后续显式 load/reload/save。 */
+    public ModConfig config(String name, int dataVersion, JSONObject defaults, ModConfig.Validator validator) throws ConfigException {
+        return new ModConfig(AirshipsPaths.configDir(), modId(), name, dataVersion, defaults, validator);
     }
 }

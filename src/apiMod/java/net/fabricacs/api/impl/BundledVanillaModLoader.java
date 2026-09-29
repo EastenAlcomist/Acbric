@@ -20,13 +20,14 @@ public final class BundledVanillaModLoader {
      * 为已加载的 Fabric MOD 准备内嵌资源；在 preLaunch 或之后调用。
      */
     public static void extractAll() {
-        // 原版只在 AGame 用户数据的 mods 下扫描 info.json，不能解包到 Fabric 的 game/mods。
-        Path gameModsDir = AGame.getGameDirectory().toPath().resolve("mods").toAbsolutePath().normalize();
+        // 外部发行统一到框架旁的 mods；旧布局继续使用原生用户数据 mods。
+        Path gameModsDir = LocalModPaths.nativeMods();
         try {
             BundledResourceStore.rejectLinks(gameModsDir);
             Files.createDirectories(gameModsDir);
             BundledResourceStore.rejectLinks(gameModsDir);
         } catch (IOException e) {
+            DiagnosticHub.publish("acbric_api",net.fabricacs.api.diagnostics.DiagnosticMessage.Level.ERROR,"Cannot prepare bundled MOD directory / 无法准备配套资源目录",e);
             System.err.println("[Acbric] Failed to prepare mods dir: " + gameModsDir + ": " + e);
             return;
         }
@@ -49,6 +50,7 @@ public final class BundledVanillaModLoader {
         try {
             BundledResourceStore.install(jarPath, gameModsDir, modId, false);
         } catch (IOException | InvalidPathException e) {
+            DiagnosticHub.publish(modId,net.fabricacs.api.diagnostics.DiagnosticMessage.Level.ERROR,"Cannot install bundled resources / 无法安装配套资源: "+jarPath,e);
             System.err.println("[Acbric] Failed to install bundled resources from " + jarPath + ": " + e);
         }
     }

@@ -30,6 +30,7 @@ public final class AcbricLogger {
     }
 
     private void log(PrintStream stream, String level, String message, Throwable throwable) {
+        net.fabricacs.api.impl.DiagnosticHub.publish(modId,net.fabricacs.api.diagnostics.DiagnosticMessage.Level.valueOf(level),message,throwable);
         stream.println("[Acbric/" + modId + "/" + level + "] " + message);
         if (throwable != null) {
             throwable.printStackTrace(stream);

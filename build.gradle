@@ -41,7 +41,29 @@ tasks.register('verifyFrameworkInputs') {
                     missing.collect { '  - ' + it[0] + '   (' + it[2] + ')' }.join('\n') +
                     '\n\nThese files are NOT redistributed with this repository (copyright).' +
                     '\nCopy them from your own Airships: Conquer the Skies installation into this project\'s libs/.' +
-                    '\nSee BUILDING.md / BUILDING.zh-CN.md for the exact list and one-line copy command.')
+                    '\nSee docs/BUILDING.md / docs/BUILDING.zh-CN.md for the exact list and one-line copy command.')
+        }
+    }
+}
+
+// 回归测试另外需要 libs/FloatIO.jar（--patch-module jdk.unsupported 的补丁源）。
+// 它只在跑测试时用，所以单独检查：缺它仍可用 build 快速编译，只有 test / check 会要求补齐。
+def testInputs = [
+        ['libs/FloatIO.jar', '原版 JSON 小数格式化依赖，regressionTest 的 --patch-module 需要'],
+].collect { [it[0], layout.projectDirectory.file(it[0]).asFile, it[1]] }
+
+tasks.register('verifyTestInputs') {
+    group = 'acbric'
+    description = 'Fails early with an actionable message when files required by regressionTest are missing.'
+    doLast {
+        def missing = testInputs.findAll { !it[1].isFile() }
+        if (!missing.isEmpty()) {
+            throw new GradleException(
+                    'Missing game files required for regression tests:\n' +
+                    missing.collect { '  - ' + it[0] + '   (' + it[2] + ')' }.join('\n') +
+                    '\n\nThese files are NOT redistributed with this repository (copyright).' +
+                    '\nCopy them from your own Airships: Conquer the Skies installation into this project\'s libs/.' +
+                    '\nSee docs/BUILDING.md / docs/BUILDING.zh-CN.md for the exact list and one-line copy command.')
         }
     }
 }
@@ -63,6 +85,8 @@ configurations {
 
 dependencies {
     compileOnly files('libs/fabric-loader-0.19.3.jar')
+    // 启动层只读字节码常量，不提前加载/初始化游戏类；运行时沿用已有 ASM。
+    compileOnly 'org.ow2.asm:asm:9.8'
     fabricLoaderRuntime files('libs/fabric-loader-0.19.3.jar')
     fabricLoaderRuntime 'net.fabricmc:sponge-mixin:0.17.3+mixin.0.8.7'
     fabricLoaderRuntime 'org.ow2.asm:asm:9.8'
@@ -73,8 +97,9 @@ dependencies {
 }
 
 sourceSets {
+    main { java.srcDir "src/shared/java" }
     apiMod {
-        java.setSrcDirs(['src/apiMod/java'])
+        java.setSrcDirs(['src/apiMod/java', 'src/shared/java'])
         resources.setSrcDirs(['src/apiMod/resources'])
         compileClasspath += configurations.compileClasspath + configurations.fabricLoaderRuntime + files(
                 'libs/asplit-A.zip',
@@ -102,6 +127,7 @@ tasks.register('regressionTest', JavaExec) {
     group = 'verification'
     description = 'Runs headless framework regression tests with isolated user data.'
     dependsOn tasks.named('regressionTestClasses')
+    dependsOn tasks.named('verifyTestInputs')
     classpath = sourceSets.regressionTest.runtimeClasspath
     mainClass = 'net.fabricacs.regression.FrameworkRegression'
 
@@ -110,8 +136,10 @@ tasks.register('regressionTest', JavaExec) {
     //   ACBRIC_SUITES=event,rename     启动脚本 test.cmd / test.sh 用
     // 脚本走环境变量是因为 cmd.exe 会把参数里的 '=' 当分隔符拆开，
     // "-Pacbric.suites=event" 到不了 Gradle；环境变量没有这个问题，且两端脚本写法一致。
-    // 套件名与覆盖范围见 BUILDING.zh-CN.md，或跑 regressionTest -Pacbric.suites=list。
+    // 套件名与覆盖范围见 docs/BUILDING.zh-CN.md，或跑 regressionTest -Pacbric.suites=list。
     def suiteSelection = (findProperty('acbric.suites') ?: System.getenv('ACBRIC_SUITES') ?: '').toString().trim()
+    // 完整构建/检查不能被终端遗留的快速测试选择缩小范围。
+    if (gradle.startParameter.taskNames.any { it.tokenize(':').last() in ['build', 'check'] }) suiteSelection = ''
     if (!suiteSelection.isEmpty()) {
         setArgs(suiteSelection.split(',')*.trim().findAll { !it.isEmpty() })
     }
@@ -119,6 +147,9 @@ tasks.register('regressionTest', JavaExec) {
     def sandbox = layout.buildDirectory.dir('regression-sandbox')
     workingDir = sandbox
     systemProperty 'java.awt.headless', 'true'
+    // 原版 JSON 的小数格式化依赖 sun.misc.FloatingDecimal2。普通 JDK 测试类加载器
+    // 不搜索该模块包中的 classpath 类；仅测试进程补丁加载，游戏仍由 Knot 加载 FloatIO。
+    jvmArgs '--patch-module', "jdk.unsupported=${file('libs/FloatIO.jar').absolutePath}"
     systemProperty 'file.encoding', 'UTF-8'
     systemProperty 'stdout.encoding', 'UTF-8'
     systemProperty 'stderr.encoding', 'UTF-8'
@@ -133,6 +164,23 @@ tasks.register('regressionTest', JavaExec) {
 
 tasks.named('check') {
     dependsOn tasks.named('regressionTest')
+}
+
+// 只读取两份已导出的清单；非零退出码区分差异、无法验证及输入错误。
+tasks.register('compareCodeManifests', JavaExec) {
+    group = 'verification'
+    description = 'Compares two local code manifests without starting the game.'
+    dependsOn tasks.named('apiModClasses')
+    classpath = sourceSets.apiMod.runtimeClasspath
+    mainClass = 'net.fabricacs.api.impl.CodeManifestCompare'
+    systemProperty 'file.encoding', 'UTF-8'
+    doFirst {
+        if (!project.hasProperty('manifestLeft') || !project.hasProperty('manifestRight')) {
+            throw new GradleException('Supply -PmanifestLeft=<file> -PmanifestRight=<file>')
+        }
+        args = [project.file(project.property('manifestLeft')).absolutePath,
+                project.file(project.property('manifestRight')).absolutePath]
+    }
 }
 
 tasks.register('installApiMod', Copy) {
@@ -187,7 +235,7 @@ tasks.register('verifyGameInputs') {
                     missing.collect { '  - ' + it[0] + '   (' + it[2] + ')' }.join('\n') +
                     '\n\nCopy your Airships game directory (Airships.json, data/, lib/native, ...) into this project\'s game/.' +
                     '\nRun without game files is still possible for library checks: gradlew assemble / gradlew regressionTest.' +
-                    '\nSee BUILDING.md / BUILDING.zh-CN.md.')
+                    '\nSee docs/BUILDING.md / docs/BUILDING.zh-CN.md.')
         }
     }
 }
@@ -217,6 +265,21 @@ tasks.register('startAirships') {
     group = 'application'
     description = 'Starts Airships with Fabric Loader. Alias for runAirshipsFabric.'
     dependsOn tasks.named('runAirshipsFabric')
+}
+
+// 第一阶段仅生成检查工具，不复制游戏/API/实例内容，不启动游戏。
+tasks.register('preflightTools', Sync) {
+    group = 'acbric'
+    description = 'Builds external-install preflight tools only; does not launch or package the game.'
+    dependsOn tasks.named('jar')
+    into layout.buildDirectory.dir('preflight')
+    from('src/dist/check-install.ps1')
+    from('LICENSE')
+    into('docs') { from('docs') { include '*.md'; exclude 'AGENT_HISTORY.md' } }
+    into('loader-libs') {
+        from tasks.named('jar')
+        from configurations.fabricLoaderRuntime
+    }
 }
 
 // ---- 通过 jlink 创建分发用 Java 21 运行时 ----
@@ -252,8 +315,8 @@ tasks.register('distDir', Sync) {
         include 'run.bat'
     }
     from 'LICENSE'
-    from 'BUNDLED_RESOURCES.md', 'EVENTS.md', 'CHANGELOG.md', 'CHANGELOG.zh-CN.md', 'API.zh-CN.md',
-         'BUILDING.md', 'BUILDING.zh-CN.md'
+    from 'README.md', 'README.zh-CN.md'
+    into('docs') { from('docs') { include '*.md'; exclude 'AGENT_HISTORY.md' } }
     doFirst {
         if (!file('src/dist/run.bat').isFile()) {
             throw new GradleException('Missing distribution launcher: src/dist/run.bat')
@@ -290,6 +353,7 @@ tasks.register('distDir', Sync) {
             exclude '.fabric/**'
             exclude 'lib/**'
             exclude 'mods/acbric-api.jar'
+            exclude 'config/acbric_mod_manager.json', 'config/acbric_mod_manager.json.lock'
         }
     }
 
@@ -313,4 +377,88 @@ tasks.register('distZip', Zip) {
     from(distributionRoot) {
         into distributionName
     }
+}
+
+// 外部发行使用允许清单，不复用旧 distDir 的游戏目录或模板 libs。
+def playerExe = layout.buildDirectory.file('player-launcher/Acbric.exe')
+tasks.register('buildPlayerLauncher', Exec) {
+    inputs.file('src/launcher/windows/Acbric.cs')
+    inputs.file('tools/build_windows_launcher.ps1')
+    outputs.file(playerExe)
+    commandLine 'powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+            file('tools/build_windows_launcher.ps1').absolutePath, '-Output', playerExe.get().asFile.absolutePath
+}
+def externalRoot = layout.buildDirectory.dir('external-dist/Acbric')
+tasks.register('externalDistDir', Sync) {
+    group = 'acbric'
+    description = 'Assembles a framework-only external distribution (bring Java 21 or bundle it explicitly).'
+    dependsOn tasks.named('jar'), tasks.named('apiModJar'), tasks.named('buildPlayerLauncher')
+    into externalRoot
+    from(playerExe)
+    from('src/dist/start.ps1', 'src/dist/check-install.ps1', 'src/dist/setup.ps1', 'src/dist/start-configured.ps1', 'LICENSE')
+    from('src/dist/player-maintenance.ps1', 'src/dist/update.ps1', 'src/dist/maintenance.ps1', 'src/dist/QUICK_START.txt', 'src/dist/使用说明.txt')
+    into('advanced') {
+        from('src/dist/Setup.cmd', 'src/dist/Start Acbric.cmd', 'src/dist/Update Acbric.cmd')
+        filter { line -> line.replace('%~dp0', '%~dp0..\\') }
+    }
+    into('update-baselines') { from('src/dist/update-baselines') }
+    // 保持与仓库一致的文档目录；旧根目录说明由更新器按归属清单移除。
+    into('docs') { from('docs') { include '*.md'; exclude 'AGENT_HISTORY.md' } }
+    into('mods') { from('src/dist/mods/README.md') }
+    into('core') { from(tasks.named('apiModJar')) { rename { 'acbric-api.jar' } } }
+    into('loader-libs') { from tasks.named('jar'); from configurations.fabricLoaderRuntime }
+    into('acbric-mod-template') {
+        from(modTemplateDir) {
+            include 'src/**', 'gradle/wrapper/**', 'gradlew', 'gradlew.bat', 'build.gradle', 'settings.gradle', 'gradle.properties'
+            include 'README.md', 'README.zh-CN.md', '.gitignore', 'local.properties.example'
+        }
+    }
+    // 默认不打包运行时；显式 -PbundleRuntime 时仅复制 jlink 输出，不复制游戏自带 Java。
+    if (project.hasProperty('bundleRuntime')) {
+        dependsOn tasks.named('createBundledJre')
+        into('runtime') { from bundledJreDir }
+    }
+    doLast {
+        def root = externalRoot.get().asFile
+        def lines = ['schema=1', "api.version=${new groovy.json.JsonSlurper().parse(file('src/apiMod/resources/fabric.mod.json')).version}"]
+        fileTree(root) { include 'loader-libs/*.jar', 'core/acbric-api.jar' }.files.sort().each { input ->
+            def hash = java.security.MessageDigest.getInstance('SHA-256').digest(input.bytes).encodeHex().toString()
+            def relative = root.toPath().relativize(input.toPath()).toString().replace('\\', '/')
+            lines.add("sha256.${relative}=${hash}")
+        }
+        new File(root, 'bundle.properties').setText(lines.join('\n') + '\n', 'UTF-8')
+        def release = lines.take(2)
+        fileTree(root) { exclude 'release-files.properties' }.files.sort().each { input ->
+            def hash = java.security.MessageDigest.getInstance('SHA-256').digest(input.bytes).encodeHex().toString()
+            def relative = root.toPath().relativize(input.toPath()).toString().replace('\\', '/')
+            release.add("sha256.${relative}=${hash}")
+        }
+        new File(root, 'release-files.properties').setText(release.join('\n') + '\n', 'UTF-8')
+    }
+}
+
+tasks.register('externalDistZip', Zip) {
+    dependsOn tasks.named('externalDistDir')
+    // 使用实际 API 版本命名，避免不同开发版的分享包互相混淆。
+    archiveFileName = providers.fileContents(layout.projectDirectory.file('src/apiMod/resources/fabric.mod.json')).asText.map {
+        "Acbric-external-${new groovy.json.JsonSlurper().parseText(it).version}.zip"
+    }
+    destinationDirectory = layout.buildDirectory.dir('external-dist')
+    from(externalRoot) { into 'Acbric' }
+    // 包扫描失败则构建失败；输入安装仅用于本地内容指纹，路径不会写入 ZIP。
+    doLast {
+        exec {
+            commandLine 'python', 'tools/verify_external_distribution.py', archiveFile.get().asFile.absolutePath,
+                    '--game-dir', file(findProperty('externalGameDir') ?: 'game').absolutePath,
+                    '--game-libs', file('libs').absolutePath,
+                    '--report', layout.buildDirectory.file('external-dist/verification.json').get().asFile.absolutePath
+            environment 'PYTHONUTF8', '1'
+        }
+    }
+}
+
+// 这些维护任务仍在执行阶段使用 Project 服务；保留日常编译/回归的配置缓存，
+// 对它们显式停用缓存，防止快速构建设置破坏 jlink 和正式发行流程。
+['compareCodeManifests', 'createBundledJre', 'distDir', 'externalDistDir', 'externalDistZip'].each { name ->
+    tasks.named(name) { notCompatibleWithConfigurationCache('Uses execution-time project services for distribution or maintenance') }
 }
