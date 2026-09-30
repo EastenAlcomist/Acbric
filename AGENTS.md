@@ -4,7 +4,7 @@
 
 正式仓库为 `04-开发源码/Acbric`。工具默认工作目录可能仍是 Steam 游戏目录，执行命令必须显式指定本仓库。开始先核对 Git 分支和本地改动，保留用户已有工作。
 
-- 当前源码/API：**0.3.3-dev.33**，分支与提交以 Git 为准。
+- 当前源码/API：**0.3.4**，分支与提交以 Git 为准。
 - 2026-09-27：用户确认 dev.33 实机测试没有问题，并要求将启动器优化及此前文档整理提交至本地 dev；本轮未要求推送。
 - 2026-09-27 dev.33：玩家入口改为 Acbric.exe，首次查找/检查/保存合并，首页只保留启动、MOD、设置、帮助。技术细节默认隐藏；日志本地保留、诊断导出需主动选择。旧 CMD 在 advanced；旧实例脚本保持字节兼容。更新交给临时助手等待 JVM 退出；不要破坏使用锁或恢复事务。
 - 本轮验证：1040 项/16 套件通过；真实 EXE 首次配置、再次打开英文首页、实际游戏菜单 30 帧/音频和返回首页通过；原游戏 5325 文件未改。旧 dev.32→dev.33→回退逐文件核对通过，原生维护交接等待与中断恢复重开通过。证据 build/player-*.log、build/player-launcher-tests/dev33final（最终包 SHA-256: 6786e3aeb17d971652100a1a0b0701aac1e3d26469ef5e9c47eaf7e1aba73403）、build/player-maintenance-tests/dev33。界面驱动使用仅测试的类加载器夹具；精简 Java 无 java.instrument，不把测试夹具打进包。
@@ -97,7 +97,7 @@ test list            # 列出套件与覆盖范围
 | 层 | 位置 | 职责 | 依赖 |
 |---|---|---|---|
 | 启动层 | `src/main` | `AirshipsGameProvider` 把游戏塞进 Fabric(解析 `game/Airships.json`、拼类路径、反射调 `Main.main`) | Fabric Loader；不依赖游戏 API 或 Acbric API |
-| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.3-dev.33（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、游戏适配 Mixin | 游戏 + fabric-loader |
+| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.4（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、游戏适配 Mixin | 游戏 + fabric-loader |
 
 功能 MOD 不属于本仓库:使用者在自己的项目里编写(可以 `acbric-mod-template/` 为起点),
 编译期依赖 API JAR，通常还依赖 `libs/asplit-*.zip`。独立模板使用其本地 API JAR；同工程 source set 才可直接依赖 `apiMod.output`。
@@ -188,4 +188,4 @@ Fabric 略有差异:
   `javap -p -c` 反编译 `libs/asplit-*.zip` 里的目标 class 核对。
 - dev.12 的 `disabledMods` 在 Provider 定位阶段读取，交由固定 Loader 候选过滤；必须同时更新启动器和 API。Java 启停重启后生效，原生热重载按钮不影响此选择，见 docs/MOD_MANAGEMENT.md。不可实现成只跳过 acbric 入口，否则 Mixin 仍生效。
 - 真实入口是 `src/main` 的 GameProvider + ServiceLoader 注册,不是任何 `fabric.mod.json`。
-- API 版本号 `acbric_api` = 0.3.3-dev.33（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
+- API 版本号 `acbric_api` = 0.3.4（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
