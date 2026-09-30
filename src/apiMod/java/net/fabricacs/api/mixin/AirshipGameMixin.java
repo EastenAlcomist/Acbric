@@ -79,9 +79,12 @@ public abstract class AirshipGameMixin implements CampaignSessionAccess {
     }
 
     @Inject(method = "getMyInput", at = @At("HEAD"), cancellable = true, remap = false)
-    private static void acbric$unwrapUi(Input input, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<com.zarkonnen.catengine.SlickEngine.MyInput> cir) {
+    private static void acbric$unwrapUi(Input input, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Object> cir) {
         if (net.fabricacs.api.impl.UiBridge.mask(input) != null)
-            cir.setReturnValue((com.zarkonnen.catengine.SlickEngine.MyInput) net.fabricacs.api.impl.UiBridge.unwrap(input));
+            // 不能写死引擎的 MyInput 类型：目标方法 getMyInput 的返回类型由当前引擎决定
+            // （SlickEngine 后端是 SlickEngine$MyInput，LWJGL3 后端是 Lwjgl3Engine$MyInput）。
+            // unwrap() 返回的就是引擎自己的 input，交给 setReturnValue 按目标返回类型处理。
+            cir.setReturnValue(net.fabricacs.api.impl.UiBridge.unwrap(input));
     }
 
 }
