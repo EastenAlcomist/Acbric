@@ -6,7 +6,7 @@ Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physic
 
 Current navigation: [development workflow](DEVELOPMENT.md), [command API](COMMANDS.md), [developer tools and diagnostics](DEVELOPER_TOOLS.md). `context.commands()` is available since dev.20, with typed arguments, help/completion and closeable registrations; existing public APIs remain compatible.
 
-Applies to **`acbric_api 0.3.5`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
+Applies to **`acbric_api 0.3.5.1`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
 
 - Installation, building and launching: [README.md](BUILDING.md).
 - Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
@@ -129,7 +129,7 @@ The static methods in `net.fabricacs.api.util.AirshipsPaths` use the Fabric game
 
 The corresponding creation methods are `ensureConfigDir()`, `ensureModsDir()`, `ensureGeneratedDir()`, `ensureCacheDir()`, `ensureModConfigDir(modId)` and `ensureModDataDir(modId)`. `ensureDirectory(Path)` creates a specified directory; I/O failures throw `UncheckedIOException`. Plain path getters do not create directories. Path methods accepting an ID do not validate arbitrary external input.
 
-**In external releases, local native MODs share `AirshipsPaths.modsDir()` with Java MODs**, as subfolders directly containing `info.json`. Saves still use instance userdata through `AGame.getGameDirectory()`; do not assume its mods subfolder is scanned. Legacy layouts keep the native user-data mods location. `context.dataDir()` is not the save directory, and writing files there does not make the game load them automatically.
+**In external releases the Java MOD folder and the native MOD root are two different roots**: Java `.jar` files use `AirshipsPaths.modsDir()` (`fabric.modsFolder`, the `mods` folder beside Acbric), while native MODs (subfolders directly containing `info.json`) use `LocalModPaths.nativeMods()` (`acbric.external.mods`) — the framework `mods` when isolated, the `mods` folder inside the vanilla user-data directory when shared. Bundled MOD resources (`acbric_vanilla/`) are extracted into the native root. Saves follow `AGame.getGameDirectory()` for the active data environment (vanilla folder when shared, instance userdata when isolated); do not assume its mods subfolder is scanned. Legacy layouts keep the native user-data mods location. `context.dataDir()` is not the save directory, and writing files there does not make the game load them automatically.
 
 ## 4. Event subscription and removal
 

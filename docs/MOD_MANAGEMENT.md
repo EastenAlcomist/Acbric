@@ -18,7 +18,7 @@ Statuses distinguish loaded code, failed Acbric entrypoints, disabled mods and p
 
 ## Scope and dependencies
 
-- Manages regular, visible, lowercase `.jar` files directly in the mod directory, `mods` beside Setup.cmd inside Acbric in external releases, or normally `game/mods` in legacy layouts; `fabric.modsFolder` is recognized.
+- Manages regular, visible, lowercase `.jar` files directly in the mod directory: `mods` beside Setup.cmd inside Acbric in external releases (`fabric.modsFolder`, independent of the native MOD root), or normally `game/mods` in legacy layouts; `fabric.modsFolder` is recognized.
 - Protects `acbric_api`, `fabricloader`, `airships`, `java` and `mixinextras`. Nested mods, development directories, multiple-path and external classpath origins are read-only. Manage embedded libraries through their parent mod.
 - Prechecks required `depends`, versions, `provides` aliases and hard `breaks` conflicts. Disable dependents first; enable libraries first. Other mods are never changed automatically.
 - Reads declared nested metadata within size, count and depth limits so parents with embedded dependencies can be enabled again. Complex candidate/version selection, cyclic groups and unscanned external sources may not be adjustable one row at a time. Fabric remains the final dependency resolver.

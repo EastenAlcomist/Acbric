@@ -83,6 +83,20 @@ public final class PlayerEnvironmentRegression {
         check(arguments.contains("-Dacbric.external.dataDir=" + vanilla) && arguments.contains("-Dacbric.external.mods=" + vanilla.resolve("mods")), "shared launch points the game at the vanilla data and MOD folders");
         check(arguments.contains("-Dfabric.modsFolder=" + javaMods) && !arguments.contains("-Dacbric.external.dataDir=" + instance.resolve("userdata")), "Java JARs keep using the framework MOD folder");
         check(singleModRoot(vanilla.resolve("mods"), game), "the game resolves native MODs to that one vanilla folder");
+        // 共享模式下两个 MOD 根不同：Java JAR 目录由启动器给出，Provider 准备原生根时不得覆盖它，
+        // 否则 Fabric 会去原版目录找 .jar，Java MOD（玩法 MOD）整个不再加载。
+        check(ExternalMods.modsFolder(vanilla.resolve("mods").toString(), javaMods.toString()).equals(javaMods.toString()), "the Java MOD folder survives the native MOD root being prepared");
+        check(ExternalMods.modsFolder(vanilla.resolve("mods").toString(), null).equals(vanilla.resolve("mods").toString()), "an internal probe without a Java folder falls back to the native root");
+        check(ExternalMods.modsFolder(vanilla.resolve("mods").toString(), " ").equals(vanilla.resolve("mods").toString()), "a blank Java folder falls back to the native root");
+        String previousFolder = System.getProperty(ExternalMods.MODS_FOLDER_PROPERTY);
+        try {
+            System.setProperty(ExternalMods.MODS_FOLDER_PROPERTY, javaMods.toString());
+            System.setProperty(ExternalMods.MODS_FOLDER_PROPERTY, ExternalMods.modsFolder(vanilla.resolve("mods").toString(), System.getProperty(ExternalMods.MODS_FOLDER_PROPERTY)));
+            check(System.getProperty(ExternalMods.MODS_FOLDER_PROPERTY).equals(javaMods.toString()), "the game keeps native and Java MOD folders apart after the provider prepares the native root");
+        } finally {
+            if (previousFolder == null) System.clearProperty(ExternalMods.MODS_FOLDER_PROPERTY);
+            else System.setProperty(ExternalMods.MODS_FOLDER_PROPERTY, previousFolder);
+        }
 
         System.setProperty(ExternalGameInstallation.DATA_PROPERTY, vanilla.toString());
         Path settings = ExternalLaunchSettings.prepare(ExternalGameInstallation.inspect(game, instance));
@@ -110,9 +124,12 @@ public final class PlayerEnvironmentRegression {
         System.setProperty(PlayerEnvironment.VANILLA_PROPERTY, root.resolve("missing-vanilla").toString());
         reject("VANILLA_DATA_MISSING", () -> PlayerEnvironment.detect(game));
         reject("VANILLA_DATA_MISSING", () -> service.useVanillaData(ready));
+        // 找不到原版目录时启动仍须可用：退回实例副本，而不是让游戏起不来。
+        var fallback = service.environment(ready);
+        check(fallback.isolated() && fallback.dataDir().equals(instance.resolve("userdata")) && fallback.modsDir().equals(javaMods), "a missing vanilla folder falls back to the instance copy so the game still starts");
         write(root, "not-a-folder", "file");
         System.setProperty(PlayerEnvironment.VANILLA_PROPERTY, root.resolve("not-a-folder").toString());
-        reject("VANILLA_DATA_MISSING", () -> service.environment(ready));
+        check(service.environment(ready).isolated(), "a file instead of a folder also falls back to the instance copy");
         System.setProperty(PlayerEnvironment.VANILLA_PROPERTY, vanilla.toString());
 
         write(instance, "acbric-launcher/environment.json", "{broken");

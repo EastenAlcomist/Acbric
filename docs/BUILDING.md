@@ -43,7 +43,7 @@ Four reasons:
    launch is pure overhead, and correctness here only shows up at runtime (mixins are load-time bytecode
    injection), so the loop runs often.
 2. **`build` had no compile-only meaning.** Upstream wired `check` to `regressionTest`, so
-   `gradlew build` = compile + 1105 assertions. Compiling alone meant remembering Gradle's internal
+   `gradlew build` = compile + 1110 assertions. Compiling alone meant remembering Gradle's internal
    `assemble` name. Now `build` compiles and `build full` compiles and tests.
 3. **145 lines of test noise bury compile errors.** The regression prints a lot of
    `[Acbric] Bundle conflict …`; a compile error is a couple of lines. Compiling only keeps it visible.
@@ -100,6 +100,14 @@ Three files are mandatory; `verifyFrameworkInputs` stops the build before compil
 | `libs/asplit-A.zip` | game kernel classes (compile + run) |
 | `libs/asplit-B.zip` | game kernel classes (compile + run) |
 | `libs/fabric-loader-0.19.3.jar` | `compileOnly` dependency |
+
+The two archives kept in this repository currently come from game **1.2.15.3** (verify with `AGame.VERSION`, command below) and are the baseline for compilation and headless regression; after changing the baseline, run `build clean` and then `test all`. At runtime the framework also works with older engines (1.2.15.2 and similar). Never hard-code the engine's input type: after switching engine backends any cast compiled against the old engine fails. See [EXTERNAL_INSTALL.md](EXTERNAL_INSTALL.md) and the 0.3.4 changelog entry.
+
+```powershell
+# Check the current baseline (read the VERSION constant out of AGame.class; javap ships with JDK 21)
+java -version   # confirm JDK 21
+javap -p -constants -classpath libs com.zarkonnen.airships.AGame | Select-String VERSION
+```
 
 One more file is needed **only by the regression tests** (not by compilation). `verifyTestInputs`
 checks it when you run `test`/`check`, so a compile-only `build` still works without it:
@@ -163,7 +171,7 @@ If it ever misbehaves on your machine, disable it for one run:
 ## 4. Testing
 
 ```sh
-./test.sh all          # every suite (currently 1105 assertions)
+./test.sh all          # every suite (currently 1110 assertions)
 ./test.sh event        # one suite
 ./test.sh ev           # unique prefix works too
 ./test.sh data rename  # several suites, run in the order given
@@ -192,7 +200,7 @@ If it ever misbehaves on your machine, disable it for one run:
 | `ui` | 107 | public UI components, text selection/editing, input masking, zh/en language selection | `UI.md` |
 | `devtools` | 56 | developer tools and console: command binding, execution, bounded diagnostics buffer | `DEVELOPMENT.md` · `COMMANDS.md` · `DEVELOPER_TOOLS.md` |
 
-**16 suites, 1105 checks in total**. After adding a suite, run `test list` to check registration and `test all` to verify assertion counts.
+**16 suites, 1110 checks in total**. After adding a suite, run `test list` to check registration and `test all` to verify assertion counts.
 
 Resolution order: exact name → alias → **unique** prefix → unique substring. An ambiguous or unknown
 selector fails loudly with the list of valid names — it never silently runs the wrong thing.
@@ -293,7 +301,7 @@ This entry point is designed so that it does not break on another machine. The h
 - **Never put logic in `build.cmd` / `build.sh` / `test.cmd` / `test.sh`.** They only find a JDK and
   forward. Add a Gradle task instead so the IDE and CI benefit too.
 - **Run the suite that covers what you touched, then `test all` before you call it done.** A full run
-  is 1105 assertions and about 7 seconds; there is no reason to skip it. Use `test <suite>` while iterating
+  is 1110 assertions and about 7 seconds; there is no reason to skip it. Use `test <suite>` while iterating
   (`test bundle` when editing `BundledResourceStore`, `test event` when editing `Event`).
 - Add new tests to the suite registry (see "Adding a suite" in this document) rather than starting a
   parallel test entry point.

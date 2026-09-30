@@ -8,9 +8,17 @@ import java.nio.file.*;
 
 final class ExternalMods implements AutoCloseable {
     static final String PROPERTY = "acbric.external.mods";
+    /** Fabric 的 Java JAR 目录；共享模式下与原生 MOD 根指向不同目录，由启动器显式给出。 */
+    static final String MODS_FOLDER_PROPERTY = "fabric.modsFolder";
     private final FileChannel channel;
     private final FileLock lock;
     private ExternalMods(FileChannel channel, FileLock lock) { this.channel = channel; this.lock = lock; }
+
+    /** Java JAR 目录：启动器给出的值优先，只有内部探针/旧调用方未提供时才回退到原生 MOD 根。
+     *  共享模式下原生 MOD 在原版数据目录、Java JAR 仍在框架 mods，覆盖会把 Java MOD 整个丢出加载列表。 */
+    static String modsFolder(String nativeRoot, String configured) {
+        return configured == null || configured.isBlank() ? nativeRoot : configured;
+    }
 
     static Path directory(Path framework, ExternalGameInstallation.Plan plan) throws IOException {
         return directory(framework, plan.install(), plan.instance());

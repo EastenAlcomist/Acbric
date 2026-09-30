@@ -321,8 +321,12 @@ public final class AirshipsGameProvider implements GameProvider {
                 Path root = Path.of(mods).toAbsolutePath().normalize();
                 externalMods = ExternalMods.open(root, plan);
                 System.setProperty(ExternalMods.PROPERTY, root.toString());
-                System.setProperty("fabric.modsFolder", root.toString());
-                System.out.println("[Acbric] MOD directory / MOD 目录: " + root);
+                // 共享模式下原生 MOD 根是原版 mods、Java JAR 目录仍是框架 mods；启动器已显式给出的值不能覆盖，
+                // 否则 Fabric 会去原版目录找 .jar，Java MOD（含 ARC 等玩法 MOD）不再加载。
+                String javaMods = ExternalMods.modsFolder(root.toString(), System.getProperty(ExternalMods.MODS_FOLDER_PROPERTY));
+                System.setProperty(ExternalMods.MODS_FOLDER_PROPERTY, javaMods);
+                System.out.println("[Acbric] Native MOD root / 原生 MOD 目录: " + root);
+                System.out.println("[Acbric] Java MOD folder / Java MOD 目录: " + javaMods);
             }
             Path settings = ExternalLaunchSettings.prepare(plan);
             System.setProperty("acbric.internal.launchSettings", settings.toString());

@@ -43,9 +43,10 @@ def main():
             if mode == 'play':
                 instance = bundle / 'instances/default'
                 (instance / 'config/launch-settings.json').write_text(json.dumps({'useCustomWindow': True, 'customWindowW': 960, 'customWindowH': 640, 'customWindowFullscreen': False, 'customWindowFullscreenWindow': False, 'customWindowBorderless': False}), encoding='utf-8')
+                vanilla_mods = run / 'appdata/AirshipsGame/mods'
+                (vanilla_mods / 'native_test').mkdir(parents=True)
+                (vanilla_mods / 'native_test/info.json').write_text(json.dumps({'id': 'native_test', 'name': 'Test'}), encoding='utf-8')
                 mods = bundle / 'mods'
-                (mods / 'native_test').mkdir()
-                (mods / 'native_test/info.json').write_text(json.dumps({'id': 'native_test', 'name': 'Test'}), encoding='utf-8')
                 name = 'net/fabricacs/regression/fixtures/PublicLaunchFixture'
                 with zipfile.ZipFile(mods / 'public-test.jar', 'w') as jar:
                     jar.write(project / f'build/classes/java/regressionTest/{name}.class', name + '.class')
@@ -70,7 +71,10 @@ def main():
                     pidfile = evidence / 'java.pid'
                     owned_pid = pidfile.read_text().strip() if pidfile.exists() else str(entry.pid)
                     subprocess.run(['taskkill', '/PID', owned_pid, '/T', '/F'], capture_output=True)
-        if list((run / 'appdata').iterdir()): raise AssertionError('Game wrote to global APPDATA')
+        unexpected = {path.name for path in (run / 'appdata').iterdir()} - {'AirshipsGame'}
+        if unexpected: raise AssertionError(f'Game wrote outside the fixture data folder: {sorted(unexpected)}')
+        if not (run / 'appdata/AirshipsGame/mods/native_test/info.json').exists(): raise AssertionError('Shared layout lost the fixture native MOD')
+        if not (run / 'appdata/AirshipsGame/log.txt').exists(): raise AssertionError('Shared mode did not use the vanilla data folder')
         logs = list((bundle / 'instances/default/logs/acbric/launcher').glob('*.log'))
         if len(logs) != 1: raise AssertionError('Game output not captured')
         results.append((bundle / 'instances/default/public-checkpoint.txt').read_text(encoding='utf-8'))

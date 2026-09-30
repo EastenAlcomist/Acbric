@@ -6,7 +6,7 @@
 
 当前文档导航：[开发流程](DEVELOPMENT.zh-CN.md)、[命令 API](COMMANDS.zh-CN.md)、[开发者工具与诊断](DEVELOPER_TOOLS.zh-CN.md)。`context.commands()` 自 dev.20 提供，支持类型参数、帮助/补全和可注销注册；旧公开接口保持兼容。
 
-适用版本：**`acbric_api 0.3.5`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
+适用版本：**`acbric_api 0.3.5.1`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
 
 - 安装、编译和启动：[README.zh-CN.md](BUILDING.zh-CN.md)。
 - 本次兼容性调整：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。
@@ -127,7 +127,7 @@ public final class ExampleMod implements AcbricInitializer {
 
 对应创建方法为 `ensureConfigDir()`、`ensureModsDir()`、`ensureGeneratedDir()`、`ensureCacheDir()`、`ensureModConfigDir(modId)`、`ensureModDataDir(modId)`。`ensureDirectory(Path)` 可创建指定目录；I/O 失败抛出 `UncheckedIOException`。普通路径 getter 不创建目录，传入 ID 的路径方法也不负责校验任意外部输入。
 
-**外部发行的本地原版 MOD 与 Java MOD 共用 `AirshipsPaths.modsDir()`**，原版 MOD 是直接含 `info.json` 的子目录。存档仍由 `AGame.getGameDirectory()` 指向实例 userdata；不能再假定它下面的 mods 是有效扫描目录。旧布局仍用原生用户数据下的 mods。`context.dataDir()` 不等于存档目录，把文件写入那里也不会自动让游戏加载它。
+**外部发行里 Java MOD 目录与原生 MOD 目录是两个不同的根**：Java `.jar` 用 `AirshipsPaths.modsDir()`（`fabric.modsFolder`，即 Acbric 同层 `mods`）；原生 MOD（直接含 `info.json` 的子目录）用 `LocalModPaths.nativeMods()`（`acbric.external.mods`），隔离环境是框架 `mods`，共享环境下是原版用户数据目录里的 `mods`。MOD 配套资源（`acbric_vanilla/`）解包到原生根。存档由 `AGame.getGameDirectory()` 指向当前数据环境（共享=原版目录，隔离=实例 userdata），不要假定它下面的 `mods` 一定被扫描；旧布局仍用原生用户数据下的 mods。`context.dataDir()` 不等于存档目录，把文件写入那里也不会自动让游戏加载它。
 
 ## 4. 事件订阅与注销
 

@@ -4,11 +4,12 @@
 
 正式仓库为 `04-开发源码/Acbric`。工具默认工作目录可能仍是 Steam 游戏目录，执行命令必须显式指定本仓库。开始先核对 Git 分支和本地改动，保留用户已有工作。
 
-- 当前源码/API：**0.3.5**，分支与提交以 Git 为准。
+- 当前源码/API：**0.3.5.1**，分支与提交以 Git 为准。
 - 2026-09-30 0.3.5：数据环境默认**共享**：首页 **一键同步** 只识别原版存档与模组目录并直接使用，不复制文件——启动时 `acbric.external.dataDir` 让游戏的原生用户数据与原生 MOD 扫描都指向原版目录，磁盘上只有一份。可选 **设置 → 环境隔离** 才把原版数据镜像到实例 `userdata` 与框架 `mods`（`PlayerDataSync` 完全镜像，多出条目移除且先备份到 `instances/default/userdata/.acbric-sync-backup/<时间戳>/`），先把副本做好再切换模式，失败保持原环境；模式按实例记在 `acbric-launcher/environment.json`。不要把它描述成自动迁移、双向同步或默认复制；也不要在无备份的情况下删除用户数据，原版目录从不删除。
+- 2026-09-30 0.3.5.1：修复共享模式下把原生 MOD 根写进 `fabric.modsFolder` 导致 Java MOD（含玩法 MOD）整个不再加载——两个 MOD 根必须分开：原生 MOD（与 `acbric_vanilla/` 配套资源）落在原版或框架 `mods`，Java `.jar` 恒为 `fabric.modsFolder`（框架 `mods`），Provider 只在启动器未提供时才回退到原生根。原版数据目录缺失或不可用时启动退回实例副本，玩家点「一键同步」仍得到明确提示。
 - 2026-09-27：用户确认 dev.33 实机测试没有问题，并要求将启动器优化及此前文档整理提交至本地 dev；本轮未要求推送。
 - 2026-09-27 dev.33：玩家入口改为 Acbric.exe，首次查找/检查/保存合并，首页只保留启动、MOD、设置、帮助。技术细节默认隐藏；日志本地保留、诊断导出需主动选择。旧 CMD 在 advanced；旧实例脚本保持字节兼容。更新交给临时助手等待 JVM 退出；不要破坏使用锁或恢复事务。
-- 本轮验证：1105 项/16 套件通过；真实 EXE 首次配置、再次打开英文首页、实际游戏菜单 30 帧/音频和返回首页通过；原游戏 5325 文件未改。旧 dev.32→dev.33→回退逐文件核对通过，原生维护交接等待与中断恢复重开通过。证据 build/player-*.log、build/player-launcher-tests/dev33final（最终包 SHA-256: 6786e3aeb17d971652100a1a0b0701aac1e3d26469ef5e9c47eaf7e1aba73403）、build/player-maintenance-tests/dev33。界面驱动使用仅测试的类加载器夹具；精简 Java 无 java.instrument，不把测试夹具打进包。
+- 本轮验证：1110 项/16 套件通过；真实 EXE 首次配置、再次打开英文首页、实际游戏菜单 30 帧/音频和返回首页通过；原游戏 5325 文件未改。旧 dev.32→dev.33→回退逐文件核对通过，原生维护交接等待与中断恢复重开通过。证据 build/player-*.log、build/player-launcher-tests/dev33final（最终包 SHA-256: 6786e3aeb17d971652100a1a0b0701aac1e3d26469ef5e9c47eaf7e1aba73403）、build/player-maintenance-tests/dev33。界面驱动使用仅测试的类加载器夹具；精简 Java 无 java.instrument，不把测试夹具打进包。
 - 2026-09-27：用户要求整理项目目录。46 份专题文档移入 `docs/`，根 README 改为当前导航，旧 README 和本指引的逐轮记录完整保留为历史快照。源码、游戏数据、缓存与验证产物不搬迁、不清空。
 - 文档入口：[中文索引](docs/README.zh-CN.md)、[English index](docs/README.md)、[构建与测试](docs/BUILDING.zh-CN.md)、[开发流程](docs/DEVELOPMENT.zh-CN.md)、[玩家安装](docs/INSTALLER.zh-CN.md)。
 - 本次整理验证：1011 项回归通过；仓库 466 个、发行目录 426 个本地 Markdown 文件链接通过（不含锚点/外网）；干净发行扫描通过；正式旧包→新 docs 布局→回退的隔离测试逐项核对发行文件与玩家标记。日志在 `build/docs-cleanup-*`，更新证据在 `build/docs-layout-update-v87sw39g`。整理阶段未提交/推送，未改游戏行为或玩家数据。
@@ -47,7 +48,7 @@ build <任意 gradle 任务>            # 其余参数原样透传，如 build i
 日常测试同理，别每次都跑全量：
 
 ```powershell
-test all             # 全部套件 1105 项断言（收尾前必跑）
+test all             # 全部套件 1110 项断言（收尾前必跑）
 test event           # 只跑 event（改 Event.java 时）
 test ui              # 只跑 ui（改 UiRuntime / 输入遮蔽时）
 test devtools        # 只跑 devtools（改控制台 / 命令绑定时）
@@ -56,7 +57,7 @@ test list            # 列出套件与覆盖范围
 ./test.sh event      # Linux / macOS / Git Bash
 ```
 
-套件 16 个、共 1105 项断言：原有 `data` `bundle` `classpath` `event` `rename` `mods`
+套件 16 个、共 1110 项断言：原有 `data` `bundle` `classpath` `event` `rename` `mods`
 （对应 CHANGELOG 的 F01–F12），加上 dev 功能线的 `campaign` `config` `scopes`
 `manifest` `handshake` `rules` `identity` `ui` `devtools` 和外部安装 `external`；每个套件的覆盖范围与断言数见
 `docs/BUILDING.zh-CN.md` 的套件表（实测值，加完套件要更新）。选择支持唯一前缀（`test ev`）
@@ -81,6 +82,7 @@ test list            # 列出套件与覆盖范围
   
   缺失时 `compileApiModJava` 会因找不到 `libs/asplit-*.zip` 失败,`startAirships` 也会因
   GameProvider 定位不到 `game/Airships.json` 而无法启动。
+- **编译基线**：`libs/asplit-*.zip` 当前取自游戏 **1.2.15.3**（2026-09-30 更新，旧 1.2.15.2 归档备份在 `C:\acsbric\_baseline-libs-1.2.15.2`）。基线版本用 `javap -p -constants -classpath libs com.zarkonnen.airships.AGame` 看 `VERSION` 常量核对；换基线后必须 `build clean` 再跑 `test all`，并同步 `README`/`docs/BUILDING` 的版本说明与 `docs/CHANGELOG` 记录。运行期不要写死引擎输入类型，旧引擎版本（1.2.15.2 等）仍要可用。
 - `build.cmd` 只编译；`build.cmd full` / `gradlew build` 才包含无界面检查；`regressionTest` 隔离用户数据，符号链接权限不足时会报告跳过。仍需单独验收真实游戏玩法。
 - 分发的 `loader-libs/` 仅进入启动类路径，`libs/` 保存游戏依赖。Provider 会按归档内容排除 Loader/Mixin/ASM/启动垫片，兼容旧的混合库目录；不要把这些类再次加入游戏加载器。
 - UI 事件契约与迁移见 `docs/EVENTS.md`：旧 `ONE_SHOT_*` 保留 RenameShipPanel 触发和标签，禁止悄悄重定向；新功能使用 `RENAME_SHIP_*`。新事件排在旧事件之后，任一 BEFORE 取消则跳过后续组、原方法及所有 AFTER。
@@ -98,7 +100,7 @@ test list            # 列出套件与覆盖范围
 | 层 | 位置 | 职责 | 依赖 |
 |---|---|---|---|
 | 启动层 | `src/main` | `AirshipsGameProvider` 把游戏塞进 Fabric(解析 `game/Airships.json`、拼类路径、反射调 `Main.main`) | Fabric Loader；不依赖游戏 API 或 Acbric API |
-| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.5（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、游戏适配 Mixin | 游戏 + fabric-loader |
+| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.5.1（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、游戏适配 Mixin | 游戏 + fabric-loader |
 
 功能 MOD 不属于本仓库:使用者在自己的项目里编写(可以 `acbric-mod-template/` 为起点),
 编译期依赖 API JAR，通常还依赖 `libs/asplit-*.zip`。独立模板使用其本地 API JAR；同工程 source set 才可直接依赖 `apiMod.output`。
@@ -189,4 +191,4 @@ Fabric 略有差异:
   `javap -p -c` 反编译 `libs/asplit-*.zip` 里的目标 class 核对。
 - dev.12 的 `disabledMods` 在 Provider 定位阶段读取，交由固定 Loader 候选过滤；必须同时更新启动器和 API。Java 启停重启后生效，原生热重载按钮不影响此选择，见 docs/MOD_MANAGEMENT.md。不可实现成只跳过 acbric 入口，否则 Mixin 仍生效。
 - 真实入口是 `src/main` 的 GameProvider + ServiceLoader 注册,不是任何 `fabric.mod.json`。
-- API 版本号 `acbric_api` = 0.3.5（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
+- API 版本号 `acbric_api` = 0.3.5.1（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。

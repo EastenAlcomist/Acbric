@@ -42,13 +42,17 @@ public abstract class PublicLaunchFixture {
         if (Files.exists(instance.resolve("allow-test-exit"))) System.exit(0);
     }
     @Unique private static void acbric$checkMods(Path instance) throws Exception {
+        // 共享模式下有两个不同的根：原生 MOD（文件夹与配套资源解包）在原版 mods，Java JAR 在框架 mods。
         Path root = Path.of(System.getProperty("acbric.external.mods"));
-        if (!net.fabricacs.api.util.AirshipsPaths.modsDir().equals(root)) throw new AssertionError("Wrong Java MOD API path");
+        Path javaRoot = net.fabricacs.api.util.AirshipsPaths.modsDir();
+        if (!javaRoot.equals(Path.of(System.getProperty("fabric.modsFolder")))) throw new AssertionError("Wrong Java MOD folder");
+        if (javaRoot.equals(root)) throw new AssertionError("Shared mode must keep the Java MOD folder separate");
         if (!net.fabricacs.api.impl.LocalModPaths.nativeMods().equals(root)) throw new AssertionError("Wrong native MOD root");
         Mod nativeMod = Mod.getById("native_test");
         if (nativeMod == null || !nativeMod.dir.toPath().equals(root.resolve("native_test"))) throw new AssertionError("Native MOD not scanned");
         if (Mod.getById("old_path_test") != null) throw new AssertionError("Old MOD path still scanned");
-        if (!Files.isRegularFile(root.resolve("public_launch_test/info.json"))) throw new AssertionError("Bundled MOD not extracted to shared root");
+        if (!Files.isRegularFile(root.resolve("public_launch_test/info.json"))) throw new AssertionError("Bundled MOD not extracted to the native root");
+        if (!Files.isRegularFile(javaRoot.resolve("public-test.jar"))) throw new AssertionError("Java MOD not in the Java folder");
         net.fabricacs.api.impl.JavaModManager.refresh();
         var manager = net.fabricacs.api.impl.JavaModManager.current();
         if (manager == null || !manager.entry("public_launch_test").manageable()) throw new AssertionError("Shared Java MOD not manageable");
@@ -74,13 +78,13 @@ public abstract class PublicLaunchFixture {
             if (!Files.exists(root.resolve("installed_native/info.json"))) throw new AssertionError("Native install used wrong root");
         }
         Path jar = instance.resolve("installed-java.jar");
-        if (!Files.exists(root.resolve("installed-java.jar"))) {
+        if (!Files.exists(javaRoot.resolve("installed-java.jar"))) {
             try (var zip = new java.util.zip.ZipOutputStream(Files.newOutputStream(jar))) {
                 zip.putNextEntry(new java.util.zip.ZipEntry("fabric.mod.json"));
                 zip.write("{\"schemaVersion\":1,\"id\":\"installed_java\",\"version\":\"1\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8)); zip.closeEntry();
             }
             if (!net.fabricacs.api.impl.FabricModInstallBridge.installIfFabricModJar(jar.toFile()).isInstalled()
-                    || !Files.exists(root.resolve("installed-java.jar"))) throw new AssertionError("Java install used wrong root");
+                    || !Files.exists(javaRoot.resolve("installed-java.jar"))) throw new AssertionError("Java install used wrong root");
         } else if (!FabricLoader.getInstance().isModLoaded("installed_java")) throw new AssertionError("Installed Java MOD not loaded after restart");
         if (Files.exists(instance.resolve("mods")) || Files.exists(instance.resolve("userdata/mods/installed_native"))) throw new AssertionError("Old destination used");
     }

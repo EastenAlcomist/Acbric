@@ -85,7 +85,10 @@ final class PlayerEnvironment {
 
     /** 共享布局：游戏直接读写原版目录，磁盘上不产生第二份存档或 MOD。 */
     static Layout shared(Path frameworkMods, Path install) throws IOException {
-        Path vanilla = detect(install);
+        return shared(detect(install));
+    }
+
+    private static Layout shared(Path vanilla) {
         return new Layout(SHARED, vanilla, vanilla.resolve(MODS), vanilla);
     }
 
@@ -94,15 +97,21 @@ final class PlayerEnvironment {
         return new Layout(ISOLATED, instance.resolve(USERDATA), frameworkMods, vanillaHint(instance, install));
     }
 
-    /** 读取实例当前环境；没有配置文件即视为共享，并立即识别原版目录。 */
+    /** 读取实例当前环境：没有配置即共享；记录过的原版目录被移走时重新识别，识别不到则退回实例副本。 */
     static Layout read(Path instance, Path frameworkMods, Path install) throws IOException {
         Optional<String[]> saved = saved(instance);
-        if (saved.isEmpty()) return shared(frameworkMods, install);
-        String mode = saved.get()[0];
-        if (ISOLATED.equals(mode)) return isolated(instance, frameworkMods, install);
+        if (saved.isEmpty()) return defaultLayout(instance, frameworkMods, install);
+        if (ISOLATED.equals(saved.get()[0])) return isolated(instance, frameworkMods, install);
         Path recorded = Path.of(saved.get()[1]);
-        Path vanilla = Files.isDirectory(recorded) ? recorded.toAbsolutePath().normalize() : detect(install);
-        return new Layout(SHARED, vanilla, vanilla.resolve(MODS), vanilla);
+        if (Files.isDirectory(recorded)) return shared(recorded.toAbsolutePath().normalize());
+        return defaultLayout(instance, frameworkMods, install);
+    }
+
+    /** 启动路径上的兜底：能共享就共享，找不到可用的原版目录时退回实例副本，保证游戏始终能启动。
+     *  玩家主动点「一键同步」时仍会得到 VANILLA_DATA_MISSING 的明确提示，这里只是不让启动失败。 */
+    private static Layout defaultLayout(Path instance, Path frameworkMods, Path install) throws IOException {
+        try { return shared(frameworkMods, install); }
+        catch (IOException unavailable) { return isolated(instance, frameworkMods, install); }
     }
 
     /** 原版目录提示：优先使用配置里记录过的路径，其次重新识别；隔离模式与界面提示都用它。 */

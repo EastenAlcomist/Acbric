@@ -1,4 +1,4 @@
-Acbric quick start — 0.3.5
+Acbric quick start — 0.3.5.1
 
 1. Fully extract and open Acbric.exe. Keep the EXE with the rest of the folder.
 2. On first use, confirm the Steam game found automatically and select Use this game. Choose its folder manually if needed.

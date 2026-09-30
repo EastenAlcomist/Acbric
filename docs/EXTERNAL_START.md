@@ -1,4 +1,4 @@
-# Acbric external distribution launcher (0.3.5)
+# Acbric external distribution launcher (0.3.5.1)
 
 [中文](EXTERNAL_START.zh-CN.md)
 

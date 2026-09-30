@@ -1,6 +1,6 @@
 # Developer documentation map
 
-[中文](DEVELOPMENT.zh-CN.md) · Current source/API: **0.3.5**, unreleased.
+[中文](DEVELOPMENT.zh-CN.md) · Current source/API: **0.3.5.1**, unreleased.
 
 Start here for the current contracts. The documentation index links to installation and build guides; topic documents define behavior. Changelogs and dated workspace research are historical evidence, not alternate current specifications. New interfaces need matching English/Chinese documentation, a minimal example, bounded failure behavior and regression coverage.
 

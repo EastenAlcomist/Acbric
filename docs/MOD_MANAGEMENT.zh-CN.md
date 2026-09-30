@@ -20,7 +20,7 @@
 
 ## 管理范围与依赖
 
-- 支持有效 MOD 扫描目录直属的普通、小写 `.jar` 文件；外部发行是 Setup.cmd 同级 `mods`；旧布局默认 `game/mods`，也识别 `fabric.modsFolder`。隐藏文件不作为候选。
+- 支持有效 MOD 扫描目录直属的普通、小写 `.jar` 文件；外部发行是 Setup.cmd 同级 `mods`（`fabric.modsFolder`，与原生 MOD 根相互独立）；旧布局默认 `game/mods`，也识别 `fabric.modsFolder`。隐藏文件不作为候选。
 - `acbric_api`、`fabricloader`、`airships`、`java`、`mixinextras` 为保护组件。嵌套 MOD、开发目录、多路径和外部类路径来源只读；通过父 MOD 管理其内嵌依赖。
 - 预检查必需依赖 `depends`、版本、`provides` 别名和硬冲突 `breaks`。停用时先停依赖者，启用时先启依赖库；不自动连带修改其他 MOD。
 - 检查父 JAR 声明的嵌套元数据，便于重新启用带内嵌库的 MOD。嵌套读取有深度、数量和大小限制。复杂候选版本选择、循环依赖组合和未扫描的外部来源不保证可在界面中逐项调整；最终依赖解析由 Fabric 执行。

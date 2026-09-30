@@ -1,10 +1,10 @@
-# Acbric player guide (0.3.5)
+# Acbric player guide (0.3.5.1)
 
 [中文](INSTALLER.zh-CN.md)
 
 ## First use
 
-1. Fully extract the distribution with bundled Java and open **Acbric.exe** in its `Acbric` folder. Install the game separately.
+1. Fully extract the distribution with bundled Java and open **Acbric.exe** in its `Acbric` folder. Install the game separately: this release is **built for *Airships: Conquer the Skies* 1.2.15.3** (including the LWJGL3 engine backend used by the engine migration MOD), and older engines such as 1.2.15.2 keep working.
 2. The launcher searches Steam automatically. Confirm the displayed location and select **Use this game**. Use **Choose game folder** if nothing was found or you want another installation.
 3. Select **Start game** when ready. Open the same EXE next time; no repeated setup is needed.
 4. To keep the saves, designs and MODs from your original game, select **Sync now** on the home screen (see below).

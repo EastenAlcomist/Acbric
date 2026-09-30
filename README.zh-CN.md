@@ -4,7 +4,9 @@
 
 Acbric 将 Fabric Loader 与《Airships: Conquer the Skies》连接起来，让 Java MOD 使用事件、配置、战役存储、公共 UI、控制台和 Mixin 扩展游戏，并整合原版 JSON MOD。
 
-当前开发版为 **0.3.5**。版本以 [fabric.mod.json](src/apiMod/resources/fabric.mod.json) 为准；完整历史见[改动记录](docs/CHANGELOG.zh-CN.md)。
+当前开发版为 **0.3.5.1**。版本以 [fabric.mod.json](src/apiMod/resources/fabric.mod.json) 为准；完整历史见[改动记录](docs/CHANGELOG.zh-CN.md)。
+
+游戏兼容：**适配《Airships: Conquer the Skies》1.2.15.3**（含其 LWJGL3 引擎后端的引擎迁移 MOD）。编译基线也是 1.2.15.3（`libs/asplit-*.zip`，可用 `AGame.VERSION` 核对），运行期兼容 1.2.15.2 等旧引擎版本——代码不写死引擎输入类型，详见[改动记录](docs/CHANGELOG.zh-CN.md) 的 0.3.4 条目。
 
 ## 从这里开始
 

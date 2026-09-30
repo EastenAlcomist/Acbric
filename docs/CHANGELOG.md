@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.5.1 — Java MODs no longer stop loading in shared mode (2026-09-30)
+
+Version bumped to **`0.3.5.1`**; every existing `>=0.3.3-dev.3` / `>=0.3.3-dev.10` declaration still holds and **no downstream mod needs changing**.
+
+Preparing the native MOD root no longer overwrites `fabric.modsFolder` with `acbric.external.mods`. The two roots are now independent — native MODs (and `acbric_vanilla/` bundled resources) live in the vanilla data folder's `mods`, Java `.jar` files stay in the framework `mods` — and the previous overwrite made Fabric look for `.jar` files in the vanilla folder, so Java MODs (including gameplay MODs such as ARC) stopped loading entirely while vanilla folder MODs kept working.
+
+Hardened in the same round: launching no longer fails when the vanilla data folder is missing or unusable — it falls back to the instance copy so the game still starts — while the explicit **Sync now** action still reports "run the original game once". The acceptance fixture and the EXE acceptance script now verify both MOD roots separately and check the shared layout inside a redirected APPDATA fixture.
+
+Compile baseline: `libs/asplit-A.zip` / `asplit-B.zip` moved from 1.2.15.2 (copied 2026-09-24) to game **1.2.15.3** (verified through `AGame.VERSION`; the archives come from the local Steam installation dated 2026-09-26). A clean rebuild and the full suite pass on the new baseline. 0.3.4, 0.3.5 and the earlier pre-packaged 0.3.5.1 builds were compiled against 1.2.15.2; published assets are not rewritten, and **0.3.5.1 onward uses 1.2.15.3**. The game's own `lib/*.jar` files are identical between both versions, so nothing else needed replacing.
+
+Verification: the `external` suite gains 5 checks (the two MOD roots never overwrite each other, the fallback when no Java folder is given, and falling back to the instance copy without a vanilla folder) and all 16 suites pass with 1110 checks.
+
 ## 0.3.5 — Data environment: vanilla saves and MODs shared by default, optional isolation (2026-09-30)
 
 Version bumped to **`0.3.5`**. Under SemVer `0.3.5 > 0.3.4`, so every existing `>=0.3.3-dev.3` / `>=0.3.3-dev.10` declaration still holds and **no downstream mod needs changing**.
