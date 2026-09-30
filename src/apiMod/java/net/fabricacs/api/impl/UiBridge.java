@@ -67,14 +67,14 @@ public final class UiBridge {
         Input raw=unwrap(input);String typed="",paste=null;
         if(runtime.isOpen()){
             // 原生 typedText 支持多字符提交；测试输入或自定义 Input 不假定属于 Slick。
-            if(raw instanceof com.zarkonnen.catengine.SlickEngine.MyInput)typed=AirshipGame.getTypedText(input);
+            if(isEngineInput(raw))typed=AirshipGame.getTypedText(input);
             else if(input.lastInput()!=0)typed=String.valueOf(input.lastInput());
             if(ctrl&&input.keyPressed("V"))paste=AGame.getClipboardString();
         }
         // Slick 在切屏/窗口移动后，事件坐标可暂时偏离轮询坐标。原生点击仍决定是否触发，
         // 命中位置则采用与悬停相同、且已完成 ScaledInput 变换的本帧坐标；缺失时退回事件坐标。
         // 自定义 Input 保持其显式事件坐标语义，不解包后直接取坐标以免绕过游戏缩放。
-        Pt point=click!=null&&(!(raw instanceof com.zarkonnen.catengine.SlickEngine.MyInput)||cursor==null)?click:cursor;
+        Pt point=click!=null&&(!(isEngineInput(raw))||cursor==null)?click:cursor;
         var uiInput=new UiRuntime.Input(point==null?-1:point.x,point==null?-1:point.y,click!=null&&input.clickButton()==1,input.mouseDown()!=null,
                 input.scrollAmount(),ctrl?"":typed,paste,input.keyPressed("TAB"),input.keyDown("LSHIFT")||input.keyDown("RSHIFT"),input.keyPressed("ENTER"),input.keyPressed("ESCAPE"),
                 input.keyPressed("BACK"),input.keyPressed("DELETE"),input.keyPressed("LEFT"),input.keyPressed("RIGHT"),input.keyPressed("HOME"),input.keyPressed("END"),ctrl&&input.keyPressed("A"));
@@ -119,6 +119,9 @@ public final class UiBridge {
     }
     public static boolean openedDuringNativeInput(AirshipGame game){return currentGame==game&&runtime!=null&&runtime.isOpen()&&!filteredWithWindow;}
     public static void exit(AirshipGame game){if(currentGame==game&&runtime!=null)runtime.closeAll(UiWindow.CloseReason.GAME_EXIT);DeveloperTools.exit(game);}
+    /** 当前引擎的原生 Input：SlickEngine 后端与 LWJGL3 后端的 MyInput 类型不同，
+     *  apiMod 不能引用 Lwjgl3Engine（不在编译类路径上），因此按类名判断。 */
+    private static boolean isEngineInput(Input in){if(in==null)return false;String n=in.getClass().getName();return n.equals("com.zarkonnen.catengine.SlickEngine$MyInput")||n.equals("com.zarkonnen.catengine.lwjgl3.Lwjgl3Engine$MyInput");}
     public static Input unwrap(Input input){for(int i=0;i<16;i++){if(input instanceof BlankInput blank)input=blank.originalIn;else if(input instanceof ScaledInput scaled)input=scaled.originalIn;else return input;}throw new IllegalArgumentException("Too many input wrappers");}
     public static UiMaskedInput mask(Input input){for(int i=0;i<16;i++){if(input instanceof UiMaskedInput mask)return mask;if(input instanceof BlankInput blank)input=blank.originalIn;else if(input instanceof ScaledInput scaled)input=scaled.originalIn;else return null;}return null;}
 
