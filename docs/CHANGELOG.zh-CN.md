@@ -1,5 +1,28 @@
 # 改动记录
 
+## 0.3.4 — 结束 dev 线并修复引擎输入类型写死（2026-09-30）
+
+版本号由 `0.3.3-dev.33` 提升为 **`0.3.4`**，作为 dev.33 之后的补丁版本发布。
+SemVer 下 `0.3.4 > 0.3.3-dev.33`，因此现有 MOD 声明的 `>=0.3.3-dev.3` / `>=0.3.3-dev.10`
+全部继续成立，**无需修改任何下游 MOD**。
+
+### 修复：框架不再写死引擎的输入类型
+
+`AirshipGameMixin` 的 `acbric$unwrapUi` 把 `AirshipGame.getMyInput` 的返回值强转成
+`SlickEngine.MyInput`，且 `CallbackInfoReturnable` 的泛型也写死了该类型。
+apiMod 是按游戏 1.2.15.2 编译的，那里 `getMyInput` 返回 `SlickEngine$MyInput`；
+换上 LWJGL3 引擎后端后返回 `Lwjgl3Engine$MyInput`，强转即 `ClassCastException`。
+只在 UI mask 生效（文本框获得焦点）时触发，普通战斗与编辑器不暴露。
+
+- `AirshipGameMixin`：改为 `CallbackInfoReturnable<Object>` 并去掉强转，
+  交由目标方法的返回类型决定；
+- `UiBridge`：两处 `raw instanceof SlickEngine.MyInput` 对 LWJGL3 引擎恒为 false，
+  会静默走错分支（拿不到 `typedText`、光标判定走 `click` 而非 `cursor`）。
+  新增 `isEngineInput(Input)` 按类名同时识别两个引擎的 MyInput ——
+  apiMod 不能引用 `Lwjgl3Engine`，它不在编译类路径上。
+
+**约束**：框架不得写死具体引擎的输入类型。替换引擎后，任何按旧引擎编译的强转都会失败。
+
 2026-09-27 dev.33：新增 Windows Acbric.exe 玩家入口，自动查找 Steam 游戏、合并检查与保存、再次打开直接启动。中英文选择持久化；普通错误使用可读说明，技术详情与有界诊断导出需主动打开。设置保留高级配置，更新/回退交给临时助手等待启动器退出后执行，沿用原事务与锁。旧 CMD 入口移至 advanced，旧实例脚本兼容。未改玩法或公开 API 契约。
 
 dev.33 验证：16 套件 1040 项通过。带 Java 的实际 Windows GUI EXE 验证首次配置、再次打开英文首页、启动真实游戏（30 帧菜单和原生音频）、退出返回首页；源游戏文件未改。dev.32→dev.33→恢复逐项核对归属文件并保留玩家标记；原生维护助手等待父进程退出、更新后重开，以及模拟中断后的恢复重开均通过。UI 夹具仅用于测试；未重跑完整战役、联机和其他设备。
