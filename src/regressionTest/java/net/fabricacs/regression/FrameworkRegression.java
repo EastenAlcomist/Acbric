@@ -56,7 +56,7 @@ public final class FrameworkRegression {
                 FrameworkRegression::suiteBundle);
         register("classpath", "启动类路径按归档内容排除 Loader/Mixin/ASM/垫片，保留游戏库 (F03)",
                 FrameworkRegression::suiteClasspath);
-        register("external", "外部安装/启动、实例配置、Steam 识别、维护锁与缓存隔离 (docs/EXTERNAL_INSTALL.md / docs/INSTALLER.md)",
+        register("external", "外部安装/启动、实例配置、Steam 识别、维护锁、缓存隔离与数据环境（共享/隔离） (docs/EXTERNAL_INSTALL.md / docs/INSTALLER.md)",
                 FrameworkRegression::suiteExternal);
         register("event", "事件总线：registerOnce 只执行一次、句柄身份、重复注册 (F04/F12)",
                 FrameworkRegression::suiteEvent);
@@ -234,6 +234,7 @@ public final class FrameworkRegression {
         checks += net.fabricacs.acbric.ExternalLauncherRegression.run(root.resolve("external-launcher"));
         checks += net.fabricacs.acbric.InstanceSetupRegression.run(root.resolve("instance-setup"));
         checks += net.fabricacs.acbric.PlayerLauncherRegression.run(root.resolve("player-launcher"));
+        checks += net.fabricacs.acbric.PlayerEnvironmentRegression.run(root.resolve("player-environment"));
         checks += net.fabricacs.acbric.SteamMaintenanceRegression.run(root.resolve("steam-maintenance"));
         checks += net.fabricacs.api.impl.ExternalCacheRegression.run(root.resolve("external-cache"));
     }

@@ -48,7 +48,9 @@ java -cp "build/preflight/loader-libs/*" net.fabricacs.acbric.ExternalPreflight 
 
 Provider 接收成对的 `acbric.external.install` / `acbric.external.instance` 属性，严格使用所选安装；缺路径或错误安装不会静默回到旧 `libs`。dev.25 正常入口调用游戏 `Main`，须显式提供并核对发行核心 API；缺少核心会报 `CORE_REQUIRED`，核心版本或实际来源不匹配会在 preLaunch 前拒绝。内部 `ExternalRuntimeProbe` 仅保留供回归。这些属性及测试入口不是公开 MOD API，也不是权限边界；不要向玩家提供绕过限制的启动命令。
 
-原型在真实 Knot 中直接读取安装 A/B 与 `lib`，Fabric `gameDir` 指向实例；新增路径 Mixin 在 API preLaunch 之前生效，`AGame.getStaticGameDirectory()` 指向安装，`AGame.getGameDirectory()` 指向实例 `userdata/`。正式入口自 dev.28 起将 Java MOD 与原生 MOD 指向框架内、与 Setup 同级的 `mods`；配置/框架日志留在实例。内部旧布局回归探针可保留实例 MOD 路径。旧模式不触发路径覆盖。`AirshipsPaths.staticDataDir()` 等公开方法保持原来的实例侧语义，尚未新增只读安装资源 API。
+原型在真实 Knot 中直接读取安装 A/B 与 `lib`，Fabric `gameDir` 指向实例；新增路径 Mixin 在 API preLaunch 之前生效，`AGame.getStaticGameDirectory()` 指向安装，`AGame.getGameDirectory()` 默认指向实例 `userdata/`。正式入口自 dev.28 起将 Java MOD 指向框架内、与 Setup 同级的 `mods`；配置/框架日志留在实例。内部旧布局回归探针可保留实例 MOD 路径。旧模式不触发路径覆盖。`AirshipsPaths.staticDataDir()` 等公开方法保持原来的实例侧语义，尚未新增只读安装资源 API。
+
+0.3.5 起增加可选属性 `acbric.external.dataDir`：设置时（共享数据环境）`AGame.getGameDirectory()` 直接返回该目录，正式启动同时把 `acbric.external.mods` 指向该目录下的 `mods`，也就是游戏唯一扫描的原生 MOD 根；目录必须存在且可写，否则明确失败、不回退也不新建。未设置时（隔离数据环境）行为与 dev.33 相同：用户数据是实例 `userdata`，原生 MOD 根是框架 `mods`。模式按实例记录在 `acbric-launcher/environment.json`，由启动器读写；Fabric 的 `fabric.modsFolder`（Java `.jar`）两种模式都保持框架 `mods`。
 
 ## 启动设置与用户输出隔离
 

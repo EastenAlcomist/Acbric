@@ -1,4 +1,4 @@
-# Acbric 外部发行启动（dev.33）
+# Acbric 外部发行启动（0.3.5）
 
 [English](EXTERNAL_START.md)
 

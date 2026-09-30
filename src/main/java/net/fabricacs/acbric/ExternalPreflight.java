@@ -93,7 +93,11 @@ public final class ExternalPreflight {
         private final FileLock lock;
         private InstanceLease(FileChannel channel, FileLock lock) { this.channel = channel; this.lock = lock; }
         static InstanceLease open(ExternalGameInstallation.Plan plan) throws IOException {
-            Path root = ExternalGameInstallation.validateInstance(plan.install(), plan.instance());
+            return open(plan.install(), plan.instance());
+        }
+        /** 只持有路径的调用方（例如玩家数据同步）不重新解析安装信息，直接复用同一把锁。 */
+        static InstanceLease open(Path install, Path instance) throws IOException {
+            Path root = ExternalGameInstallation.validateInstance(install, instance);
             Files.createDirectories(root);
             Path lockFile = root.resolve(".acbric-instance.lock"); ModSelection.rejectLinks(lockFile);
             FileChannel channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);

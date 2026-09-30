@@ -13,16 +13,25 @@ final class ExternalMods implements AutoCloseable {
     private ExternalMods(FileChannel channel, FileLock lock) { this.channel = channel; this.lock = lock; }
 
     static Path directory(Path framework, ExternalGameInstallation.Plan plan) throws IOException {
+        return directory(framework, plan.install(), plan.instance());
+    }
+
+    /** 已持有 install/instance 路径的调用方（例如玩家数据同步）复用同一套检查。 */
+    static Path directory(Path framework, Path install, Path instance) throws IOException {
         Path root = framework.toAbsolutePath().normalize().resolve("mods");
-        validate(root, plan);
+        validate(root, install, instance);
         if (framework.startsWith(root))
             throw new IOException("MODS_OVERLAP / MOD 目录不能包含框架: " + root);
         return root;
     }
 
     static void validate(Path root, ExternalGameInstallation.Plan plan) throws IOException {
+        validate(root, plan.install(), plan.instance());
+    }
+
+    static void validate(Path root, Path install, Path instance) throws IOException {
         ModSelection.rejectLinks(root);
-        for (Path other : new Path[]{plan.install(), plan.instance()}) {
+        for (Path other : new Path[]{install, instance}) {
             if (root.startsWith(other) || other.startsWith(root))
                 throw new IOException("MODS_OVERLAP / MOD directory overlaps game or instance / MOD 目录与游戏或实例重叠: " + root);
         }
@@ -31,7 +40,11 @@ final class ExternalMods implements AutoCloseable {
     }
 
     static ExternalMods open(Path root, ExternalGameInstallation.Plan plan) throws IOException {
-        validate(root, plan);
+        return open(root, plan.install(), plan.instance());
+    }
+
+    static ExternalMods open(Path root, Path install, Path instance) throws IOException {
+        validate(root, install, instance);
         Files.createDirectories(root);
         Path file = root.resolve(".acbric-mods.lock"); ModSelection.rejectLinks(file);
         FileChannel channel = FileChannel.open(file, StandardOpenOption.CREATE, StandardOpenOption.WRITE);

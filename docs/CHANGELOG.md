@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.5 — Data environment: vanilla saves and MODs shared by default, optional isolation (2026-09-30)
+
+Version bumped to **`0.3.5`**. Under SemVer `0.3.5 > 0.3.4`, so every existing `>=0.3.3-dev.3` / `>=0.3.3-dev.10` declaration still holds and **no downstream mod needs changing**.
+
+**Sync now** only detects the vanilla save and MOD folders and uses them directly — no file is copied. At launch both the native user-data directory and the native MOD scan point at the vanilla folder (new property `acbric.external.dataDir`, with `acbric.external.mods` following the mode), so designs and MODs exist once on disk and the original game and Acbric share them. Detection prefers `customDataDirectoryLocation` from the installation's `launch_settings.json` and otherwise `%APPDATA%\AirshipsGame`; a missing or read-only folder fails explicitly instead of creating or guessing one. When an instance needs its own copy, use **Settings → Environment isolation**: the vanilla data is mirrored into the instance `userdata` and framework `mods` (a full mirror — extra items are removed and everything overwritten or removed is first backed up to `instances/default/userdata/.acbric-sync-backup/<timestamp>/`) and the mode switches only after that succeeds; a failed mirror keeps the previous environment. The mirror holds the instance and shared-MOD locks and refuses while the game runs; Java `.jar` files and framework files in `mods` are never copied or deleted. Selecting Sync now returns to sharing, the isolated copies stay on disk and the vanilla folder is never deleted. The mode is recorded per instance in `acbric-launcher/environment.json`. No public API or networking change.
+
+Verification: the `external` suite gains 65 checks (detection rules, zero-copy sharing, launch arguments and launch settings in both modes, mirroring with backups, a failed mirror keeping the previous environment, and the real home button plus settings entry) and all 16 suites pass with 1105 checks.
+
 ## 0.3.4 — End of the dev line, engine input type no longer hard-coded (2026-09-30)
 
 Version bumped from `0.3.3-dev.33` to **`0.3.4`**, published as the patch release after dev.33.
@@ -21,7 +29,6 @@ with the LWJGL3 engine backend it returns `Lwjgl3Engine$MyInput`, so the cast th
   both engines' MyInput by class name (apiMod cannot reference `Lwjgl3Engine`).
 
 **Constraint**: the framework must not hard-code a concrete engine's input type.
-
 2026-09-27 dev.33: adds the Windows Acbric.exe player launcher, automatic Steam discovery, combined check/save and a reusable play home. Chinese/English selection persists. Ordinary failures show readable guidance; technical details and bounded diagnostic exports are opt-in. Settings retain advanced setup and hand off updates/restoration to a temporary helper after the launcher exits, preserving existing transactions and locks. Legacy CMD entries move to advanced; existing instance scripts remain compatible. No gameplay/API contract changes.
 
 dev.33 verification: 1040 checks across 16 suites pass. The real Windows GUI EXE with bundled Java was tested for first setup, reopening in English, starting the actual game (30 menu frames and native audio), and returning to the launcher. Source game files remain unchanged. dev.32→dev.33→restore matches all owned files and preserves player markers; native maintenance waits for the parent, reopens after update, and recovers a simulated interrupted transaction. UI fixtures are test-only; full campaigns, networking and other devices were not rerun.

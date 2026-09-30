@@ -11,12 +11,13 @@ import java.util.*;
 
 final class ExternalLaunchSettings {
     static Path prepare(ExternalGameInstallation.Plan plan) throws IOException {
+        Path data = dataDirectory(plan);
         Map<String, String> values = read(plan.install().resolve("launch_settings.json"));
         Path override = plan.instance().resolve("config/launch-settings.json");
         ModSelection.rejectLinks(override);
         values.putAll(read(override));
-        values.put("customDataDirectoryLocation", quote(plan.instance().resolve("userdata").toString()));
-        Path gifs = plan.instance().resolve("userdata/gifs");
+        values.put("customDataDirectoryLocation", quote(data.toString()));
+        Path gifs = data.resolve("gifs");
         ModSelection.rejectLinks(gifs); Files.createDirectories(gifs);
         values.put("customGIFSaveDirectoryLocation", quote(gifs.toString()));
         Path output = plan.instance().resolve(".fabric/acbric/launch-settings.json");
@@ -27,6 +28,16 @@ final class ExternalLaunchSettings {
             Files.move(temp, output, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } finally { Files.deleteIfExists(temp); }
         return output;
+    }
+
+    /** 共享模式读取 `acbric.external.dataDir`（原版目录），隔离模式固定实例 userdata。 */
+    static Path dataDirectory(ExternalGameInstallation.Plan plan) throws IOException {
+        String shared = System.getProperty(ExternalGameInstallation.DATA_PROPERTY);
+        if (shared == null || shared.isBlank()) return plan.instance().resolve("userdata");
+        Path data = Path.of(shared).toAbsolutePath().normalize();
+        if (!Files.isDirectory(data) || !Files.isWritable(data))
+            throw new IOException("SHARED_DATA_UNAVAILABLE / 共享数据目录不可用，不静默回到实例副本: " + data);
+        return data;
     }
 
     static Map<String, String> read(Path file) throws IOException {

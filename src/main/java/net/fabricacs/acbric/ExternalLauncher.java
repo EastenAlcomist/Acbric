@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.zip.ZipFile;
 
 public final class ExternalLauncher {
-    static final String CORE_VERSION = "0.3.4";
+    static final String CORE_VERSION = "0.3.5";
     private ExternalLauncher() {}
 
     public static void main(String[] args) { System.exit(run(args)); }
@@ -64,6 +64,17 @@ public final class ExternalLauncher {
         return List.copyOf(loaders);
     }
 
+    /** 路径属性是两种环境的唯一差别：共享模式让游戏直接使用原版数据目录，隔离模式仍用实例 userdata。
+     *  Java JAR 目录始终是框架 mods，玩家已放的 .jar 不会因为切换模式而失效。 */
+    static List<String> pathArguments(Path install, Path instance, PlayerEnvironment.Layout environment, Path javaMods) {
+        List<String> arguments = new ArrayList<>(List.of(
+                "-Dacbric.external.install=" + install, "-Dacbric.external.instance=" + instance));
+        if (!environment.isolated()) arguments.add("-Dacbric.external.dataDir=" + environment.dataDir());
+        arguments.add("-Dacbric.external.mods=" + environment.modsDir());
+        arguments.add("-Dfabric.modsFolder=" + javaMods);
+        return arguments;
+    }
+
     static String sha256(Path file) throws IOException {
         try (var stream = Files.newInputStream(file)) {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -88,7 +99,11 @@ public final class ExternalLauncher {
             Path core = requireCore(bundle.resolve("core/acbric-api.jar").toString());
             var plan = ExternalGameInstallation.inspect(Path.of(options.get("--game-dir")), Path.of(options.get("--instance-dir")));
             InstanceSetup.checkFrameworkPath(bundle, plan.instance());
-            Path mods = ExternalMods.directory(bundle, plan);
+            // 框架 mods 放 Java JAR；原生 MOD 根按环境决定：共享模式直接使用原版 mods，隔离模式用框架 mods。
+            Path javaMods = ExternalMods.directory(bundle, plan);
+            var environment = PlayerEnvironment.read(plan.instance(), javaMods, plan.install());
+            Path mods = environment.modsDir();
+            ExternalMods.validate(mods, plan);
             // 预检查锁释放后由子进程重新获取并持有整个会话；并发竞争只能有一个游戏进程胜出。
             try (var lease = ExternalPreflight.InstanceLease.open(plan); var shared = ExternalMods.open(mods, plan)) { lease.prepareDirectories(plan.instance()); }
             Path logDir = plan.instance().resolve("logs/acbric/launcher");
@@ -97,13 +112,14 @@ public final class ExternalLauncher {
             List<String> command = new ArrayList<>(List.of(
                     Path.of(System.getProperty("java.home"), "bin/java.exe").toString(), "-Xmx4G",
                     "-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8",
-                    "--add-opens=java.base/java.util=ALL-UNNAMED",
-                    "-Dacbric.external.install=" + plan.install(), "-Dacbric.external.instance=" + plan.instance(),
-                    "-Dacbric.external.mods=" + mods, "-Dfabric.modsFolder=" + mods,
+                    "--add-opens=java.base/java.util=ALL-UNNAMED"));
+            command.addAll(pathArguments(plan.install(), plan.instance(), environment, javaMods));
+            command.addAll(List.of(
                     "-Dacbric.external.core=" + core, "-Dfabric.addMods=" + core,
                     "-cp", String.join(File.pathSeparator, loaders.stream().map(Path::toString).toList()),
                     "net.fabricmc.loader.impl.launch.knot.KnotClient"));
-            Files.writeString(early, "install=" + plan.install() + "\ninstance=" + plan.instance() + "\nmods=" + mods + "\nlog=" + log + "\n", StandardCharsets.UTF_8);
+            Files.writeString(early, "install=" + plan.install() + "\ninstance=" + plan.instance() + "\nmode=" + environment.mode()
+                    + "\ndata=" + environment.dataDir() + "\nmods=" + mods + "\njavaMods=" + javaMods + "\nlog=" + log + "\n", StandardCharsets.UTF_8);
             System.out.println("Game log / 游戏启动日志: " + log);
             for (String warning : plan.warnings()) System.out.println(warning);
             ProcessBuilder builder = new ProcessBuilder(command).directory(plan.instance().toFile())

@@ -2,7 +2,7 @@
 
 [中文](README.zh-CN.md)
 
-Current development version: **0.3.4**. Players start with setup, MOD authors with the development workflow, and framework contributors with the build guide. Build commands assume the repository root as the working directory.
+Current development version: **0.3.5**. Players start with setup, MOD authors with the development workflow, and framework contributors with the build guide. Build commands assume the repository root as the working directory.
 
 Topic documents define behavior; changelogs and historical snapshots record earlier states. A dev.N in a topic title usually identifies the feature introduction, not the current framework version. Game content, user configuration and test outputs are not documentation source.
 

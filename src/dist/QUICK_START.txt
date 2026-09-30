@@ -1,10 +1,12 @@
-﻿Acbric quick start — dev.33
+Acbric quick start — 0.3.5
 
 1. Fully extract and open Acbric.exe. Keep the EXE with the rest of the folder.
 2. On first use, confirm the Steam game found automatically and select Use this game. Choose its folder manually if needed.
 3. Select Start game. Use the same EXE next time; no repeated setup is needed.
 4. Open MOD folder: add Java .jar MODs or native folders directly containing info.json. The API is included; do not duplicate it.
-5. Restart after changing Java MODs. Old User folders are not imported automatically.
+5. Restart after changing Java MODs. Saves and MODs come directly from your original game: select Sync now
+   to detect those folders - nothing is copied and only one copy exists. Use Settings -> Environment
+   isolation when this instance should keep its own copies instead.
 
 Choose Chinese/English at the top right. Settings can change the game location, install a local update ZIP or restore the previous framework. Close the game first. Do not extract updates over an old folder.
 For help: Help → Export diagnostics. Send the resulting ZIP yourself; saves are excluded and nothing is uploaded automatically.

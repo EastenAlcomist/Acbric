@@ -56,6 +56,40 @@ class PlayerLauncherService {
         finally { Files.deleteIfExists(temp); }
     }
 
+    /** 当前数据环境：默认共享（直接使用原版存档与模组），只有玩家主动隔离才使用实例副本。 */
+    PlayerEnvironment.Layout environment(State state) throws IOException {
+        requireReady(state);
+        return PlayerEnvironment.read(state.instance(), bundle.resolve("mods"), state.game());
+    }
+
+    /** 一键同步：识别原版存档与模组目录并直接使用，不复制任何文件。 */
+    PlayerEnvironment.Layout useVanillaData(State state) throws IOException {
+        requireReady(state);
+        PlayerEnvironment.Layout layout = PlayerEnvironment.shared(bundle.resolve("mods"), state.game());
+        PlayerEnvironment.write(state.instance(), layout);
+        return layout;
+    }
+
+    /** 环境隔离预览：只统计将要复制与移除的条目，供玩家确认后再执行。 */
+    PlayerDataSync.Preview isolatePreview(State state) throws IOException {
+        requireReady(state);
+        return PlayerDataSync.preview(PlayerEnvironment.vanilla(state.instance(), state.game()),
+                state.game(), state.instance(), bundle.resolve("mods"));
+    }
+
+    /** 环境隔离：先把原版数据镜像到实例副本，成功后再切换到隔离模式；失败仍保持共享。 */
+    PlayerDataSync.Result isolate(State state) throws IOException {
+        requireReady(state);
+        Path vanilla = PlayerEnvironment.vanilla(state.instance(), state.game());
+        PlayerDataSync.Result result = PlayerDataSync.sync(vanilla, state.game(), state.instance(), bundle.resolve("mods"));
+        PlayerEnvironment.write(state.instance(), PlayerEnvironment.isolated(state.instance(), bundle.resolve("mods"), state.game()));
+        return result;
+    }
+
+    private static void requireReady(State state) throws IOException {
+        if (state == null || !state.ready()) throw new IOException("SETUP_REQUIRED");
+    }
+
     /** 将维护脚本复制到临时目录；维护进程等待当前 JVM 退出后才申请独占锁。 */
     Path maintenance(Path archive, boolean restore, String language) throws IOException {
         if (!restore && (archive == null || !Files.isRegularFile(archive))) throw new IOException("PACKAGE_REQUIRED");

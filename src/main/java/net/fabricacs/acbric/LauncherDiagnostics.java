@@ -64,6 +64,11 @@ final class LauncherDiagnostics {
     static String friendly(Throwable ex, boolean zh) {
         String text = ex.toString();
         if (text.contains("BUSY")) return zh ? "游戏或更新程序正在使用这些文件。请关闭后重试。" : "The game or updater is using these files. Close it and try again.";
+        if (text.contains("VANILLA_DATA_MISSING")) return zh ? "没有找到原版数据文件夹。请先在原版游戏中运行一次，再点一键同步；也可以选择环境隔离使用副本。" : "No vanilla data folder was found. Run the original game once, then select Sync now — or isolate this instance to use its own copies.";
+        if (text.contains("VANILLA_DATA_READONLY") || text.contains("SHARED_DATA_UNAVAILABLE")) return zh ? "原版数据文件夹当前不可写。请检查权限，或选择环境隔离改用实例副本。" : "The vanilla data folder is not writable. Check permissions, or isolate this instance to use its own copies.";
+        if (text.contains("ENVIRONMENT_CONFIG_INVALID")) return zh ? "已保存的数据环境配置无法读取。文件已保留，请导出诊断或选择环境隔离重建。" : "The saved environment configuration could not be read. The file is preserved; export diagnostics or isolate the instance again.";
+        if (text.contains("SYNC_LINK_UNSUPPORTED") || text.contains("SYNC_SOURCE_INVALID") || text.contains("SYNC_TARGET_INVALID"))
+            return zh ? "原版数据里有链接或结构异常的条目，无法安全同步。请改成普通文件夹后重试。" : "The vanilla data contains linked or unexpected items that cannot be synced safely. Replace them with regular folders and try again.";
         if (text.contains("CONFIG_INVALID") || text.contains("ENTRY_MODIFIED") || text.contains("INSTANCE_NOT_FRESH"))
             return zh ? "已有配置无法安全读取。文件已保留，请在高级设置中检查原来的数据目录，或导出诊断寻求帮助。" : "Existing setup could not be read safely. Files are preserved. Check the original data folder in Advanced settings or export diagnostics for help.";
         if (text.contains("AccessDenied") || text.contains("PUBLISH_DENIED")) return zh ? "暂时无法保存配置。请稍后重试，仍然失败时可导出诊断信息。" : "Setup could not be saved. Try again shortly, or export diagnostics if this continues.";

@@ -15,6 +15,8 @@ final class ExternalGameInstallation {
     static final String MAIN = "com.zarkonnen.airships.Main";
     static final String INSTALL_PROPERTY = "acbric.external.install";
     static final String INSTANCE_PROPERTY = "acbric.external.instance";
+    /** 共享模式下游戏直接使用的原版用户数据目录；不设置时游戏使用实例 userdata。 */
+    static final String DATA_PROPERTY = "acbric.external.dataDir";
     // 仅供隔离回归测试；公开启动器不暴露探针参数。
     static final String PROBE_PROPERTY = "acbric.internal.externalProbeMain";
     record Plan(Path install, Path instance, Path nativeDir, List<Path> classPath,
