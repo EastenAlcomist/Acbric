@@ -1,12 +1,17 @@
 /*
  * LobbyHandshakeBridge.java — 战役大厅适配：沿用原生单次消费，过滤框架尾包，绑定准备与房主更新。
  * 实例归属于大厅，不持有全局游戏引用；未适配的模式只过滤框架保留消息，不改变原生命令。
+ *
+ * 准备意愿不再因为例行续证、规则值更新或房主改动地图设置而整批作废：每名成员的凭据绑定自己的
+ * 会话，只有本人换了会话才需要重新准备。规则值采用房主权威分发，其他玩家不必手动对齐本地配置。
  */
 package net.fabricacs.api.impl;
 
 import com.zarkonnen.airships.*;
 import com.zarkonnen.catengine.Fount;
 import com.zarkonnen.catengine.Draw;
+import net.fabricacs.api.ui.*;
+import net.fabricacs.api.util.AcbricLanguage;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.*;
@@ -23,7 +28,9 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
     private int room = -1, host = -1;
     private List<Integer> members = List.of();
     private Client connection;
-    private long generation = -1, lastFrame = -1, lastPublish, invalidation;
+    private long generation = -1, lastFrame = -1, lastPublish, invalidation, selfInvalidation;
+    /** 玩家在大厅里点过准备：原生重同步会清零 ready 位且不会自动重发，这里记住意愿并自动恢复。 */
+    private boolean readyIntent;
     private boolean readyConnection, closed, welcome, publishing;
     private String lastReport = "";
     private int reports;
@@ -59,6 +66,8 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
         for (String text : gate.tick(now())) send(text);
         syncInvalidation();
         rulesContext(); rulesExchange.tick(now()).ifPresent(this::send);
+        syncHostReadyView();
+        restoreReadyIntent();
         String status = status();
         if (!lastReport.equals(status)) {
             if (reports < 100) { System.out.println("[Acbric Lobby] " + status); reports++; }
@@ -74,7 +83,35 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
         if (connection != null && readyConnection) connection.sendMessageRawWithSizeCheck(new JSONObject(text));
     }
     private void syncInvalidation() {
-        if (invalidation != gate.invalidation()) { invalidation = gate.invalidation(); clearNativeReady(); }
+        if (invalidation != gate.invalidation()) invalidation = gate.invalidation();
+        // 只有本机自己的准备需要重做时才取消本机准备；其他成员的准备显示由房主更新重写。
+        if (selfInvalidation != gate.selfInvalidation()) { selfInvalidation = gate.selfInvalidation(); clearOwnReady(); }
+    }
+    /** 房主把自己的界面显示对齐到真正通过校验的准备凭据；原生裸 ready 标记不参与显示。 */
+    private void syncHostReadyView() {
+        if (!gate.isHost()) return;
+        int self = screen.g.playerID();
+        syncHostReadyView(screen.channelPlayers, self);
+        if (screen.hoster != null) syncHostReadyView(screen.hoster.channelPlayers, self);
+    }
+    private void syncHostReadyView(Map<Integer, StrategicPlayerInfo> players, int self) {
+        if (players == null) return;
+        for (var entry : players.entrySet())
+            if (entry.getKey() != self && entry.getValue() != null) entry.getValue().ready = gate.readyAccepted(entry.getKey());
+    }
+    /** 取消本机准备意愿；不会清掉其他玩家的准备显示。 */
+    private void clearOwnReady() { screen.readySent = false; }
+    /**
+     * 恢复玩家已经表达过的准备意愿。
+     *
+     * <p>原生在重同步（ResumeScreen 重建大厅）时把所有玩家的 ready 位清零，并且不拷贝 readySent，
+     * 玩家只能自己再点一次；Acbric 还会在会话变化时作废本机凭据。这里只在「玩家此前确实点过准备、
+     * 本机还没有重新准备好、并且当前门禁允许准备」时自动重发原生准备消息，凭据仍由本类按新会话签发。</p>
+     */
+    private void restoreReadyIntent() {
+        if (!readyIntent || closed || screen.readySent) return;
+        if (!canReady()) return;
+        if (screen instanceof LobbyHandshakeAccess access) access.acbric$resendReady();
     }
     private void clearNativeReady() {
         screen.readySent = false;
@@ -90,10 +127,15 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
         RuleSet next=resumed ? map==null ? RuleSet.invalid("SAVED","WAITING_FOR_SAVE") : SharedRulesRegistry.saved(map) : SharedRulesRegistry.newCampaign();
         rulesMap=map;rulesResumed=resumed;rulesRegistryRevision=registryRevision;rulesStoreRevision=storeRevision;
         if(rules==null || !rules.text().equals(next.text())) {
-            rules=next;gate.rulesDigest(next.digest(),now());rulesExchange.reset();startingRules=null;syncInvalidation();
+            // 规则候选值变化只重新开始规则交换；已经确认的会话与准备意愿保持有效。
+            rules=next;rulesExchange.reset();startingRules=null;syncInvalidation();
         }
     }
-    private void rulesContext(){rulesExchange.context(room,screen.g.playerID(),gate.codeView(now()),rules,now());}
+    private void rulesContext(){
+        rulesExchange.context(room,screen.g.playerID(),host,gate.codeView(now()),rules,now());
+        RuleSet effective=rulesExchange.effective();
+        if(effective!=null && effective.valid())gate.rulesDigest(effective.digest(),now());
+    }
     public boolean canReady() {
         if(!connectionReady())return false;refreshRules();rulesContext();
         return rulesExchange.matched() && (gate.canReady(now()) || gate.canStart(now()));
@@ -102,7 +144,13 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
         if(!connectionReady())return false;refreshRules();rulesContext();
         return rulesExchange.matched() && gate.canStart(now());
     }
-    public boolean beginStart(){if(!canStart())return false;startingRules=rules;return true;}
+    public boolean beginStart(){
+        if(!canStart())return false;
+        // 生成前固化的是本机真正采用的那一套：房主采用本机候选，其他玩家采用房主广播并校验过的快照。
+        RuleSet effective=rulesExchange.effective();
+        startingRules=effective!=null?effective:rules;
+        return true;
+    }
     RuleSet startingRules(){if(startingRules==null)throw new IllegalStateException("No approved campaign rules");return startingRules;}
     public void retry() { if (connectionReady()) { gate.restart(now()); rulesExchange.reset(); syncInvalidation(); } }
 
@@ -144,13 +192,12 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
             if (LobbyRuleExchange.TYPE.equals(type)) {
                 if(live && !history && !gate.codeView(now()).isEmpty()) {
                     rulesContext();rulesExchange.receive(item.toString(),channel,false,now());
-                    if(!rulesExchange.matched())clearNativeReady();
+                    if(!rulesExchange.matched())clearOwnReady();
                 }
                 continue;
             }
-            if (live && !history && gate.isHost() && Set.of("strategicSizeAndDifficulty", "claimEmpire", "joinEmpire", "strategicEmpireAndArms").contains(type)) {
-                gate.restart(now()); syncInvalidation();
-            }
+            // 房主改动地图设置、帝国选择等原生内容不再撤销准备：玩法值由房主权威分发，
+            // 每位玩家的准备凭据只绑定自己的会话，原生消息照旧按顺序传给原生处理器。
             if (type.equals("strategicReady") || type.equals("strategicResumeReady")) {
                 if (gate.isHost() && (!live || history || !canReady() || !gate.acceptReady(item.optInt("id", -1), item.optJSONObject(LobbyCodeGate.FIELD), now()))) continue;
             }
@@ -200,6 +247,8 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
         if (!replacement.welcome && old.welcome) {
             replacement.room = old.room; replacement.welcome = old.room >= 0;
             replacement.host = next.g.lanClient == null ? next.initiatorID : next.hoster != null ? next.g.playerID() : -1;
+            // 重同步后的新大厅按原生语义清空 ready；把玩家已经表达过的准备意愿交给新实例。
+            replacement.readyIntent = old.readyIntent;
             replacement.clearNativeReady(); old.close();
         }
     }
@@ -226,6 +275,7 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
         if (type.equals("strategicReady") || type.equals("strategicResumeReady")) {
             JSONObject proof = canReady() ? gate.prepare(now()) : null;
             if (proof == null) { screen.readySent = false; return false; }
+            readyIntent = true;
             message.put(LobbyCodeGate.FIELD, proof);
         } else if (type.equals("hosterUpdate")) {
             if(!closed)refreshRules();
@@ -243,7 +293,7 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
 
     public String status() {
         var snapshot = gate.snapshot(now());
-        boolean zh = net.fabricacs.api.util.AcbricLanguage.isChinese();
+        boolean zh = AcbricLanguage.isChinese();
         String label = switch (snapshot.state()) {
             case CODE_MATCH -> gate.canReady(now()) ? (zh ? "代码一致" : "Code match") : (zh ? "等待房主确认" : "Waiting for host");
             case DIFFERENT -> zh ? "代码不同" : "Code differs";
@@ -255,11 +305,13 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
         };
         if(snapshot.state()==CodeHandshakeSession.State.CODE_MATCH) {
             String ruleState=rulesExchange.state(now());
+            boolean adopted=rulesExchange.adopted();
             label=switch(ruleState){
-                case "MATCH" -> label+(zh?" / 规则一致":" / Rules match");
+                case "MATCH" -> adopted ? (zh?"已采用房主设置":"Host settings applied") : label+(zh?" / 规则一致":" / Rules match");
+                case "UNADOPTABLE" -> zh?"无法采用房主设置":"Cannot apply host settings";
                 case "DIFFERENT" -> zh?"玩法规则不同":"Rules differ";
                 case "UNVERIFIABLE" -> zh?"规则无法验证":"Rules unverifiable";
-                case "TIMED_OUT" -> zh?"规则检查超时":"Rules timed out";
+                case "TIMED_OUT" -> zh?"规则检查中（自动重试）":"Checking rules (retrying)";
                 default -> zh?"检查玩法规则中":"Checking rules";
             };
         }
@@ -274,15 +326,95 @@ public final class LobbyHandshakeBridge implements AutoCloseable {
                     .forEach(d -> text.append(" / ").append(d.id()).append(' ').append(d.code()));
         });
         rulesExchange.differences().forEach(d->text.append('\n').append(d));
-        return text.append("\n").append(net.fabricacs.api.util.AcbricLanguage.isChinese()
-                ? "点击重新检查；只比较代码和显式声明的规则，不保证完整状态同步。" : "Click to retry. Code and declared rules only; not full state synchronization.").toString();
+        if (rulesExchange.adopted()) text.append('\n').append(AcbricLanguage.isChinese()
+                ? "玩法设置采用房主的快照，本机配置未被修改。" : "Gameplay settings use the host's snapshot; local config files are untouched.");
+        return text.append("\n").append(AcbricLanguage.isChinese()
+                ? "准备意愿只在你自己重新连接后需要重做；点击此处打开联机大厅面板。" : "Your ready state survives routine re-checks; click here to open the lobby panel.").toString();
     }
     /** 复用左上角连接信息位置，不占用准备/离开按钮；原连接文字保留在提示中。 */
     public Draw drawStatus(MyDraw draw, String original, Fount font, double x, double y) {
         String label = status(); int width = draw.bw(label);
-        draw.button((int)x, MyDraw.TOP_BAR_INSET, width, label, (Runnable) this::retry);
+        draw.button((int)x, MyDraw.TOP_BAR_INSET, width, label, (Runnable) this::openMenu);
         draw.tooltip(x, MyDraw.TOP_BAR_INSET, width, MyDraw.BUTTON_H, original + "\n" + details());
         return draw;
     }
-    @Override public void close() { if (!closed) { closed = true; gate.close(); rulesExchange.reset();rulesMap=null;startingRules=null;members = List.of(); connection = null; } }
+
+    /**
+     * 联机大厅面板：状态与重新检查、各 MOD 的玩法设置入口（房主决定，其他玩家自动采用）、
+     * AcMod（Java MOD）启停与代码差异。原状态按钮的点击从「重新检查」改为打开这里，
+     * 因为重新检查已经自动进行，而设置与 MOD 管理原本只能退出大厅后才能操作。
+     */
+    public void openMenu() {
+        try {
+            ModUi menu = new ModUi("acbric_api");
+            menu.open(menuWindow());
+        } catch (RuntimeException ex) {
+            System.err.println("[Acbric Lobby] cannot open the lobby panel: " + ex);
+        }
+    }
+    public UiWindow menuWindow() {
+        boolean zh = AcbricLanguage.isChinese();
+        List<UiNode> nodes = new ArrayList<>();
+        nodes.add(Ui.label(this::status));
+        nodes.add(Ui.label(this::details));
+        nodes.add(Ui.row(8,
+                Ui.button(() -> zh ? "重新检查" : "Re-check", h -> retry()),
+                Ui.button(() -> zh ? "关闭" : "Close", UiWindowHandle::close)));
+        nodes.add(Ui.label(() -> zh ? "玩法设置（城市数、资金、AI 舰队等）：房主修改后其他玩家自动采用，不需要各自改成一样的值。"
+                : "Gameplay settings (cities, cash, AI fleets…): the host decides and other players apply the same values automatically."));
+        for (UiBridge.Registered entry : UiBridge.registered()) nodes.add(Ui.button(entry.label(), h -> {
+            UiWindow next;
+            try { next = entry.factory().get(); }
+            catch (RuntimeException ex) { h.message(zh ? "无法打开设置" : "Cannot open settings", String.valueOf(ex.getMessage())); return; }
+            if (next == null || !next.modal()) { h.message(zh ? "无法打开设置" : "Cannot open settings", entry.owner() + ":" + entry.id()); return; }
+            h.dialog(next);
+        }));
+        nodes.add(Ui.label(() -> zh ? "AcMod（Java MOD）启停：改动在重启游戏后生效，重启后重新进入大厅即可。"
+                : "AcMod (Java MOD) enable/disable: changes apply after a restart, then rejoin the lobby."));
+        JavaModManager manager = JavaModManager.current();
+        if (manager == null) {
+            try { JavaModManager.refresh(); manager = JavaModManager.current(); }
+            catch (RuntimeException ex) { System.err.println("[Acbric Lobby] MOD manager unavailable: " + ex); }
+        }
+        if (manager == null) nodes.add(Ui.label(() -> zh ? "无法读取 MOD 列表。" : "The MOD list is unavailable."));
+        else for (JavaModManager.Entry entry : manager.entries()) {
+            JavaModManager fixed = manager;
+            String id = entry.id();
+            nodes.add(Ui.row(8,
+                    Ui.label(() -> id + " · " + fixed.status(id, AcbricLanguage.isChinese())).width(430),
+                    Ui.button(() -> fixed.entry(id) != null && fixed.enabledNext(id)
+                                    ? (zh ? "下次启动停用" : "Disable on restart") : (zh ? "下次启动启用" : "Enable on restart"),
+                            h -> toggleMod(fixed, id, h))
+                            .enabled(() -> fixed.entry(id) != null && fixed.entry(id).manageable() && fixed.reason(id).isEmpty())));
+        }
+        // 原生 MOD（AI 舰队包、玩法资源包等）同样只能在重启后改变加载集合；这里只写游戏自己的设置。
+        Map<Mod, Boolean> nativeNext = new IdentityHashMap<>();
+        List<Mod> nativeMods = new ArrayList<>();
+        try { for (Mod mod : Mod.getAvailableMods()) if (mod != null && mod.dir != null) { nativeMods.add(mod); nativeNext.put(mod, mod.isCurrentlyEnabled()); } }
+        catch (RuntimeException ex) { System.err.println("[Acbric Lobby] native MOD list unavailable: " + ex); }
+        if (!nativeMods.isEmpty()) {
+            nodes.add(Ui.label(() -> zh ? "原生 MOD（AI 舰队包等）：启停写入游戏设置，重启后生效；同房玩家需要同一组 MOD。"
+                    : "Native MODs (AI fleet packs…): toggling is saved and applies after a restart; everyone needs the same set."));
+            for (Mod mod : nativeMods) nodes.add(Ui.row(8,
+                    Ui.label(() -> mod.getName() + " · " + (Boolean.TRUE.equals(nativeNext.get(mod)) ? (zh ? "启用" : "Enabled") : (zh ? "停用" : "Disabled"))).width(430),
+                    Ui.button(() -> Boolean.TRUE.equals(nativeNext.get(mod))
+                                    ? (zh ? "下次启动停用" : "Disable on restart") : (zh ? "下次启动启用" : "Enable on restart"),
+                            h -> toggleNativeMod(mod, nativeNext, h))));
+        }
+        return new UiWindow(zh ? "Acbric 联机大厅" : "Acbric multiplayer lobby", 660, 660, true, Ui.column(8, nodes.toArray(UiNode[]::new)));
+    }
+    private void toggleMod(JavaModManager manager, String id, UiWindowHandle handle) {
+        boolean zh = AcbricLanguage.isChinese();
+        try { manager.toggle(id); }
+        catch (java.io.IOException | RuntimeException ex) { handle.message(zh ? "无法更改" : "Cannot change", String.valueOf(ex.getMessage())); }
+    }
+    private void toggleNativeMod(Mod mod, Map<Mod, Boolean> next, UiWindowHandle handle) {
+        boolean enable = !Boolean.TRUE.equals(next.get(mod));
+        try { mod.setPermanentlyEnabled(enable); next.put(mod, enable); }
+        catch (RuntimeException ex) {
+            System.err.println("[Acbric Lobby] cannot change native MOD " + mod.getName() + ": " + ex);
+            handle.message(AcbricLanguage.isChinese() ? "无法更改" : "Cannot change", String.valueOf(ex.getMessage()));
+        }
+    }
+    @Override public void close() { if (!closed) { closed = true; readyIntent = false; gate.close(); rulesExchange.reset();rulesMap=null;startingRules=null;members = List.of(); connection = null; } }
 }

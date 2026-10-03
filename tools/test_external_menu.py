@@ -45,6 +45,8 @@ def main():
     for name in ['cwd', 'appdata', 'localappdata', 'home', 'tmp']:
         (run / name).mkdir()
     instance = run / 'instance'
+    # 预检查只建实例配置/数据目录；框架 MOD 根要由测试自己准备（外部实例的 mods 与原生 MOD 根相互独立）。
+    (instance / 'mods').mkdir(parents=True, exist_ok=True)
     before = snapshot(install)
     (run / 'installation-before.json').write_text(json.dumps(before, indent=2), encoding='utf-8')
     env = dict(os.environ, APPDATA=str(run / 'appdata'), LOCALAPPDATA=str(run / 'localappdata'),

@@ -75,7 +75,9 @@ There is one root at a time and at most eight window levels. Opening another roo
 | `node.enabled(BooleanSupplier)` | Dynamic enablement, inherited from ancestors and rechecked before activation. |
 | `node.tooltip(String)` | Hover explanation, including on disabled controls. |
 
-`Align`: `START / CENTER / END / STRETCH`. Columns default to STRETCH, rows to CENTER. Modifiers return new nodes: use the returned value. A tree may contain at most 512 unique node objects and depth 24; reusing one node twice in a tree is rejected. Sizes use GUI logical units scaled with native button size. Window width: 160–4096; max height: 120–4096; component width: 1–4096; spacing: 0–4096; scroll height: 24–4096.
+`Align`: `START / CENTER / END / STRETCH`. Columns default to STRETCH, rows to CENTER. Modifiers return new nodes: use the returned value. A tree may contain at most 4096 unique node objects and depth 32 (from 0.3.6; previously 512 / 24); reusing one node twice in a tree is rejected. Sizes use GUI logical units scaled with native button size. Window width: 160–4096; max height: 120–4096; component width: 1–4096; spacing: 0–4096; scroll height: 24–4096.
+
+Layout and drawing grow linearly with the node count, and scrolling only clips drawing rather than reducing per-frame measurement: a window generated as one row per loaded entry (hundreds of AI fleets, for example) should page or filter first, keeping the nodes shown at once to a few hundred, instead of relying on the raised limit. Exceeding a limit still fails explicitly and never truncates silently.
 
 Suppliers should be pure reads, with no disk I/O or window mutations; they may be called multiple times during drawing/input. Dynamic text is limited to 16384 UTF-16 units per read. Game color markup is not interpreted: square brackets display as fullwidth brackets, without changing underlying text values.
 

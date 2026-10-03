@@ -4,7 +4,7 @@
 
 Acbric connects Fabric Loader to *Airships: Conquer the Skies*. Java MODs extend the game through events, configuration, campaign storage, shared UI, console commands and Mixins, alongside native JSON MODs.
 
-Current development version: **0.3.5.1**. [fabric.mod.json](src/apiMod/resources/fabric.mod.json) is the version source; see the [changelog](docs/CHANGELOG.md) for history.
+Current development version: **0.3.6**. [fabric.mod.json](src/apiMod/resources/fabric.mod.json) is the version source; see the [changelog](docs/CHANGELOG.md) for history.
 
 Game compatibility: **built for *Airships: Conquer the Skies* 1.2.15.3** (including the LWJGL3 engine backend used by the engine migration MOD). The compile baseline is 1.2.15.3 as well (`libs/asplit-*.zip`; verify with `AGame.VERSION`), and the runtime still works with older engines such as 1.2.15.2 — the framework does not hard-code the engine's input type; see the 0.3.4 entry in the [changelog](docs/CHANGELOG.md).
 

@@ -20,8 +20,16 @@ public record UiWindow(String title,int width,int maxHeight,boolean modal,UiNode
     public UiWindow withFooter(UiNode footer){return new UiWindow(title,width,maxHeight,modal,content,onClose,Objects.requireNonNull(footer),closeRequest);}
     /** 仅拦截 X、Esc 及 requestClose；程序 close 和生命周期清理始终立即执行。 */
     public UiWindow onCloseRequest(Consumer<UiWindowHandle> request){return new UiWindow(title,width,maxHeight,modal,content,onClose,footer,request);}
+    /**
+     * 组件树规模上限。按「每一支已加载条目一行」生成的设置页（例如 AI 舰队）在大型 MOD 包下会有
+     * 数百行，旧上限 512 会让整个窗口构造失败；这里放宽到能容纳常见规模，同时保留防御性上限，
+     * 防止组件树退化成无界递归或超大布局。布局与绘制按节点数线性增长，滚动裁剪仍只画可见区域。
+     */
+    static final int MAX_DEPTH = 32;
+    static final int MAX_NODES = 4096;
     private static void validate(UiNode node,Set<UiNode> seen,int depth) {
-        if(depth>24 || !seen.add(node) || seen.size()>512)throw new IllegalArgumentException("UI tree: depth <=24, unique nodes <=512");
+        if(depth>MAX_DEPTH || !seen.add(node) || seen.size()>MAX_NODES)
+            throw new IllegalArgumentException("UI tree: depth <="+MAX_DEPTH+", unique nodes <="+MAX_NODES);
         for(UiNode child:node.children)validate(child,seen,depth+1);
     }
 }

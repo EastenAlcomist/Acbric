@@ -34,6 +34,16 @@ public final class UiBridge {
         Objects.requireNonNull(label);Objects.requireNonNull(factory);
         synchronized(entries){if(entries.size()>=256||entries.containsKey(owner+":"+id))throw new IllegalStateException("Duplicate or excessive UI entry");Entry entry=new Entry(owner,id,label,factory);entries.put(owner+":"+id,entry);return entry;}
     }
+    /** 已注册设置入口的快照：大厅面板与 MOD 详情页共用，不向调用方暴露内部映射。 */
+    public record Registered(String owner,String id,Supplier<String> label,Supplier<UiWindow> factory){}
+    public static List<Registered> registered(){
+        synchronized(entries){
+            List<Registered> result=new ArrayList<>();
+            for(Entry entry:entries.values())if(entry.factory!=null&&entry.label!=null)
+                result.add(new Registered(entry.owner,entry.id,entry.label,entry.factory));
+            return List.copyOf(result);
+        }
+    }
     private static UiRuntime runtime(AirshipGame game){
         if(currentGame!=game){if(runtime!=null)runtime.closeAll(UiWindow.CloseReason.GAME_EXIT);currentGame=game;cursor=null;pointerMasked=false;graveHeld=false;
             DeveloperTools.bind(game);

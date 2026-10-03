@@ -8,6 +8,12 @@ import java.util.*;
 
 final class CodeHandshakeSession implements AutoCloseable {
     static final long RETRY_MS = 2_000, TIMEOUT_MS = 10_000, LEASE_MS = 30_000, RESPONSE_INTERVAL_MS = 250;
+    /**
+     * 超时后的自动重试间隔：一次检查超时只说明这一轮报文没走通（丢包、对方刚进房、对方还在加载），
+     * 不改变会话本身。自动重试沿用同一个会话令牌，因此不会让其他玩家的准备失效，也不需要玩家
+     * 手动点「重新检查」。间隔按失败轮数退避，避免长时间连不上时刷屏。
+     */
+    static final long RENEW_TIMEOUT_MS = 5_000, MAX_RENEW_MS = 30_000;
     static final int MAX_ATTEMPTS = 5;
     enum State { IDLE, ALONE, CHECKING, CODE_MATCH, DIFFERENT, UNVERIFIABLE, TIMED_OUT, CLOSED }
     record PeerSnapshot(State state, int attempts, String remoteSession, CodeManifest.Comparison comparison) {}
@@ -18,8 +24,8 @@ final class CodeHandshakeSession implements AutoCloseable {
         String challenge = token(), remoteSession = "";
         State state = State.CHECKING;
         CodeManifest.Comparison comparison;
-        long started, sentAt, confirmedAt, repliedAt;
-        int attempts;
+        long started, sentAt, confirmedAt, repliedAt, timedOutAt;
+        int attempts, renewals;
         boolean replied;
         Peer(long now) { started = now; }
         void reset(long now) {
@@ -42,12 +48,20 @@ final class CodeHandshakeSession implements AutoCloseable {
         localProblem = wireManifest == null ? "MANIFEST_TOO_LARGE" : local.verified() ? "" : "LOCAL_UNVERIFIABLE";
     }
 
-    /** 相同上下文不重置计时；连接恢复必须先 disconnect，或由适配层显式 restart。 */
+    /** 相同上下文不重置计时；成员变化只为进出房间的人增删检查对象，不动其他成员的会话。 */
     void context(int room, int player, Collection<Integer> roster, long now) {
         ensureOpen(); time(now);
         List<Integer> sorted = CodeHandshakeProtocol.roster(roster);
         if (room < 0 || !sorted.contains(player)) throw new IllegalArgumentException("Invalid handshake context");
-        if (active && channel == room && self == player && members.equals(sorted)) return;
+        if (active && channel == room && self == player) {
+            if (members.equals(sorted)) return;
+            // 身份没变就不重置会话：本机令牌与其他成员的已确认会话继续有效，因此新玩家进房
+            // 不再让全体重新检查、重新准备；离开的成员只被移出检查集合。
+            members = sorted;
+            peers.keySet().retainAll(sorted);
+            for (int member : sorted) if (member != self) peers.computeIfAbsent(member, id -> new Peer(now));
+            return;
+        }
         channel = room; self = player; members = sorted; active = true;
         reset(now);
     }
@@ -119,9 +133,18 @@ final class CodeHandshakeSession implements AutoCloseable {
     private void advance(long now) {
         time(now);
         for (Peer peer : peers.values()) {
-            if (peer.state == State.CHECKING && now - peer.started >= TIMEOUT_MS) peer.state = State.TIMED_OUT;
-            else if (peer.state == State.CODE_MATCH && now - peer.confirmedAt >= LEASE_MS) peer.reset(now);
+            if (peer.state == State.CHECKING && now - peer.started >= TIMEOUT_MS) {
+                peer.state = State.TIMED_OUT; peer.timedOutAt = now;
+            } else if (peer.state == State.TIMED_OUT && now - peer.timedOutAt >= renewDelay(peer.renewals)) {
+                // 自动进入下一轮检查：会话令牌不变，其他成员的身份与准备意愿保持有效。
+                peer.renewals++; peer.reset(now);
+            } else if (peer.state == State.CODE_MATCH && now - peer.confirmedAt >= LEASE_MS) {
+                peer.renewals = 0; peer.reset(now);
+            }
         }
+    }
+    private static long renewDelay(int renewals) {
+        return Math.min(RENEW_TIMEOUT_MS << Math.min(renewals, 3), MAX_RENEW_MS);
     }
     Snapshot snapshot(long now) {
         advance(now);

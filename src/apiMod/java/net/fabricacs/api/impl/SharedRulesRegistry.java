@@ -70,6 +70,23 @@ public final class SharedRulesRegistry {
         if(rule==null)throw new IllegalStateException("RULE_MISSING: "+id);
         return rule;
     }
+    /**
+     * 采用远端（房主）快照前的本地校验：本机声明必须齐全、版本一致，并通过各自的校验器。
+     * 返回 {@code null} 表示可以接受；否则返回给玩家看的失败原因，调用方不得放行。
+     */
+    static String adoptionProblem(RuleSet candidate){
+        if(candidate==null)return "REMOTE_RULES_MISSING";
+        if(!candidate.valid())return "REMOTE_RULES_INVALID: "+candidate.problem;
+        var declarations=declarations();
+        if(!candidate.entries.keySet().equals(declarations.keySet()))return "RULE_SET_MISMATCH";
+        for(var entry:declarations.entrySet()){
+            var snapshot=candidate.entries.get(entry.getKey());
+            if(snapshot==null)return "RULE_MISSING: "+entry.getKey();
+            if(snapshot.version()!=entry.getValue().current().version())return "RULE_VERSION: "+entry.getKey();
+            try{entry.getValue().checked(snapshot);}catch(RuntimeException bad){return "RULE_INVALID: "+entry.getKey();}
+        }
+        return null;
+    }
     /** 构造加载战役成功后、通知 LOADED 前校验；不补值、不迁移、不写盘。 */
     public static void validateLoaded(Object map) throws java.io.IOException {
         RuleSaveSession.requireCompatible(store(map));
