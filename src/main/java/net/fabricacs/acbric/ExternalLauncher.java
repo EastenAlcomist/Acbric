@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.zip.ZipFile;
 
 public final class ExternalLauncher {
-    static final String CORE_VERSION = "0.3.6";
+    static final String CORE_VERSION = "0.3.7";
     private ExternalLauncher() {}
 
     public static void main(String[] args) { System.exit(run(args)); }

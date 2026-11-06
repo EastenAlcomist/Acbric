@@ -144,3 +144,22 @@ Text fields measure native glyph widths and spacing in one pass and draw only th
 ## Text submission (dev.20)
 
 `UiNode.onSubmit(Consumer<UiWindowHandle>)` applies only to text fields and returns a copied description retaining other modifiers. Enter submits after editing while focused; ordinary text fields retain Tab focus traversal. The console uses internal adapters for history and completion without changing other MOD text fields. See [commands](COMMANDS.md).
+
+
+## Percentage scaling of the native UI (0.3.7)
+
+`net.fabricacs.api.ui.UiScale` controls native buttons, panels, scrollbars and font metrics, including Acbric windows. Installing the API alone keeps vanilla sizing.
+
+```java
+import net.fabricacs.api.ui.UiScale;
+
+UiScale.setPercent(125);  // any integer 50..200; 100 = vanilla Small
+int requested = UiScale.percent(); // 0 means vanilla, not a measured percentage
+UiScale.useVanilla();     // restore the current Auto/Small/Medium/Large choice
+```
+
+Consuming MODs must declare `"acbric_api": ">=0.3.7"`. Requests apply together before the next render. Invalid percentages throw `IllegalArgumentException` and retain the prior request. Initialization-time requests are supported. This is one process-wide display preference: the latest caller wins. The API neither persists it nor adds it to shared campaign rules; the calling MOD owns its settings UI and explicit saving.
+
+100% means the **Small** asset/metric baseline, not the current automatic size. Dimensions round to UI pixels; positive borders remain at least one pixel. Font measurements and raster dimensions share the rounding. Source texture crops, baseline assets, native preferences, resolution, world camera and input coordinates remain unchanged. The Draw adapter preserves `Frame.nativeRenderer()`; callers should not cast `Draw.frame()` itself to a particular engine implementation. Native preset/font changes rebuild percentage metrics from original sources; steady frames reuse the result. Reset restores the native preset without accumulating factors.
+
+The fixed title font shared by all native presets retains its original size; native title spacing is often hard-coded. Large percentages require sufficient screen space: hard-coded native layouts and third-party rendering that bypasses native UI metrics do not become responsive automatically. ARC Overhaul provides the bilingual settings page and `config/arc_overhaul/ui-scale.json` persistence. It remains a separate MOD, outside the framework distribution.

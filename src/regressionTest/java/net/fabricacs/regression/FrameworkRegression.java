@@ -274,6 +274,7 @@ public final class FrameworkRegression {
     }
 
     private static void suiteUi(Path root) throws Exception {
+        checks += net.fabricacs.api.impl.UiScaleRegression.run();
         checks += net.fabricacs.api.ui.UiRegression.run();
         checks += net.fabricacs.api.ui.TextInteractionRegression.run();
         checks += net.fabricacs.api.impl.UiInputDiagnosticsRegression.run(root.resolve("ui-input"));
