@@ -6,7 +6,7 @@
 
 当前文档导航：[开发流程](DEVELOPMENT.zh-CN.md)、[命令 API](COMMANDS.zh-CN.md)、[开发者工具与诊断](DEVELOPER_TOOLS.zh-CN.md)。`context.commands()` 自 dev.20 提供，支持类型参数、帮助/补全和可注销注册；旧公开接口保持兼容。
 
-适用版本：**`acbric_api 0.3.7`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
+适用版本：**`acbric_api 0.3.7.1`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
 
 - 安装、编译和启动：[README.zh-CN.md](BUILDING.zh-CN.md)。
 - 本次兼容性调整：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。
@@ -306,4 +306,4 @@ Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/�
 
 本地化：dev.14 新增 `AcbricLanguage.text(英文, 中文)` 与 `ModUi.register(id, Supplier<String>, factory)`，见 [UI.zh-CN.md](UI.zh-CN.md)。
 
-0.3.7 起可用 `UiScale.setPercent(50..200)`、`percent()`、`useVanilla()` 调整原版界面大小。见[缩放契约与示例](UI.zh-CN.md#原版界面百分比缩放037)；使用者须依赖 `acbric_api >=0.3.7`。
+0.3.7 起可用 `UiScale.setPercent(50..200)`、`percent()`、`useVanilla()` 调整原版界面大小。见[缩放契约与示例](UI.zh-CN.md#原版界面百分比缩放037)；使用者须依赖 `acbric_api >=0.3.7`。0.3.7.1 修复位图清晰度。

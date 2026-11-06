@@ -1,4 +1,4 @@
-/* UiScaleBridge.java — 基于原版 SMALL 资源重建控件与字体度量；每次从基准生成，避免累乘和素材污染。 */
+/* UiScaleBridge.java — 按百分比选用原版对应清晰度的资源；从原始档位生成，避免小图放大和累乘。 */
 package net.fabricacs.api.impl;
 
 import com.zarkonnen.airships.*;
@@ -10,7 +10,7 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 
 public final class UiScaleBridge {
-    private record Slot(Field target, Field source) { }
+    private record Slot(Field target, Field source, Field medium, Field large) { }
     private static List<Slot> slots;
     private static int appliedPercent;
     private static Fount appliedFont;
@@ -31,14 +31,20 @@ public final class UiScaleBridge {
         // 语言、字体偏好或原版档位变化会重新激活原生字体，必须重新生成，不能缓存系统 Locale。
         boolean dyslexic = SimplePref.DYSLEXIC_FONT.get();
         if (percent == appliedPercent && AGame.FOUNT == appliedFont && dyslexic == appliedDyslexic) return;
-        double factor = percent / 100.0;
         try {
             if (slots == null) slots = discoverSlots();
             IdentityHashMap<Fount, Fount> fonts = new IdentityHashMap<>();
             List<Object> values = new ArrayList<>(slots.size());
             // 先完整生成再发布；读取失败不留下只改了一半的界面。
             for (Slot slot : slots) {
-                Object source = slot.source.get(null);
+                // 原版各档位不是同一张位图放大：中/大字号与装饰各有独立资源。
+                // 选择不小于目标的档位；100/150/200 原样使用原生对象，其他比例向下采样。
+                Field selected = slot.source;
+                int basis = 100;
+                if (percent > 150 && slot.large != null) { selected = slot.large; basis = 200; }
+                else if (percent > 100 && slot.medium != null) { selected = slot.medium; basis = 150; }
+                Object source = selected.get(null);
+                double factor = percent / (double) basis;
                 if (source instanceof Integer value) values.add(ScaledUiImage.dimension(value, factor));
                 else if (source instanceof Img img) values.add(factor == 1 ? img : new ScaledUiImage(img, factor));
                 else if (source instanceof Fount[] choices) {
@@ -67,16 +73,24 @@ public final class UiScaleBridge {
                 Field target = type.getField(source.getName().substring(6));
                 if (!Modifier.isStatic(target.getModifiers()) || Modifier.isFinal(target.getModifiers()) || target.getType() != source.getType())
                     throw new IllegalStateException("Unsupported native UI metric: " + target);
-                result.add(new Slot(target, source));
+                result.add(new Slot(target, source, optional(type, "MEDIUM_" + target.getName()),
+                        optional(type, "LARGE_" + target.getName())));
             }
         }
         for (String name : List.of("FOUNT", "FOUNT_OUTLINE", "BIG_FOUNT", "BIG_FOUNT_OUTLINE", "BIGGER_FOUNT", "HUGE_FOUNT",
                 "MAP", "MAP_OUTLINE", "MAP_SMALL", "MAP_SMALL_OUTLINE", "MAP_FALLBACK", "MAP_FALLBACK_OUTLINE",
                 "MAP_FALLBACK_SMALL", "MAP_FALLBACK_SMALL_OUTLINE")) {
             String sourceName = name.equals("HUGE_FOUNT") ? "HUGE_FOUNTS" : "SMALL_" + name;
-            result.add(new Slot(AGame.class.getField(name), AGame.class.getField(sourceName)));
+            result.add(new Slot(AGame.class.getField(name), AGame.class.getField(sourceName),
+                    optional(AGame.class, "MEDIUM_" + name), optional(AGame.class, "LARGE_" + name)));
         }
         return List.copyOf(result);
+    }
+
+    /** 旧版或资源 MOD 没有高档位字段时仍可使用原有基准，不在运行时引入新硬依赖。 */
+    private static Field optional(Class<?> type, String name) {
+        try { return type.getField(name); }
+        catch (NoSuchFieldException absent) { return null; }
     }
 
     private static Fount scaleFont(Fount source, double factor, IdentityHashMap<Fount, Fount> cache) {

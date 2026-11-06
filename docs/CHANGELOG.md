@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.7.1 — Preserve native UI raster quality (2026-11-06)
+
+Fix blurred percentage UI: 0.3.7 stretched Small bitmap fonts and borders even though vanilla provides separate Medium/Large assets. 100/150/200% now reuse native Small/Medium/Large objects exactly; intermediate values downsample the next tier, including native CJK and dyslexic font variants. Fixed title behavior, saved settings, camera, resolution and texture filters remain unchanged. Existing ARC dev.12 works with this framework patch. See [the UI contract](UI.md).
+
+Validation: framework 1162 checks / 16 suites; real Knot on games 1.2.15.2 and 1.2.15.3 passes 729 checks each, including native font/border/CJK object identity at all three tiers. At 2560×1600, isolated before/after GPU runs reproduce the old blur and verify the fix: the ARC panel's 1180×710 interior region at 200% is pixel-identical to native Large. Also rendered 50/137/150%; original installation hashes remain unchanged for 5317 files. Evidence: `build/ui-scale-visual/sharp-before`, `sharp-after` and ARC `build/runtime-tests/ui-scale-sharp-final`. Full gameplay-screen coverage remains separate.
+
 ## 0.3.7 — Percentage sizing for native UI (2026-11-06)
 
 Added `UiScale.setPercent(int)`, `percent()` and `useVanilla()`. Any integer from 50 to 200 is accepted; 100% is the vanilla Small baseline and 0 from the getter means vanilla mode. Installation alone keeps Auto / Small / Medium / Large. Changes apply before the next render; invalid requests retain the previous value. Persistence and player-facing controls belong to the consuming MOD. ARC Overhaul dev.12 supplies them and now requires API 0.3.7.
