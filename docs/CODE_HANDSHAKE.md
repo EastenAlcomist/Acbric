@@ -1,5 +1,7 @@
 # Code handshake protocol and state machine (dev.8 core, dev.9 integration)
 
+> 0.3.6: members joining or leaving no longer reset the session (check targets are only added or removed) and a timed-out round retries automatically with backoff; see [lobby integration](LOBBY_HANDSHAKE.md) for the differences.
+
 > dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
 
 **English** | [中文](CODE_HANDSHAKE.zh-CN.md)
@@ -27,10 +29,10 @@ The native Server does not authenticate sender fields in custom messages. IDs, s
 
 Immutable snapshots expose per-peer status, attempt count, last confirmed remote session and comparison details. Local problems take priority as `UNVERIFIABLE`; otherwise aggregation uses `UNVERIFIABLE`, `DIFFERENT`, `TIMED_OUT`, `CHECKING`, then `CODE_MATCH`. Per-peer records preserve simultaneous problems.
 
-- Changing the room ID, local ID or member set clears confirmations and generates a new session/challenges. Reordering members does not reset timers.
+- Changing the room ID or the local ID restarts the exchange with a new session and challenges; a member-set change only adds or removes check targets — this machine's token and the confirmed peers' sessions are kept, and reordering members does not reset timers. A new player entering the room therefore no longer makes everyone check again.
 - Disconnect/rebind creates a new session even if IDs are unchanged. Native internal reconnect can preserve IDs: the adapter must explicitly report disconnect or call `restart`.
 - Requests retry every 2 seconds, at most 5 attempts, with a 10-second deadline measured from the start of that peer check. Failed sends still consume attempts. A stalled timer does not burst-send missed retries.
-- Timeout cannot be revived by late requests/responses. Explicit retry or a new room/connection context is required.
+- After a round times out the next round opens **automatically** without manual intervention: the wait backs off with the number of failed rounds (5, 10, 20, 30 seconds, then a fixed 30 seconds) on the same session token, so it neither drags other members' preparation down nor triggers a new room batch. Late responses and requests still cannot restore the previous round's result.
 - Matching evidence expires after 30 seconds and must be revalidated. Duplicate responses never extend its lease. Difference/unverifiable states remain blocking until explicit retry or context changes.
 - A valid request carrying a different session from a previously confirmed peer conservatively triggers a new check. A delayed old request may cause rechecking, but cannot directly restore an old successful result.
 - Replies are limited to one per peer per 250 ms. Each `tick` produces at most one request per peer; there is no unbounded outgoing queue.

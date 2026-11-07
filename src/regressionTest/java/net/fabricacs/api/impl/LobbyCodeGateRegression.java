@@ -94,7 +94,9 @@ public final class LobbyCodeGateRegression {
         ig.context(10, 2, 1, List.of(1,2,3), 1);
         check(!ig.canStart(1) && !ig.canReady(1), "join invalidates an already granted start");
         ig.context(10, 2, 1, List.of(1,2), 2);
-        check(ig.observeUpdate(complete, Set.of(1,2), Set.of(1,2), 2).isEmpty(), "same roster after leave does not reuse old grant");
+        // 会话与凭据都没有变，回到同一成员集合后旧批次重新成立；开局许可仍按新确认重新授予。
+        check(ig.canReady(2) && ig.observeUpdate(complete, Set.of(1,2), Set.of(1,2), 2).size() == 2 && ig.canStart(2),
+                "returning to the same roster restores the still-valid ready batch");
         ih.disconnect(1); check(!ih.canStart(1), "disconnect revokes grant");
 
         var renewed = group(10,2); var rh = renewed.get(1); var rg = renewed.get(2);
@@ -104,6 +106,45 @@ public final class LobbyCodeGateRegression {
         rg.restart(30_300);
         for (String packet : rg.tick(30_300)) rh.receive(packet,10,false,30_300);
         check(!rh.readyAccepted(2) && !rh.canStart(30_300), "known remote context change immediately revokes approvals");
+
+        // 玩家进房：批次更新、开局许可作废，但已经在场且会话未变的成员保留准备。
+        var growing = group(20,2); var gh = growing.get(1); var gg = growing.get(2);
+        gh.acceptReady(1, gh.prepare(0), 0); gh.acceptReady(2, gg.prepare(0), 0);
+        JSONObject full = gh.hostUpdate(0);
+        for (var gate : growing.values()) gate.observeUpdate(full, Set.of(1,2), Set.of(1,2), 0);
+        check(growing.values().stream().allMatch(g -> g.canStart(0)), "two-member room can start before anyone joins");
+        var joined = new LobbyCodeGate(manifest("a")); joined.context(20, 3, 1, List.of(1,2,3), 1);
+        gh.context(20, 1, 1, List.of(1,2,3), 1); gg.context(20, 2, 1, List.of(1,2,3), 1);
+        check(gh.readyAccepted(1) && gh.readyAccepted(2) && !gh.readyAccepted(3), "a join keeps ready proofs of members whose session did not change");
+        check(!gh.canStart(1), "a join still revokes the start grant");
+        var room = new TreeMap<>(growing); room.put(3, joined);
+        exchange(room, 20, 2);
+        JSONObject afterJoin = gh.hostUpdate(2);
+        check(afterJoin != null && afterJoin.getJSONObject("ready").has("1") && afterJoin.getJSONObject("ready").has("2"),
+                "retained proofs are re-broadcast in the batch that includes the newcomer");
+        for (var gate : growing.values()) gate.observeUpdate(afterJoin, Set.of(1,2), Set.of(1,2,3), 2);
+        check(gg.canReady(2) && !gg.canStart(2), "an older guest adopts the new batch and waits for the newcomer");
+        joined.observeUpdate(afterJoin, Set.of(), Set.of(1,2,3), 2);
+        var newcomerProof = joined.prepare(2);
+        check(newcomerProof != null && gh.acceptReady(3, newcomerProof, 2), "the newcomer readies without the others clicking again");
+        JSONObject everyone = gh.hostUpdate(2);
+        for (var gate : growing.values()) gate.observeUpdate(everyone, Set.of(1,2,3), Set.of(1,2,3), 2);
+        joined.observeUpdate(everyone, Set.of(1,2,3), Set.of(1,2,3), 2);
+        check(growing.values().stream().allMatch(g -> g.canStart(2)) && joined.canStart(2), "all three start once the newcomer readies");
+
+        // 规则摘要变化不再撤销任何人的准备；旧摘要凭据只在短窗口内仍然有效。
+        var digest = group(30,2); var dh = digest.get(1); var dg = digest.get(2);
+        JSONObject staleDigestProof = dg.prepare(0);
+        check(dh.acceptReady(1, dh.prepare(0), 0) && dh.acceptReady(2, staleDigestProof, 0), "both members ready before the digest changes");
+        JSONObject granted = dh.hostUpdate(0);
+        for (var gate : digest.values()) gate.observeUpdate(granted, Set.of(1,2), Set.of(1,2), 0);
+        dh.rulesDigest("a".repeat(64), 1_000);
+        check(dh.readyAccepted(1) && dh.readyAccepted(2), "a rules digest change keeps every ready proof");
+        check(dh.acceptReady(2, staleDigestProof, 1_500), "a proof issued under the previous digest is still accepted inside the grace window");
+        dg.rulesDigest("a".repeat(64), 1_500);
+        check(dg.observeUpdate(dh.hostUpdate(1_500), Set.of(1,2), Set.of(1,2), 1_500).size() == 2 && dg.canStart(1_500),
+                "guests accept the same batch once both sides use the new digest");
+        check(!dh.acceptReady(2, staleDigestProof, 10_000), "the previous digest stops being accepted after the grace window");
 
         var stripped = new JSONObject().put("type","frame").put("channelID",0).put("members",new JSONArray().put(1).put(2))
                 .put("messages",new JSONArray().put(new JSONObject().put("type","before"))

@@ -21,12 +21,15 @@ public abstract class StrategicLobbyMixin implements LobbyHandshakeAccess {
     @Shadow private ModReloadProgressDialog mrpd;
     @Shadow private boolean canSendReady() { throw new AssertionError(); }
     @Shadow private boolean canStart() { throw new AssertionError(); }
+    @Shadow private void sendReady() { throw new AssertionError(); }
     @Unique private LobbyHandshakeBridge acbric$handshake;
 
     @Override public LobbyHandshakeBridge acbric$lobbyHandshake() {
         if (acbric$handshake == null) acbric$handshake = new LobbyHandshakeBridge((StrategicLobbyScreen)(Object)this);
         return acbric$handshake;
     }
+    /** 恢复玩家此前点过的准备；sendReady 会再次经过本类的准备门禁与适配层的凭据附加。 */
+    @Override public void acbric$resendReady() { sendReady(); }
     @Inject(method = "processWelcome(Lorg/json/JSONObject;)Z", at = @At("RETURN"), remap = false)
     private void acbric$welcome(JSONObject message, CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValueZ()) acbric$lobbyHandshake().welcome(message);

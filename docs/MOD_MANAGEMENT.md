@@ -12,6 +12,8 @@ To reproduce, use a freshly extracted framework and a new instance with Java MOD
 
 Open the mod screen and use **Disable** or **Enable** on a Fabric row. The selection is saved immediately; the status shows the pending restart action. Click again to undo. Restart the game to apply it. Disabled archives remain listed and can be enabled again.
 
+Since 0.3.6 the **multiplayer lobby panel** performs the same operation without leaving the lobby: click the `Acbric` status button at the lobby's top left and the panel lists the current state of Java MODs (AcMod) and native MODs and offers **disable/enable on next start**. The lobby previously had no mod controls at all, and the native mod screen always returns to the main menu with no way back into the lobby; the panel only writes the enabled state and never hot-reloads, so an already confirmed code manifest cannot be invalidated.
+
 Vanilla Apply, Reload, Reset and Disable All still apply only to vanilla data mods. They neither apply nor undo Java mod selections. Synthetic Java rows remain outside vanilla hot reload. Mod settings, saves and resources are preserved; whether a save works without a gameplay mod depends on that mod.
 
 Statuses distinguish loaded code, failed Acbric entrypoints, disabled mods and pending restart actions. Entrypoint success does not validate other entrypoint types, background tasks or gameplay.

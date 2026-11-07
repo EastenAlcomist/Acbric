@@ -91,18 +91,54 @@ public final class SharedRulesRegression {
         check(a.tick(1).isEmpty(),"wire retries rate limited");
         var three=new LobbyRuleExchange();var larger=new HashMap<>(sessions);larger.put(3,UUID.randomUUID().toString());three.context(0,1,larger,base,0);three.receive(bp,0,false,0);
         check(!three.matched(),"incomplete or different full roster cannot confirm");
+        // 同一成员改口只影响这一轮确认：报告回到当前有效快照后重新成立，不做永久降级。
         var d=new LobbyRuleExchange();d.context(0,2,sessions,different,0);a.receive(d.tick(0).orElseThrow(),0,false,1);
-        check(a.state(1).equals("UNVERIFIABLE"),"conflicting snapshots in one session remain unverifiable");
-        a.receive(bp,0,false,2);check(!a.matched(),"replaying prior success cannot revive contradiction");
+        check(a.state(1).equals("DIFFERENT"),"a changed self-report counts as a mismatch for the current round");
+        a.receive(bp,0,false,2);check(a.matched(),"a peer reporting the current snapshot again is accepted without a manual re-check");
         a.reset();a.context(0,1,sessions,base,0);d.reset();d.context(0,2,sessions,different,0);a.receive(d.tick(0).orElseThrow(),0,false,0);
         check(a.state(0).equals("DIFFERENT") && a.differences().get(0).contains("damage"),"rule mismatch produces actionable field difference");
         a.reset();a.context(0,1,sessions,base,0);for(int i=0;i<5;i++)check(a.tick(i*2000).isPresent(),"bounded attempt "+(i+1));
-        check(a.tick(10_000).isEmpty() && a.state(10_000).equals("TIMED_OUT"),"silent peer times out after five attempts");
-        a.receive(bp,0,false,10_001);check(!a.matched(),"late packet cannot revive timed out exchange");
+        check(a.tick(9_000).isEmpty(),"attempts inside one window stay capped");
+        check(a.tick(10_000).isPresent() && a.state(10_000).equals("CHECKING"),"a new window retries automatically");
+        check(a.state(30_000).equals("TIMED_OUT") && a.tick(30_000).isPresent(),"silent windows report a timeout while still retrying");
+        a.receive(bp,0,false,30_001);check(a.matched(),"a late report still confirms instead of being dropped forever");
         var changed=new HashMap<>(sessions);changed.put(2,UUID.randomUUID().toString());a.context(0,1,changed,base,10_002);a.receive(bp,0,false,10_002);
         check(!a.matched(),"old session offer cannot confirm new context");
+        adoption(sessions);
         JSONObject frame=new JSONObject().put("type","frame").put("messages",new JSONArray().put(new JSONObject().put("type",LobbyRuleExchange.TYPE)).put(new JSONObject().put("type","native")));
         check(LobbyHandshakeBridge.stripReserved(frame).getJSONArray("messages").length()==1,"reserved rule tails filtered, native messages preserved");
         return checks;
+    }
+    /** 房主权威：其他玩家采用房主广播并由本地声明校验过的快照，不需要各自改成相同的本地配置。 */
+    private static void adoption(Map<Integer,String> sessions){
+        RuleSet hostRules=rule("NEW",1,7),guestLocal=rule("NEW",1,1);
+        var host=new LobbyRuleExchange();var guest=new LobbyRuleExchange();
+        host.context(0,1,1,sessions,hostRules,0);guest.context(0,2,1,sessions,guestLocal,0);
+        String hostPacket=host.tick(0).orElseThrow();
+        check(!host.adopted(),"the host is authoritative and never adopts a remote snapshot");
+        check(guest.effective().text().equals(guestLocal.text()),"before any host packet the guest uses its own candidate");
+        guest.receive(hostPacket,0,false,0);
+        check(guest.adopted()&&guest.effective().text().equals(hostRules.text()),"the guest adopts the host snapshot instead of matching local values");
+        check(guest.matched(),"the adopted snapshot counts as the guest's own report");
+        check(guest.effective().digest().equals(hostRules.digest()),"the lobby digest follows the adopted snapshot");
+        check(guest.differences().isEmpty(),"a successfully adopted snapshot reports no difference");
+        var switched=new LobbyRuleExchange();switched.context(0,2,1,sessions,guestLocal,0);switched.receive(hostPacket,0,false,0);
+        var newHost=new LobbyRuleExchange();RuleSet updated=rule("NEW",1,9);newHost.context(0,1,1,sessions,updated,0);
+        switched.receive(newHost.tick(0).orElseThrow(),0,false,4_000);
+        check(switched.adopted()&&switched.effective().digest().equals(updated.digest()),"a new host snapshot replaces the adopted one without a manual re-check");
+        var invalid=new LobbyRuleExchange();invalid.context(0,2,1,sessions,guestLocal,0);
+        var badHost=new LobbyRuleExchange();badHost.context(0,1,1,sessions,rule("NEW",1,0),0);
+        invalid.receive(badHost.tick(0).orElseThrow(),0,false,0);
+        check(invalid.state(0).equals("UNADOPTABLE")&&invalid.adoptProblem().equals("RULE_INVALID: rule_test")&&!invalid.matched(),
+                "a snapshot the local validator rejects cannot be adopted or confirmed");
+        var foreign=new LobbyRuleExchange();foreign.context(0,2,1,sessions,guestLocal,0);
+        var foreignHost=new LobbyRuleExchange();
+        foreignHost.context(0,1,1,sessions,new RuleSet("NEW",Map.of("other_mod",new SharedRuleSnapshot(1,new JSONObject().put("x",1))),""),0);
+        foreign.receive(foreignHost.tick(0).orElseThrow(),0,false,0);
+        check(foreign.state(0).equals("UNADOPTABLE")&&foreign.adoptProblem().equals("RULE_SET_MISMATCH"),"a host snapshot declaring other MODs cannot be adopted");
+        var observer=new LobbyRuleExchange();observer.context(0,3,1,sessions,hostRules,0);
+        var otherGuest=new LobbyRuleExchange();otherGuest.context(0,2,1,sessions,rule("NEW",1,2),0);
+        observer.receive(otherGuest.tick(0).orElseThrow(),0,false,0);
+        check(observer.state(0).equals("DIFFERENT")&&!observer.adopted(),"only the host snapshot is adopted; a peer still has to report the same values");
     }
 }

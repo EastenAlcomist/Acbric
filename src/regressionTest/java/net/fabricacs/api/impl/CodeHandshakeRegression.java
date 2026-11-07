@@ -79,9 +79,18 @@ public final class CodeHandshakeRegression {
         check(oldSession.equals(reset.snapshot(1).session()), "roster order does not restart timeout");
         reset.context(10, 1, List.of(1, 2, 3), 2);
         reset.receive(oldResponse, 10, false, 2);
-        check(state(reset, 2) == CodeHandshakeSession.State.CHECKING && reset.snapshot(2).peers().size() == 2, "join invalidates prior confirmations");
+        check(state(reset, 2) == CodeHandshakeSession.State.CHECKING && reset.snapshot(2).peers().size() == 2,
+                "a join adds a fresh unverified peer and a stale roster reply is rejected");
         reset.context(10, 1, MEMBERS, 3); reset.receive(oldResponse, 10, false, 3);
-        check(state(reset, 3) == CodeHandshakeSession.State.CHECKING && !oldSession.equals(reset.snapshot(3).session()), "leave and identical roster return cannot restore old session");
+        // 成员进出只增删检查对象：本机令牌与对端会话不变，因此同一个挑战的有效回复仍然成立。
+        check(state(reset, 3) == CodeHandshakeSession.State.CODE_MATCH && oldSession.equals(reset.snapshot(3).session()),
+                "leaving and returning to the same roster keeps the session and the confirmed peer");
+        var keeping = session(1, good); var kept = session(2, good);
+        deliver(keeping, kept, 0); deliver(kept, keeping, 0);
+        String keptRemote = keeping.snapshot(0).peers().get(2).remoteSession();
+        keeping.context(10, 1, List.of(1, 2, 3), 1);
+        check(keptRemote.equals(keeping.snapshot(1).peers().get(2).remoteSession()),
+                "a third member joining keeps the sessions already confirmed in the room");
         reset.context(11, 1, MEMBERS, 4); reset.receive(oldResponse, 10, false, 4);
         check(state(reset, 4) == CodeHandshakeSession.State.CHECKING, "room change rejects previous room messages");
         reset.disconnect(5);
