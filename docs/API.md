@@ -6,7 +6,7 @@ Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physic
 
 Current navigation: [development workflow](DEVELOPMENT.md), [command API](COMMANDS.md), [developer tools and diagnostics](DEVELOPER_TOOLS.md). `context.commands()` is available since dev.20, with typed arguments, help/completion and closeable registrations; existing public APIs remain compatible.
 
-Applies to **`acbric_api 0.3.5.1`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
+Applies to **`acbric_api 0.3.7.1`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
 
 - Installation, building and launching: [README.md](BUILDING.md).
 - Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
@@ -308,3 +308,5 @@ Declare with `context.sharedRules`, retain a `SharedRules` handle for candidates
 `context.ui()` registers MOD tools and opens native-style component windows. `Ui` builds labels, buttons, toggles, single-line text, rows, columns, panels and scroll regions. `UiWindowHandle` owns dialogs and cleanup resources. See [UI.md](UI.md) for signatures, lifecycle, thread rules, examples and limitations. Native simulation/network ticks continue under modal UI. Framework [MOD details](MOD_MANAGEMENT.md) use the same components.
 
 Localization: dev.14 adds `AcbricLanguage.text(english, chinese)` and `ModUi.register(id, Supplier<String>, factory)`; see [UI.md](UI.md).
+
+Native UI percentage scaling is available through `UiScale.setPercent(50..200)`, `percent()` and `useVanilla()` since 0.3.7. See [UI scaling contract and example](UI.md#percentage-scaling-of-the-native-ui-037); consuming MODs require `acbric_api >=0.3.7`. Version 0.3.7.1 fixes raster quality.

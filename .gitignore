@@ -5,6 +5,7 @@ game/
 
 ### Build output ###
 build/
+/bin/
 .gradle/
 out/
 __pycache__/

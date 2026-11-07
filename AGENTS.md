@@ -4,7 +4,9 @@
 
 正式仓库为 `04-开发源码/Acbric`。工具默认工作目录可能仍是 Steam 游戏目录，执行命令必须显式指定本仓库。开始先核对 Git 分支和本地改动，保留用户已有工作。
 
-- 当前源码/API：**0.3.6**，分支与提交以 Git 为准。
+- 当前源码/API：**0.3.7.1**，分支与提交以 Git 为准。
+- 2026-11-06 0.3.7.1：修复自定义 UI 发虚；100/150/200% 原样使用原版 SMALL/MEDIUM/LARGE 素材与度量，中间比例从较高档位向下采样。不要回退为统一拉伸小号字体/边框，不改全局纹理过滤。既有 ARC dev.12 无需重装；验证见 CHANGELOG。
+- 2026-11-06 0.3.7：新增 `UiScale` 原生 UI 百分比接口（50–200，100 为原版 SMALL），默认沿用原版。框架只管理显示请求；ARC 独立保存本机偏好。两个 `Draw` 构造重载须用完整描述符注入，否则真实 `MyDraw(Frame, Hooks, ...)` 会遗漏纹理适配；原版固定标题字号保持不变。契约见双语 `docs/UI`，验证记录见 CHANGELOG。
 - 2026-09-30 0.3.5：数据环境默认**共享**：首页 **一键同步** 只识别原版存档与模组目录并直接使用，不复制文件——启动时 `acbric.external.dataDir` 让游戏的原生用户数据与原生 MOD 扫描都指向原版目录，磁盘上只有一份。可选 **设置 → 环境隔离** 才把原版数据镜像到实例 `userdata` 与框架 `mods`（`PlayerDataSync` 完全镜像，多出条目移除且先备份到 `instances/default/userdata/.acbric-sync-backup/<时间戳>/`），先把副本做好再切换模式，失败保持原环境；模式按实例记在 `acbric-launcher/environment.json`。不要把它描述成自动迁移、双向同步或默认复制；也不要在无备份的情况下删除用户数据，原版目录从不删除。
 - 2026-10-03 0.3.6：联机大厅准备不再整批撤销——凭据按成员绑定各自的已验证会话，成员进出只增删检查对象（会话令牌跨进出保留），一轮超时按失败轮数退避自动重试（5/10/20/30 秒），原生重同步（`ResumeScreen` 把全员 `ready` 清零且不拷贝 `readySent`）后按玩家已表达的准备意愿自动重发一次。玩法设置改为**房主权威**：房主广播共享规则快照，其他玩家在本地用自己声明的版本与校验器确认后采用，不必手动对齐本地配置，本机配置文件不被改写；规则值因此不再参与准备门禁的逐位比较（摘要变化只在 5 秒宽限窗口内继续接受旧摘要凭据）。大厅状态按钮的点击改为打开**联机大厅面板**（重新检查、各 MOD 玩法设置入口、Java MOD 与原生 MOD 的下次启动启停）。`UiWindow` 组件树上限 512/24 放宽为 4096/32（按条目生成行的设置页此前会整个构造失败）。验证：16 套件 1135 项（`handshake` 134、`rules` 132）；ARC dev.10 在 1.2.15.3 上 622 项。真实大厅实机流程仍需用户验收。
 - 2026-09-30 0.3.5.1：修复共享模式下把原生 MOD 根写进 `fabric.modsFolder` 导致 Java MOD（含玩法 MOD）整个不再加载——两个 MOD 根必须分开：原生 MOD（与 `acbric_vanilla/` 配套资源）落在原版或框架 `mods`，Java `.jar` 恒为 `fabric.modsFolder`（框架 `mods`），Provider 只在启动器未提供时才回退到原生根。原版数据目录缺失或不可用时启动退回实例副本，玩家点「一键同步」仍得到明确提示。
@@ -49,7 +51,7 @@ build <任意 gradle 任务>            # 其余参数原样透传，如 build i
 日常测试同理，别每次都跑全量：
 
 ```powershell
-test all             # 全部套件 1135 项断言（收尾前必跑）
+test all             # 全部套件 1162 项断言（收尾前必跑）
 test event           # 只跑 event（改 Event.java 时）
 test ui              # 只跑 ui（改 UiRuntime / 输入遮蔽时）
 test devtools        # 只跑 devtools（改控制台 / 命令绑定时）
@@ -58,7 +60,7 @@ test list            # 列出套件与覆盖范围
 ./test.sh event      # Linux / macOS / Git Bash
 ```
 
-套件 16 个、共 1135 项断言：原有 `data` `bundle` `classpath` `event` `rename` `mods`
+套件 16 个、共 1162 项断言：原有 `data` `bundle` `classpath` `event` `rename` `mods`
 （对应 CHANGELOG 的 F01–F12），加上 dev 功能线的 `campaign` `config` `scopes`
 `manifest` `handshake` `rules` `identity` `ui` `devtools` 和外部安装 `external`；每个套件的覆盖范围与断言数见
 `docs/BUILDING.zh-CN.md` 的套件表（实测值，加完套件要更新）。选择支持唯一前缀（`test ev`）
@@ -101,7 +103,7 @@ test list            # 列出套件与覆盖范围
 | 层 | 位置 | 职责 | 依赖 |
 |---|---|---|---|
 | 启动层 | `src/main` | `AirshipsGameProvider` 把游戏塞进 Fabric(解析 `game/Airships.json`、拼类路径、反射调 `Main.main`) | Fabric Loader；不依赖游戏 API 或 Acbric API |
-| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.6（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、游戏适配 Mixin | 游戏 + fabric-loader |
+| API 层 | `src/apiMod` | 运行时核心:`acbric_api` v0.3.7.1（未发布） —— 事件系统、入口桥、原生 MOD 界面集成、战役数据、游戏适配 Mixin | 游戏 + fabric-loader |
 
 功能 MOD 不属于本仓库:使用者在自己的项目里编写(可以 `acbric-mod-template/` 为起点),
 编译期依赖 API JAR，通常还依赖 `libs/asplit-*.zip`。独立模板使用其本地 API JAR；同工程 source set 才可直接依赖 `apiMod.output`。
@@ -192,4 +194,4 @@ Fabric 略有差异:
   `javap -p -c` 反编译 `libs/asplit-*.zip` 里的目标 class 核对。
 - dev.12 的 `disabledMods` 在 Provider 定位阶段读取，交由固定 Loader 候选过滤；必须同时更新启动器和 API。Java 启停重启后生效，原生热重载按钮不影响此选择，见 docs/MOD_MANAGEMENT.md。不可实现成只跳过 acbric 入口，否则 Mixin 仍生效。
 - 真实入口是 `src/main` 的 GameProvider + ServiceLoader 注册,不是任何 `fabric.mod.json`。
-- API 版本号 `acbric_api` = 0.3.6（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。
+- API 版本号 `acbric_api` = 0.3.7.1（未发布）;使用战役接口的 MOD 在 `fabric.mod.json` 里声明 `">=0.3.3-dev.3"`。

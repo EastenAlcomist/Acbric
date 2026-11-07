@@ -64,6 +64,7 @@ public abstract class AirshipGameMixin implements CampaignSessionAccess {
 
     @Inject(method = "render", at = @At("HEAD"), remap = false)
     private void acbric$prepareUiRender(com.zarkonnen.catengine.Frame frame, CallbackInfo ci) {
+        net.fabricacs.api.impl.UiScaleBridge.beforeRender((AirshipGame) (Object) this);
         net.fabricacs.api.impl.UiBridge.beforeRender((AirshipGame) (Object) this, drawState);
     }
 
