@@ -9,6 +9,7 @@ import java.util.*;
 
 class PlayerLauncherService {
     record State(Path instance, Path game, boolean ready) {}
+    enum LaunchMode { DIRECT, STEAM }
     final Path bundle;
     PlayerLauncherService(Path bundle) { this.bundle = bundle.toAbsolutePath().normalize(); }
 
@@ -34,6 +35,14 @@ class PlayerLauncherService {
         State state = inspect();
         if (!state.ready()) throw new IOException("SETUP_REQUIRED");
         return ExternalLauncher.run(new String[]{"--game-dir", state.game().toString(), "--instance-dir", state.instance().toString()});
+    }
+
+    int launch(LaunchMode mode) throws IOException {
+        if (mode == LaunchMode.DIRECT) return launch();
+        State state = inspect();
+        if (!state.ready()) throw new IOException("SETUP_REQUIRED");
+        SteamLaunch.launch(bundle, state.game(), state.instance());
+        return 0;
     }
 
     String language() throws IOException {

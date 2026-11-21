@@ -2,7 +2,7 @@
 
 [中文](README.zh-CN.md)
 
-Current development version: **0.3.5.1**. Players start with setup, MOD authors with the development workflow, and framework contributors with the build guide. Build commands assume the repository root as the working directory.
+Current development version: **0.3.8**. Players start with setup, MOD authors with the development workflow, and framework contributors with the build guide. Build commands assume the repository root as the working directory.
 
 Topic documents define behavior; changelogs and historical snapshots record earlier states. A dev.N in a topic title usually identifies the feature introduction, not the current framework version. Game content, user configuration and test outputs are not documentation source.
 
@@ -28,6 +28,7 @@ Topic documents define behavior; changelogs and historical snapshots record earl
 | Campaign storage | [English](CAMPAIGN_DATA.md) | [中文](CAMPAIGN_DATA.zh-CN.md) |
 | Campaign lifecycle | [English](CAMPAIGN_LIFECYCLE.md) | [中文](CAMPAIGN_LIFECYCLE.zh-CN.md) |
 | Shared UI | [English](UI.md) | [中文](UI.zh-CN.md) |
+| Combat command-panel controls | [English](COMMAND_PANEL_UI.md) | [中文](COMMAND_PANEL_UI.zh-CN.md) |
 | Settings UI | [English](SETTINGS.md) | [中文](SETTINGS.zh-CN.md) |
 | Console commands | [English](COMMANDS.md) | [中文](COMMANDS.zh-CN.md) |
 | Developer tools | [English](DEVELOPER_TOOLS.md) | [中文](DEVELOPER_TOOLS.zh-CN.md) |

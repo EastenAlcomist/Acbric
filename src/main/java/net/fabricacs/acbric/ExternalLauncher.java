@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.zip.ZipFile;
 
 public final class ExternalLauncher {
-    static final String CORE_VERSION = "0.3.7.1";
+    static final String CORE_VERSION = "0.3.8";
     private ExternalLauncher() {}
 
     public static void main(String[] args) { System.exit(run(args)); }
@@ -91,6 +91,9 @@ public final class ExternalLauncher {
             early = Files.createTempFile("acbric-launch-", ".log");
             System.out.println("Bootstrap log / 引导日志: " + early);
             var options = options(args);
+            boolean steam = Boolean.parseBoolean(
+                    System.getProperty(SteamLaunch.MODE_PROPERTY, "false"));
+            if (steam) ExternalGameInstallation.requireSteamLaunch(System.getenv());
             ExternalGameInstallation.runtime(System.getProperty("os.name"), Runtime.version().feature(), System.getProperty("os.arch"));
             Path ownJar = Path.of(ExternalLauncher.class.getProtectionDomain().getCodeSource().getLocation().toURI());
             Path bundle = ownJar.getParent().getParent().toRealPath();
@@ -114,6 +117,7 @@ public final class ExternalLauncher {
                     "-Dfile.encoding=UTF-8", "-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8",
                     "--add-opens=java.base/java.util=ALL-UNNAMED"));
             command.addAll(pathArguments(plan.install(), plan.instance(), environment, javaMods));
+            if (steam) command.add("-D" + SteamLaunch.MODE_PROPERTY + "=true");
             command.addAll(List.of(
                     "-Dacbric.external.core=" + core, "-Dfabric.addMods=" + core,
                     "-cp", String.join(File.pathSeparator, loaders.stream().map(Path::toString).toList()),

@@ -2,11 +2,13 @@
 
 [English](README.md) · [文档总目录](docs/README.zh-CN.md)
 
-Acbric 将 Fabric Loader 与《Airships: Conquer the Skies》连接起来，让 Java MOD 使用事件、配置、战役存储、公共 UI、控制台和 Mixin 扩展游戏，并整合原版 JSON MOD。
+**此文档部分使用AI编写，并未进行完整的人工审查，如发现问题，请联系开发者**
 
-当前开发版为 **0.3.7.1**。版本以 [fabric.mod.json](src/apiMod/resources/fabric.mod.json) 为准；完整历史见[改动记录](docs/CHANGELOG.zh-CN.md)。
+Acbric 将 Fabric Loader 与《Airships: Conquer the Skies》连接起来，让 Java MOD 使用API和 Mixin 扩展游戏，同时兼容原版 JSON MOD。
 
-游戏兼容：**适配《Airships: Conquer the Skies》1.2.15.3**（含其 LWJGL3 引擎后端的引擎迁移 MOD）。编译基线也是 1.2.15.3（`libs/asplit-*.zip`，可用 `AGame.VERSION` 核对），运行期兼容 1.2.15.2 等旧引擎版本——代码不写死引擎输入类型，详见[改动记录](docs/CHANGELOG.zh-CN.md) 的 0.3.4 条目。
+当前开发版为 **0.3.8**。版本以 [fabric.mod.json](src/apiMod/resources/fabric.mod.json) 为准；完整历史见[改动记录](docs/CHANGELOG.zh-CN.md)。
+
+游戏兼容：**适配《Airships: Conquer the Skies》1.2.15.3**。编译基线是 1.2.15.3，理论兼容旧版本。
 
 ## 从这里开始
 
@@ -33,7 +35,7 @@ Acbric 将 Fabric Loader 与《Airships: Conquer the Skies》连接起来，让 
 .\test.cmd mods   # 按修改范围选择套件
 ```
 
-对外打包使用 `externalDistZip`，带 Java 21 时增加 `-PbundleRuntime`；具体命令见[外部发行指南](docs/EXTERNAL_START.zh-CN.md)。旧 `distZip` 会包含本地游戏内容，仅供旧布局研究，不用于公开分发。
+对外打包使用 `externalDistZip`，带 Java 21 时增加 `-PbundleRuntime`；具体命令见[外部发行指南](docs/EXTERNAL_START.zh-CN.md)。
 
 ## 目录
 
@@ -49,10 +51,5 @@ Acbric 将 Fabric Loader 与《Airships: Conquer the Skies》连接起来，让 
 | `build/`、`.gradle/` | 本地构建产物、验证记录与缓存，不纳入 Git |
 | `libs/`、`game/` | 自备编译依赖与旧布局测试资料，不纳入 Git |
 
-## 验证与边界
-
-本版新增玩家启动流程、双语界面及诊断导出检查；保留安装占用重试、更新保护和已有 API 行为。验证范围见[改动记录](docs/CHANGELOG.zh-CN.md)。
-
-Java MOD 启停需要重启；写入战役扩展数据不等于自动联机同步；代码一致性检查不等于反作弊或任意 MOD 组合兼容。已知原生 GL 报错暂缓处理，详见[外部安装研究](docs/EXTERNAL_INSTALL.zh-CN.md)。
 
 Acbric 使用 [MIT 许可证](LICENSE)。游戏及第三方组件的权利和许可证分别归其作者所有。

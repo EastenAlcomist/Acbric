@@ -1,6 +1,6 @@
 # Developer documentation map
 
-[中文](DEVELOPMENT.zh-CN.md) · Current source/API: **0.3.5.1**, unreleased.
+[中文](DEVELOPMENT.zh-CN.md) · Current source/API: **0.3.8**, unreleased.
 
 Start here for the current contracts. The documentation index links to installation and build guides; topic documents define behavior. Changelogs and dated workspace research are historical evidence, not alternate current specifications. New interfaces need matching English/Chinese documentation, a minimal example, bounded failure behavior and regression coverage.
 
@@ -27,6 +27,7 @@ Start here for the current contracts. The documentation index links to installat
 | Explicit old-save conversion | [Save migration](RULE_SAVE_MIGRATION.md) | dev.11; preview and separate destination. |
 | Java MOD management | [Management](MOD_MANAGEMENT.md) | dev.12; restart-based, not runtime unload. |
 | Shared UI / text / cleanup | [UI](UI.md) | dev.13 base, dev.18 binding/choice, dev.19 editing/footer, dev.20 submit. |
+| Combat command-panel controls | [Command-panel UI](COMMAND_PANEL_UI.md) | 0.3.8; native labels/toggles/buttons, window/panel anchors, horizontal rows and vertical sidebars, four items per MOD, no gameplay synchronization. |
 | Draft-based settings forms | [Settings](SETTINGS.md) | dev.18; MOD defines effect timing. |
 | Commands and help/completion | [Commands](COMMANDS.md) | dev.20; shared gameplay execution reserved. |
 | In-game tools / diagnostic snapshots | [Developer tools](DEVELOPER_TOOLS.md) | dev.20; bounded local capture/export. |

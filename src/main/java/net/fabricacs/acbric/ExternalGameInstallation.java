@@ -17,6 +17,7 @@ final class ExternalGameInstallation {
     static final String INSTANCE_PROPERTY = "acbric.external.instance";
     /** 共享模式下游戏直接使用的原版用户数据目录；不设置时游戏使用实例 userdata。 */
     static final String DATA_PROPERTY = "acbric.external.dataDir";
+    static final String STEAM_PROPERTY = SteamLaunch.MODE_PROPERTY;
     // 仅供隔离回归测试；公开启动器不暴露探针参数。
     static final String PROBE_PROPERTY = "acbric.internal.externalProbeMain";
     record Plan(Path install, Path instance, Path nativeDir, List<Path> classPath,
@@ -30,6 +31,20 @@ final class ExternalGameInstallation {
         if (!os.startsWith("Windows") || !(arch.equals("amd64") || arch.equals("x86_64")))
             throw failure("PLATFORM_UNSUPPORTED", "Windows x64 is required", "首批仅支持 Windows x64");
         if (java < 21) throw failure("JAVA_TOO_OLD", "Java 21 or newer is required", "请使用独立的 Java 21 或更新运行时，游戏内置 Java 8 不适用");
+    }
+
+    /**
+     * Steam 模式只接受由 App 342560 启动的进程。环境值可被伪造，但真实 Steamworks 初始化和
+     * Workshop 权限仍由 Steam 客户端对当前账号的许可验证；直接启动不会被误标为 Steam。
+     */
+    static void requireSteamLaunch(java.util.Map<String, String> environment) throws IOException {
+        if (!SteamGameLocator.APP_ID.equals(environment.get("SteamAppId"))
+                || !SteamGameLocator.APP_ID.equals(environment.get("SteamGameId"))
+                || !"1".equals(environment.get("SteamClientLaunch"))) {
+            throw failure("STEAM_CONTEXT_INVALID",
+                    "Acbric Steam mode must be launched by Steam App " + SteamGameLocator.APP_ID,
+                    "Acbric Steam 模式必须由 Steam App " + SteamGameLocator.APP_ID + " 启动");
+        }
     }
 
     /** 不创建实例；先确认真实路径互不包含，并拒绝实例中的链接/重解析路径。 */

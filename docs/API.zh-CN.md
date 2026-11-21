@@ -6,7 +6,7 @@
 
 当前文档导航：[开发流程](DEVELOPMENT.zh-CN.md)、[命令 API](COMMANDS.zh-CN.md)、[开发者工具与诊断](DEVELOPER_TOOLS.zh-CN.md)。`context.commands()` 自 dev.20 提供，支持类型参数、帮助/补全和可注销注册；旧公开接口保持兼容。
 
-适用版本：**`acbric_api 0.3.7.1`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
+适用版本：**`acbric_api 0.3.8`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
 
 - 安装、编译和启动：[README.zh-CN.md](BUILDING.zh-CN.md)。
 - 本次兼容性调整：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。
@@ -102,6 +102,8 @@ public final class ExampleMod implements AcbricInitializer {
 | `configDir()` / `ensureConfigDir()` | 获取 / 创建本 MOD 的配置目录 |
 | `dataDir()` / `ensureDataDir()` | 获取 / 创建本 MOD 的数据目录 |
 | `logger()` | 带当前 MOD ID 的 `AcbricLogger` |
+| `ui()` | 按 MOD 隔离的组件窗口工具，自 dev.13；见 [UI](UI.zh-CN.md)。 |
+| `commandPanelUi()` | 按 MOD 隔离的战斗命令面板控件，自 0.3.8；见[命令面板 UI](COMMAND_PANEL_UI.zh-CN.md)。 |
 | `commands()` | 当前 MOD 的命令注册入口，dev.20；见 [命令契约](COMMANDS.zh-CN.md) |
 | `sharedRules(int version, JSONObject values, SharedRules.Validator validator)` | 注册本 MOD 的共享玩法规则（dev.10）；见 [规则契约](SHARED_RULES.zh-CN.md) |
 | `campaignData(Object worldMap)` | 绑定当前 MOD 和指定地图的 `CampaignData`（dev.3 新增） |
@@ -307,3 +309,7 @@ Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/�
 本地化：dev.14 新增 `AcbricLanguage.text(英文, 中文)` 与 `ModUi.register(id, Supplier<String>, factory)`，见 [UI.zh-CN.md](UI.zh-CN.md)。
 
 0.3.7 起可用 `UiScale.setPercent(50..200)`、`percent()`、`useVanilla()` 调整原版界面大小。见[缩放契约与示例](UI.zh-CN.md#原版界面百分比缩放037)；使用者须依赖 `acbric_api >=0.3.7`。0.3.7.1 修复位图清晰度。
+
+## 21. 战斗命令面板控件（0.3.8）
+
+`context.commandPanelUi()` 为主战斗命令面板注册最多 4 个原生样式项目，首版包括按钮、原生开关和状态标签；文字、开关状态、提示和启用状态可动态读取，确认交互使用游戏的 `MyDraw` / Hooks 链路。注册时可选择原生面板上方锚点，或游戏视口顶部/中部/底部的左、中、右锚点，并附加有界像素偏移及横向/纵向布局；旧重载继续使用 `PANEL_ABOVE_CENTER` 与 `HORIZONTAL`，`VERTICAL` 可生成分组侧边栏。该接口不调整原生面板尺寸、不自动同步玩法，也不提供快捷键。完整契约见[命令面板 UI](COMMAND_PANEL_UI.zh-CN.md)。

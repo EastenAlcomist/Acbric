@@ -9,10 +9,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 final class SteamGameLocator {
+    static final String APP_ID = "342560";
     private static final Pattern PAIR = Pattern.compile("\"((?:\\\\.|[^\"\\\\])*)\"\\s*\"((?:\\\\.|[^\"\\\\])*)\"");
     private SteamGameLocator() {}
 
     static List<Path> find() {
+        return find(steamRoots());
+    }
+
+    private static Set<Path> steamRoots() {
         Set<Path> roots = new LinkedHashSet<>();
         registry(roots, "HKCU\\Software\\Valve\\Steam", "SteamPath");
         registry(roots, "HKLM\\SOFTWARE\\WOW6432Node\\Valve\\Steam", "InstallPath");
@@ -21,7 +26,7 @@ final class SteamGameLocator {
             String value = System.getenv(variable);
             if (value != null) roots.add(Path.of(value, "Steam"));
         }
-        return find(roots);
+        return roots;
     }
 
     private static void registry(Set<Path> roots, String key, String name) {
@@ -74,6 +79,64 @@ final class SteamGameLocator {
             }
         }
         return List.copyOf(games);
+    }
+
+    /**
+     * 只有游戏位于 Steam 库且对应 App 342560 清单时返回该库所属 Steam 客户端。
+     * 返回值用于 -applaunch；它本身不证明账号所有权，所有权由 Steam 启动 App 时校验。
+     */
+    static Optional<Path> steamExecutable(Path game) {
+        return steamExecutable(steamRoots(), game);
+    }
+
+    static Optional<Path> steamExecutable(Collection<Path> roots, Path game) {
+        try {
+            Path target = game.toRealPath();
+            for (Path root : roots) {
+                Path executable = root.toAbsolutePath().normalize().resolve("steam.exe");
+                if (!Files.isRegularFile(executable)) continue;
+                for (Path library : libraries(root)) {
+                    if (!manifestMatches(library, target)) continue;
+                    return Optional.of(executable);
+                }
+            }
+        } catch (IOException | RuntimeException ignored) {
+        }
+        return Optional.empty();
+    }
+
+    private static Set<Path> libraries(Path root) {
+        Set<Path> libraries = new LinkedHashSet<>();
+        libraries.add(root.toAbsolutePath().normalize());
+        for (String file : List.of("steamapps/libraryfolders.vdf", "config/libraryfolders.vdf")) {
+            for (var pair : pairs(root.resolve(file))) {
+                if (pair.getKey().equals("path") || pair.getKey().matches("[0-9]+")) {
+                    try {
+                        Path path = Path.of(pair.getValue());
+                        if (path.isAbsolute()) libraries.add(path.normalize());
+                    } catch (InvalidPathException ignored) {
+                    }
+                }
+            }
+        }
+        return libraries;
+    }
+
+    private static boolean manifestMatches(Path library, Path game) {
+        String installdir = null;
+        boolean appId = false;
+        for (var pair : pairs(library.resolve("steamapps/appmanifest_" + APP_ID + ".acf"))) {
+            if (pair.getKey().equals("appid") && pair.getValue().equals(APP_ID)) appId = true;
+            if (pair.getKey().equals("installdir")) installdir = pair.getValue();
+        }
+        if (!appId || installdir == null || installdir.isBlank()
+                || installdir.equals("..") || installdir.contains("/") || installdir.contains("\\")
+                || installdir.contains(":")) return false;
+        try {
+            return library.resolve("steamapps/common").resolve(installdir).toRealPath().equals(game);
+        } catch (IOException | RuntimeException ignored) {
+            return false;
+        }
     }
 
     /** 读取 VDF 中的标量键值，兼容新库的 path 与旧库的数字键；忽略注释。 */

@@ -76,9 +76,10 @@ public final class PlayerLauncherRegression {
     private static void ui(Path root, Path game) throws Exception {
         Path bundle = InstanceSetupRegression.bundle(root.resolve("UI"));
         int[] launched = {0};
+        PlayerLauncherService.LaunchMode[] launchMode = {null};
         var service = new PlayerLauncherService(bundle) {
             List<Path> discover() { return List.of(game); }
-            int launch() { launched[0]++; return 0; }
+            int launch(PlayerLauncherService.LaunchMode mode) { launched[0]++; launchMode[0] = mode; return 0; }
         };
         var diagnostics = new LauncherDiagnostics(root.resolve("UI-logs"));
         PlayerLauncherPanel[] panel = new PlayerLauncherPanel[1];
@@ -87,19 +88,29 @@ public final class PlayerLauncherRegression {
         SwingUtilities.invokeAndWait(() -> {
             var p = panel[0];
             check(p.primary.getText().equals("使用此游戏") && p.state.game().equals(game) && !p.mods.isEnabled(), "first screen offers one setup action after discovery");
+            check(!p.steam.isVisible(), "Steam launch is hidden before setup is ready");
             paint(p, root.resolve("first-zh.png")); p.primary.doClick();
             check(p.busy() && !p.settings.isEnabled(), "setup blocks conflicting actions while working");
         });
         await(panel[0]);
         SwingUtilities.invokeAndWait(() -> {
             var p = panel[0]; check(p.primary.getText().equals("开始游戏") && p.mods.isEnabled() && !p.browse.isVisible(), "saved setup becomes a simple playable home");
+            check(p.steam.isVisible() && p.steam.isEnabled() && p.steam.getText().contains("Steam"), "ready screen offers an explicit Steam launch option");
             paint(p, root.resolve("home-zh.png")); p.primary.doClick();
         });
         await(panel[0]);
-        SwingUtilities.invokeAndWait(() -> { check(launched[0] == 1 && panel[0].primary.isEnabled(), "game return restores launcher actions"); panel[0].language.setSelectedIndex(1); });
+        SwingUtilities.invokeAndWait(() -> {
+            check(launched[0] == 1 && launchMode[0] == PlayerLauncherService.LaunchMode.DIRECT && panel[0].primary.isEnabled(), "normal start remains the direct launch");
+            panel[0].steam.doClick();
+        });
         await(panel[0]);
         SwingUtilities.invokeAndWait(() -> {
-            check(panel[0].primary.getText().equals("Start game"), "home translates to English"); paint(panel[0], root.resolve("home-en.png"));
+            check(launched[0] == 2 && launchMode[0] == PlayerLauncherService.LaunchMode.STEAM && panel[0].status.getText().contains("Steam"), "Steam option dispatches only the Steam launch mode");
+            panel[0].language.setSelectedIndex(1);
+        });
+        await(panel[0]);
+        SwingUtilities.invokeAndWait(() -> {
+            check(panel[0].primary.getText().equals("Start game") && panel[0].steam.getText().contains("Steam"), "home and Steam option translate to English"); paint(panel[0], root.resolve("home-en.png"));
             panel[0].state = new PlayerLauncherService.State(panel[0].state.instance(), root.resolve("missing-game"), false);
             panel[0].configure(root.resolve("missing-game"));
         });

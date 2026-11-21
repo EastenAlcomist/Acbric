@@ -2,9 +2,9 @@
 
 [中文](README.zh-CN.md) · [Documentation index](docs/README.md)
 
-Acbric connects Fabric Loader to *Airships: Conquer the Skies*. Java MODs extend the game through events, configuration, campaign storage, shared UI, console commands and Mixins, alongside native JSON MODs.
+Acbric connects Fabric Loader to *Airships: Conquer the Skies*. Java MODs extend the game through events, configuration, campaign storage, shared/combat UI, console commands and Mixins, alongside native JSON MODs.
 
-Current development version: **0.3.7.1**. [fabric.mod.json](src/apiMod/resources/fabric.mod.json) is the version source; see the [changelog](docs/CHANGELOG.md) for history.
+Current development version: **0.3.8**. [fabric.mod.json](src/apiMod/resources/fabric.mod.json) is the version source; see the [changelog](docs/CHANGELOG.md) for history.
 
 Game compatibility: **built for *Airships: Conquer the Skies* 1.2.15.3** (including the LWJGL3 engine backend used by the engine migration MOD). The compile baseline is 1.2.15.3 as well (`libs/asplit-*.zip`; verify with `AGame.VERSION`), and the runtime still works with older engines such as 1.2.15.2 — the framework does not hard-code the engine's input type; see the 0.3.4 entry in the [changelog](docs/CHANGELOG.md).
 
@@ -51,7 +51,7 @@ Use `externalDistZip` for redistribution; add `-PbundleRuntime` to include Java 
 
 ## Verification and limits
 
-This version adds player workflow, bilingual UI and diagnostic-export checks while retaining setup retries, update protections and existing API behavior. See the [changelog](docs/CHANGELOG.md) for verification scope.
+This version adds extensible combat command-panel controls, window/panel anchors and vertical sidebars while retaining the player workflow, bilingual UI, diagnostic export, setup retries, update protections and existing API behavior. See the [changelog](docs/CHANGELOG.md) for verification scope.
 
 Java MOD selection requires a restart. Campaign extension writes do not automatically synchronize over the network. Code matching is neither anti-cheat nor a guarantee for arbitrary MOD combinations. Known native GL errors remain deferred; see the [external installation research](docs/EXTERNAL_INSTALL.md).
 

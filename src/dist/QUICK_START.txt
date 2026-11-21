@@ -1,8 +1,9 @@
-Acbric quick start — 0.3.7.1
+Acbric quick start — 0.3.8
 
 1. Fully extract and open Acbric.exe. Keep the EXE with the rest of the folder.
 2. On first use, confirm the Steam game found automatically and select Use this game. Choose its folder manually if needed.
 3. Select Start game. Use the same EXE next time; no repeated setup is needed.
+   For Steamworks and Workshop, use Steam launch (owned copy). This requires the game installed in Steam and the signed-in account to own App 342560. First use may synchronize subscribed Workshop content.
 4. Open MOD folder: add Java .jar MODs or native folders directly containing info.json. The API is included; do not duplicate it.
 5. Restart after changing Java MODs. Saves and MODs come directly from your original game: select Sync now
    to detect those folders - nothing is copied and only one copy exists. Use Settings -> Environment
