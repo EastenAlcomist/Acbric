@@ -1,17 +1,16 @@
 # 开发文档导航
 
-[English](DEVELOPMENT.md) · 当前源码/API：**0.3.5.1**，尚未发布稳定版。
+[English](DEVELOPMENT.md) · 当前源码/API：**0.3.8**，尚未发布稳定版。
 
-从这里查找当前契约。文档总目录提供安装与构建入口，专题文档负责行为定义；变更记录和工作区带日期的研究文档是历史证据，不是另一套当前规范。新增接口同时维护中英文说明、最小示例、明确的失败边界和回归验证。
 
 ## 第一个 MOD 的流程
 
 1. 按 [构建指南](BUILDING.zh-CN.md) 准备自有游戏文件和 JDK 21，使用独立游戏/用户数据目录测试。
-2. 执行 `gradlew.bat build syncModTemplateLibs`，将 `acbric-mod-template` 复制成独立项目，参照[模板说明](../acbric-mod-template/README.md)。不要把游戏类和资源打进 MOD 源码发行包。
-3. 设置唯一 MOD ID 和 `acbric` 入口。覆盖带上下文初始化方法时仍要实现无参方法，保留旧兼容协议，见 [API](API.zh-CN.md)。
-4. 从下表选择所需服务，已有事件/API 能解决时优先使用。只有确实缺少能力时再引入依赖游戏版本的 Mixin。声明实际所用的最低 API 版本；模板 dev.10 下限不覆盖更新的 UI、设置和命令接口。
+2. 执行 `gradlew.bat build syncModTemplateLibs`，将 `acbric-mod-template` 复制成独立项目，参照[模板说明](../acbric-mod-template/README.md)。
+3. 设置唯一 MOD ID 和 `acbric` 入口。见 [API](API.zh-CN.md)。
+4. 从下表选择所需服务，推荐优先使用已有事件/API 。只有确实缺少能力时再引入依赖游戏版本的 Mixin。声明实际所用的最低 API 版本。
 5. 构建独立 JAR，在已配置的外部框架 `Acbric/mods/` 只保留一个版本，重启后进入 **Acbric API → 详情 → 开发者工具**。分别检查是否已加载、入口是否成功，需要时查看错误并导出诊断。
-6. 测试中英文、不可用上下文、错误路径和注册清理，保留复现所需代码与日志。实机界面验收和联机验证不等于无界面检查。
+6. 通过 Acbric 启动游戏查看实际效果
 
 ## 能力与权威契约
 
@@ -27,6 +26,7 @@
 | 显式旧档转换 | [迁移](RULE_SAVE_MIGRATION.zh-CN.md) | dev.11；预览后另存。 |
 | Java MOD 管理 | [管理](MOD_MANAGEMENT.zh-CN.md) | dev.12；重启生效，不热卸载。 |
 | 公共界面、文本与清理 | [UI](UI.zh-CN.md) | dev.13 基础、dev.18 绑定/选项、dev.19 编辑/页脚、dev.20 提交。 |
+| 战斗命令面板控件 | [命令面板 UI](COMMAND_PANEL_UI.zh-CN.md) | 0.3.8；原生标签/开关/按钮、窗口/面板锚点、横向行与纵向侧边栏、每 MOD 最多 4 个、不同步玩法。 |
 | 草稿式设置界面 | [设置](SETTINGS.zh-CN.md) | dev.18；生效时机由 MOD 定义。 |
 | 命令、帮助与补全 | [命令](COMMANDS.zh-CN.md) | dev.20；共享玩法执行预留。 |
 | 游戏内工具、诊断快照 | [开发者工具](DEVELOPER_TOOLS.zh-CN.md) | dev.20；有界本地记录与导出。 |

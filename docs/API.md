@@ -6,7 +6,7 @@ Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physic
 
 Current navigation: [development workflow](DEVELOPMENT.md), [command API](COMMANDS.md), [developer tools and diagnostics](DEVELOPER_TOOLS.md). `context.commands()` is available since dev.20, with typed arguments, help/completion and closeable registrations; existing public APIs remain compatible.
 
-Applies to **`acbric_api 0.3.7.1`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
+Applies to **`acbric_api 0.3.8`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
 
 - Installation, building and launching: [README.md](BUILDING.md).
 - Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
@@ -104,6 +104,8 @@ Game data and UI objects may not yet exist during pre-launch. Register the appro
 | `configDir()` / `ensureConfigDir()` | Get / create this mod's configuration directory |
 | `dataDir()` / `ensureDataDir()` | Get / create this mod's data directory |
 | `logger()` | `AcbricLogger` tagged with this mod's ID |
+| `ui()` | Owner-scoped component-window tools since dev.13; see [UI](UI.md). |
+| `commandPanelUi()` | Owner-scoped combat command-panel controls since 0.3.8; see [command-panel UI](COMMAND_PANEL_UI.md). |
 | `commands()` | Owner-scoped command registration since dev.20; see [command contract](COMMANDS.md). |
 | `sharedRules(int version, JSONObject values, SharedRules.Validator validator)` | Declare gameplay rules for this MOD (dev.10); see [contract](SHARED_RULES.md) |
 | `campaignData(Object worldMap)` | `CampaignData` scoped to this mod and the given map (since dev.3) |
@@ -310,3 +312,7 @@ Declare with `context.sharedRules`, retain a `SharedRules` handle for candidates
 Localization: dev.14 adds `AcbricLanguage.text(english, chinese)` and `ModUi.register(id, Supplier<String>, factory)`; see [UI.md](UI.md).
 
 Native UI percentage scaling is available through `UiScale.setPercent(50..200)`, `percent()` and `useVanilla()` since 0.3.7. See [UI scaling contract and example](UI.md#percentage-scaling-of-the-native-ui-037); consuming MODs require `acbric_api >=0.3.7`. Version 0.3.7.1 fixes raster quality.
+
+## 21. Combat command-panel controls (0.3.8)
+
+`context.commandPanelUi()` registers up to four native-style items per MOD for the main combat command panel. The surface supports buttons, native toggles and status labels; text, toggle state, tooltips and enabled states may be dynamic. Accepted button/toggle interactions use the game's `MyDraw` / Hooks path. Registrations may select a native-panel-above anchor or a top/center/bottom viewport anchor, plus a bounded pixel offset and horizontal or vertical layout. Existing overloads keep `PANEL_ABOVE_CENTER` and `HORIZONTAL`; `VERTICAL` produces a grouped sidebar. The surface does not resize the native panel, synchronize gameplay or provide hotkeys. See the [command-panel UI contract](COMMAND_PANEL_UI.md).

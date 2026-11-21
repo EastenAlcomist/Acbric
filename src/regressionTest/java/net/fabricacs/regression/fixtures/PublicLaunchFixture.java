@@ -26,6 +26,8 @@ public abstract class PublicLaunchFixture {
             if (!Display.isCreated() || !org.lwjgl.openal.AL.isCreated()) throw new AssertionError("Native display/audio missing");
             if (!AGame.getGameDirectory().toPath().equals(instance.resolve("userdata"))) throw new AssertionError("Wrong userdata");
             if (!AGame.getStaticGameDirectory().toPath().equals(install)) throw new AssertionError("Wrong resources");
+            boolean steamScenario = Files.exists(instance.resolve("steam-context-test"));
+            if (steamScenario) acbric$checkSteamContext();
             if (Files.exists(instance.resolve("java-only-test"))) {
                 try { net.fabricacs.regression.JavaOnlyModListChecks.run(instance, draw, mode, hooks, cursor); }
                 catch (Throwable failure) {
@@ -34,19 +36,50 @@ public abstract class PublicLaunchFixture {
                     System.exit(71);
                 }
             } else acbric$checkMods(instance);
-            String scenario = Files.exists(instance.resolve("java-only-test"))
+            String scenario = steamScenario
+                    ? "Steam App 342560 launch, Steamworks/UGC, isolated instance cwd, Java/native MOD roots and public menu"
+                    : Files.exists(instance.resolve("java-only-test"))
                     ? "Java-only ModsScreen rendering, native availability isolation, refresh and restart selection"
                     : "shared Java/native MOD scan/install/bundles/manager/fleet";
             Files.writeString(instance.resolve("public-checkpoint.txt"), "PASS: actual Main, 30 rendered frames, native audio, selected A/B, instance cwd/data, external core, " + scenario + "\njava.home=" + System.getProperty("java.home") + "\n");
         }
         if (Files.exists(instance.resolve("allow-test-exit"))) System.exit(0);
     }
+    @Unique private static void acbric$checkSteamContext() throws Exception {
+        if (!"true".equals(System.getProperty("steam"))) throw new AssertionError("Steam property not enabled");
+        if (!"true".equals(System.getProperty("acbric.external.steam"))) throw new AssertionError("Acbric Steam mode not marked");
+        if (!"342560".equals(System.getenv("SteamAppId")) || !"342560".equals(System.getenv("SteamGameId")))
+            throw new AssertionError("Wrong Steam App environment");
+        if (!SteamBackend.isEnabled() || SteamBackend.hasBrokenSteam())
+            throw new AssertionError("SteamBackend did not initialize");
+        if (SteamBackend.getUserID() <= 0 || SteamBackend.ugc == null)
+            throw new AssertionError("Steam identity or UGC unavailable");
+        if (SteamBackend.ugc.getNumSubscribedItems() < 0)
+            throw new AssertionError("Steam UGC query failed");
+        ProcessHandle current = ProcessHandle.current();
+        String executable = current.info().command().orElse("");
+        if (!executable.toLowerCase().endsWith("java.exe"))
+            throw new AssertionError("Steam child game did not use the Java launcher: " + executable);
+        boolean packr = false, steam = false;
+        ProcessHandle parent = current.parent().orElse(null);
+        for (int depth = 0; parent != null && depth < 4; depth++) {
+            String command = parent.info().command().orElse("").toLowerCase();
+            if (command.endsWith("airships.exe")) packr = true;
+            if (command.endsWith("steam.exe")) steam = true;
+            parent = parent.parent().orElse(null);
+        }
+        if (!packr || !steam)
+            throw new AssertionError("Steam -> Packr -> game process lineage missing");
+    }
     @Unique private static void acbric$checkMods(Path instance) throws Exception {
         // 共享模式下有两个不同的根：原生 MOD（文件夹与配套资源解包）在原版 mods，Java JAR 在框架 mods。
         Path root = Path.of(System.getProperty("acbric.external.mods"));
         Path javaRoot = net.fabricacs.api.util.AirshipsPaths.modsDir();
         if (!javaRoot.equals(Path.of(System.getProperty("fabric.modsFolder")))) throw new AssertionError("Wrong Java MOD folder");
-        if (javaRoot.equals(root)) throw new AssertionError("Shared mode must keep the Java MOD folder separate");
+        boolean isolated = Files.isRegularFile(instance.resolve("acbric-launcher/environment.json"))
+                && Files.readString(instance.resolve("acbric-launcher/environment.json")).contains("\"isolated\"");
+        if (!isolated && javaRoot.equals(root)) throw new AssertionError("Shared mode must keep the Java MOD folder separate");
+        if (isolated && !javaRoot.equals(root)) throw new AssertionError("Isolated mode must use the framework MOD folder for both roots");
         if (!net.fabricacs.api.impl.LocalModPaths.nativeMods().equals(root)) throw new AssertionError("Wrong native MOD root");
         Mod nativeMod = Mod.getById("native_test");
         if (nativeMod == null || !nativeMod.dir.toPath().equals(root.resolve("native_test"))) throw new AssertionError("Native MOD not scanned");

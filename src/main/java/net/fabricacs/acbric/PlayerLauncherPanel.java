@@ -9,7 +9,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
 class PlayerLauncherPanel extends JPanel {
-    final JButton primary = new JButton(), browse = new JButton(), mods = new JButton(), sync = new JButton(), settings = new JButton(), help = new JButton(), retry = new JButton();
+    final JButton primary = new JButton(), steam = new JButton(), browse = new JButton(), mods = new JButton(), sync = new JButton(), settings = new JButton(), help = new JButton(), retry = new JButton();
     final JLabel title = new JLabel(), location = new JLabel();
     final JTextArea status = new JTextArea(3, 42);
     final JComboBox<String> language = new JComboBox<>(new String[]{"中文", "English"});
@@ -35,14 +35,24 @@ class PlayerLauncherPanel extends JPanel {
         title.setFont(title.getFont().deriveFont(Font.BOLD, 20)); content.add(title); content.add(Box.createVerticalStrut(12)); content.add(location); content.add(Box.createVerticalStrut(16));
         status.setEditable(false); status.setFocusable(false); status.setLineWrap(true); status.setWrapStyleWord(true); status.setOpaque(false); status.setFont(status.getFont().deriveFont(15f)); content.add(status);
         primary.setFont(primary.getFont().deriveFont(Font.BOLD, 20)); primary.setPreferredSize(new Dimension(260, 52)); actions.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52)); actions.add(primary); actions.add(browse); content.add(actions); add(content, BorderLayout.CENTER);
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0)); for (JButton button : List.of(mods, sync, settings, help, retry)) footer.add(button); add(footer, BorderLayout.SOUTH);
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0)); for (JButton button : List.of(steam, mods, sync, settings, help, retry)) footer.add(button); add(footer, BorderLayout.SOUTH);
         primary.addActionListener(e -> {
             if (state == null) return;
-            if (state.ready()) work(text("游戏运行中，关闭游戏后可返回这里。", "Game running. Close the game to return here."), service::launch, result -> {
+            if (state.ready()) work(text("游戏运行中，关闭游戏后可返回这里。", "Game running. Close the game to return here."), () -> service.launch(PlayerLauncherService.LaunchMode.DIRECT), result -> {
                 if (result != 0) throw new IllegalStateException("GAME_EXIT_" + result);
                 render();
             });
             else if (state.game() != null) configure(state.game());
+        });
+        steam.addActionListener(e -> {
+            if (state == null || !state.ready()) return;
+            work(text("正在请求 Steam 启动…", "Requesting Steam launch…"),
+                    () -> service.launch(PlayerLauncherService.LaunchMode.STEAM), unused -> {
+                        render();
+                        status.setText(text(
+                                "已请求 Steam 启动。Steam 将校验当前账号的游戏许可；首次或 MOD 更新后可能先下载创意工坊内容。",
+                                "Steam launch requested. Steam will verify this account's game license; first launch or MOD updates may sync Workshop content first."));
+                    });
         });
         browse.addActionListener(e -> chooseGame());
         mods.addActionListener(e -> open(service.bundle.resolve("mods")));
@@ -110,6 +120,11 @@ class PlayerLauncherPanel extends JPanel {
                 ? text("改回直接使用原版存档与模组（不复制文件）", "Go back to using the vanilla saves and MODs directly (no copying)")
                 : text("重新识别原版存档与模组位置（不复制文件）", "Detect the vanilla save and MOD locations again (no copying)"));
         settings.setText(text("设置", "Settings")); help.setText(text("帮助", "Help")); retry.setText(text("重试", "Retry"));
+        steam.setText(text("Steam 启动（正版）", "Steam launch (owned copy)"));
+        steam.setToolTipText(text(
+                "通过 Steam App 342560 启动，启用 Steamworks 和创意工坊。需要已购正版并登录同一 Windows 用户；首次启动可能先同步订阅内容。",
+                "Starts through Steam App 342560 with Steamworks and Workshop. Requires an owned copy and the same signed-in Windows user; first launch may sync subscriptions."));
+        steam.setVisible(ready);
         retry.setVisible(false); enabled();
     }
 
@@ -137,6 +152,7 @@ class PlayerLauncherPanel extends JPanel {
         actions.revalidate(); actions.repaint();
         mods.setEnabled(!working && state != null && state.ready());
         sync.setEnabled(!working && state != null && state.ready());
+        steam.setEnabled(!working && state != null && state.ready());
         settings.setEnabled(!working); help.setEnabled(!working); language.setEnabled(!working); retry.setEnabled(!working);
     }
 

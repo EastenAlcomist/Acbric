@@ -11,6 +11,8 @@
 
 The Chinese/English choice at the top right is saved. The default data folder is configured automatically; ordinary players do not need to manage an “instance”. Launcher actions are disabled while the game runs and restored after it closes.
 
+Once setup is ready, the home screen offers **Steam launch (owned copy)**. This requires an installation registered in Steam, a signed-in Steam client and an account that owns App `342560`; launching through Steam enables Steamworks, game status and Workshop access. On first use or after MOD updates, Steam may synchronize subscribed Workshop content before the game reaches its menu. Keep using **Start game** for the original direct launch when Steam or Workshop is not needed.
+
 ```text
 Acbric/
 ├─ Acbric.exe            One everyday entry

@@ -236,6 +236,7 @@ public final class FrameworkRegression {
         checks += net.fabricacs.acbric.PlayerLauncherRegression.run(root.resolve("player-launcher"));
         checks += net.fabricacs.acbric.PlayerEnvironmentRegression.run(root.resolve("player-environment"));
         checks += net.fabricacs.acbric.SteamMaintenanceRegression.run(root.resolve("steam-maintenance"));
+        checks += net.fabricacs.acbric.SteamLaunchRegression.run(root.resolve("steam-launch"));
         checks += net.fabricacs.api.impl.ExternalCacheRegression.run(root.resolve("external-cache"));
     }
 
@@ -274,6 +275,7 @@ public final class FrameworkRegression {
     }
 
     private static void suiteUi(Path root) throws Exception {
+        checks += net.fabricacs.api.impl.CommandPanelUiRegression.run();
         checks += net.fabricacs.api.impl.UiScaleRegression.run();
         checks += net.fabricacs.api.ui.UiRegression.run();
         checks += net.fabricacs.api.ui.TextInteractionRegression.run();

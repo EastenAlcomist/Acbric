@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-当前开发版：**0.3.5.1**。玩家从安装指南开始，MOD 作者从开发流程开始，框架贡献者先读构建指南。文档中的构建命令以仓库根目录为工作目录。
+当前开发版：**0.3.8**。玩家从安装指南开始，MOD 作者从开发流程开始，框架贡献者先读构建指南。文档中的构建命令以仓库根目录为工作目录。
 
 专题文档定义行为，CHANGELOG 和历史快照记录当时状态。文档标题中的 dev.N 通常表示功能引入版本，不表示当前框架仍停留在该版本。游戏代码、资源、用户配置和测试产物不纳入文档仓库。
 
@@ -28,6 +28,7 @@
 | 战役存储 | [English](CAMPAIGN_DATA.md) | [中文](CAMPAIGN_DATA.zh-CN.md) |
 | 战役生命周期 | [English](CAMPAIGN_LIFECYCLE.md) | [中文](CAMPAIGN_LIFECYCLE.zh-CN.md) |
 | 公共 UI | [English](UI.md) | [中文](UI.zh-CN.md) |
+| 战斗命令面板控件 | [English](COMMAND_PANEL_UI.md) | [中文](COMMAND_PANEL_UI.zh-CN.md) |
 | 设置界面 | [English](SETTINGS.md) | [中文](SETTINGS.zh-CN.md) |
 | 控制台命令 | [English](COMMANDS.md) | [中文](COMMANDS.zh-CN.md) |
 | 开发者工具 | [English](DEVELOPER_TOOLS.md) | [中文](DEVELOPER_TOOLS.zh-CN.md) |

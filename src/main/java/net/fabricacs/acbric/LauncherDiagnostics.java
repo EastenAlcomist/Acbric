@@ -63,6 +63,18 @@ final class LauncherDiagnostics {
 
     static String friendly(Throwable ex, boolean zh) {
         String text = ex.toString();
+        if (text.contains("STEAM_GAME_NOT_REGISTERED")) return zh
+                ? "当前游戏文件夹没有识别到 Steam App 342560 的安装记录。请从 Steam 安装并登录已购游戏后再使用 Steam 启动，或改用普通启动。"
+                : "This game folder is not registered as Steam App 342560. Install and sign in to an owned copy in Steam, or use direct launch.";
+        if (text.contains("STEAM_CONTEXT_INVALID")) return zh
+                ? "这不是由 Steam 正版 App 342560 启动的游戏进程。请关闭游戏，再从 Acbric 点击“Steam 启动（正版）”。"
+                : "This process was not launched by Steam App 342560. Close it and use Acbric's Steam launch button.";
+        if (text.contains("STEAM_RUNTIME_INVALID")) return zh
+                ? "Steam 启动需要完整的 Java 21 运行时。请重新解压带运行时的 Acbric 包。"
+                : "Steam launch needs a complete Java 21 runtime. Extract a complete Acbric package again.";
+        if (text.contains("STEAM_LAUNCH_")) return zh
+                ? "无法通过 Steam 启动。请确认 Steam 已登录、App 342560 已安装且没有被其他进程占用。"
+                : "Steam launch could not be started. Check that Steam is signed in, App 342560 is installed, and no other process is blocking it.";
         if (text.contains("BUSY")) return zh ? "游戏或更新程序正在使用这些文件。请关闭后重试。" : "The game or updater is using these files. Close it and try again.";
         if (text.contains("VANILLA_DATA_MISSING")) return zh ? "没有找到原版数据文件夹。请先在原版游戏中运行一次，再点一键同步；也可以选择环境隔离使用副本。" : "No vanilla data folder was found. Run the original game once, then select Sync now — or isolate this instance to use its own copies.";
         if (text.contains("VANILLA_DATA_READONLY") || text.contains("SHARED_DATA_UNAVAILABLE")) return zh ? "原版数据文件夹当前不可写。请检查权限，或选择环境隔离改用实例副本。" : "The vanilla data folder is not writable. Check permissions, or isolate this instance to use its own copies.";

@@ -11,14 +11,20 @@ import com.zarkonnen.catengine.Input;
 import com.zarkonnen.catengine.util.Pt;
 import com.zarkonnen.catengine.util.ScreenMode;
 import net.fabricacs.api.event.CombatUiPanelType;
+import net.fabricacs.api.impl.CommandPanelUiBridge;
 import net.fabricacs.api.impl.LifecycleHooks;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = CommandButtonsPanel.class, remap = false)
 public abstract class CommandButtonsPanelMixin {
+    @Shadow private int moveInH;
+    @Unique private boolean acbric$commandPanelUiAfter;
+
     @Inject(method = "draw", at = @At("HEAD"), cancellable = true, remap = false)
     private void acbric$beforeDraw(MyDraw draw, Pt mouse, ScreenMode mode,
                                     Hooks hooks, UniScreen screen, CallbackInfo ci) {
@@ -33,6 +39,8 @@ public abstract class CommandButtonsPanelMixin {
                                    Hooks hooks, UniScreen screen, CallbackInfo ci) {
         LifecycleHooks.firePlayerControlPanelAfterDraw(
                 CombatUiPanelType.COMMAND_BUTTONS, this, draw, mouse, mode, hooks, screen);
+        CommandPanelUiBridge.draw((CommandButtonsPanel) (Object) this, draw, mode, screen, moveInH);
+        acbric$commandPanelUiAfter = true;
     }
 
     @Inject(method = "tick", at = @At("HEAD"), cancellable = true, remap = false)

@@ -342,7 +342,10 @@ public final class AirshipsGameProvider implements GameProvider {
             System.setProperty(ExternalGameInstallation.INSTALL_PROPERTY, plan.install().toString());
             System.setProperty(ExternalGameInstallation.INSTANCE_PROPERTY, plan.instance().toString());
             System.setProperty("dev", "false");
-            System.setProperty("steam", "false");
+            boolean steam = Boolean.parseBoolean(
+                    System.getProperty(ExternalGameInstallation.STEAM_PROPERTY, "false"));
+            if (steam) ExternalGameInstallation.requireSteamLaunch(System.getenv());
+            System.setProperty("steam", Boolean.toString(steam));
             diagnostics = new LaunchDiagnostics(gameDirectory, buildIdentity);
             diagnostics.phase(probe == null ? "EXTERNAL_GAME_LOCATED" : "EXTERNAL_PROBE_LOCATED", null);
             configureNativeLibraries();
