@@ -1,5 +1,6 @@
 /*
- * ModsScreenMixin.java — 在 MOD 界面追加 Fabric 列表，并把 Fabric 安装请求交给安装桥处理。
+ * ModsScreenMixin.java — 在 MOD 界面追加 Fabric 列表，并把 Fabric 安装请求交给安装桥处理；
+ * 打开列表时同步刷新原版 MOD 内嵌 ACMOD 状态。
  */
 package net.fabricacs.api.mixin;
 
@@ -42,6 +43,7 @@ public abstract class ModsScreenMixin implements net.fabricacs.api.impl.ModManag
     @Inject(method = "<init>", at = @At("RETURN"), remap = false)
     private void acbric$appendFabricMods(AirshipGame game, CallbackInfo ci) {
         FabricModListBridge.appendFabricMods();
+        net.fabricacs.api.impl.NativeEmbeddedAcmods.refresh(Mod.mods);
         if (this.selected == null && !Mod.mods.isEmpty()) {
             this.selected = Mod.mods.get(0);
         }

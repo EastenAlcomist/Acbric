@@ -287,7 +287,7 @@ def bundledJreDir = layout.buildDirectory.dir('jre')
 
 tasks.register('createBundledJre', Exec) {
     group = 'acbric'
-    description = 'Creates a minimal JRE for distribution using jlink.'
+    description = 'Creates the default Java 21 runtime for distribution using jlink.'
     def jdkHome = System.getProperty('java.home')
     def osName = System.getProperty('os.name').toLowerCase()
     def jlinkExe = osName.contains('win') ? "${jdkHome}/bin/jlink.exe" : "${jdkHome}/bin/jlink"
@@ -296,8 +296,16 @@ tasks.register('createBundledJre', Exec) {
             '--no-header-files', '--no-man-pages', '--strip-debug',
             '--add-modules', 'java.base,java.compiler,java.desktop,java.logging,java.management,java.sql,jdk.unsupported,jdk.zipfs',
             '--output', bundledJreDir.get().asFile.absolutePath
-    doFirst { delete bundledJreDir }
-    inputs.property('modules', 'java.base,java.desktop,java.management,jdk.unsupported')
+    doFirst {
+        def specification = System.getProperty('java.specification.version', '')
+        if (specification != '21') {
+            throw new GradleException("Distribution runtime must be built with JDK 21; current JDK is ${System.getProperty('java.version')}. / 发行运行时必须使用 JDK 21 构建")
+        }
+        delete bundledJreDir
+    }
+    inputs.property('javaHome', jdkHome)
+    inputs.property('javaVersion', System.getProperty('java.version'))
+    inputs.property('modules', 'java.base,java.compiler,java.desktop,java.logging,java.management,java.sql,jdk.unsupported,jdk.zipfs')
     outputs.dir bundledJreDir
 }
 
@@ -391,7 +399,7 @@ tasks.register('buildPlayerLauncher', Exec) {
 def externalRoot = layout.buildDirectory.dir('external-dist/Acbric')
 tasks.register('externalDistDir', Sync) {
     group = 'acbric'
-    description = 'Assembles a framework-only external distribution (bring Java 21 or bundle it explicitly).'
+    description = 'Assembles a framework-only external distribution with the Java 21 runtime by default.'
     dependsOn tasks.named('jar'), tasks.named('apiModJar'), tasks.named('buildPlayerLauncher')
     into externalRoot
     from(playerExe)
@@ -413,8 +421,10 @@ tasks.register('externalDistDir', Sync) {
             include 'README.md', 'README.zh-CN.md', '.gitignore', 'local.properties.example'
         }
     }
-    // 默认不打包运行时；显式 -PbundleRuntime 时仅复制 jlink 输出，不复制游戏自带 Java。
-    if (project.hasProperty('bundleRuntime')) {
+    // 默认携带 jlink 生成的 Java 21 运行时；显式 -PbundleRuntime=false 可制作精简的无运行时包。
+    boolean bundleRuntime = !project.hasProperty('bundleRuntime')
+            || !project.property('bundleRuntime').toString().equalsIgnoreCase('false')
+    if (bundleRuntime) {
         dependsOn tasks.named('createBundledJre')
         into('runtime') { from bundledJreDir }
     }

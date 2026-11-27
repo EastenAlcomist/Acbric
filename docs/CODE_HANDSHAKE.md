@@ -1,12 +1,8 @@
-# Code handshake protocol and state machine (dev.8 core, dev.9 integration)
-
-> 0.3.6: members joining or leaving no longer reset the session (check targets are only added or removed) and a timed-out round retries automatically with backoff; see [lobby integration](LOBBY_HANDSHAKE.md) for the differences.
-
-> dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
+# Code handshake protocol and state machine
 
 **English** | [中文](CODE_HANDSHAKE.zh-CN.md)
 
-The dev.8 core implements internal packets and state management. dev.9 adds automatic [campaign lobby integration](LOBBY_HANDSHAKE.md), including UI and ready/start guards. The following describes core semantics separately from coordinated preparation. `CodeHandshakeProtocol` and `CodeHandshakeSession` are package-private implementation details, not public mod APIs.
+This protocol implements internal packets and state management and is connected to the [campaign lobby](LOBBY_HANDSHAKE.md), including status UI and ready/start guards. `CodeHandshakeProtocol` and `CodeHandshakeSession` are package-private implementation details, not public MOD APIs.
 
 ## Meaning of confirmation
 
@@ -67,6 +63,6 @@ Parsing rejects unknown fields/versions, duplicate keys, wrong types, floating-p
 
 Neither layer changes `LOADED` timing, add gameplay APIs or automatically broadcast campaign data.
 
-## Validation
+## Security boundary
 
-The dev.8 core was introduced with 433 assertions, including 77 handshake checks for state, clocks, retries/timeouts, replay, membership, three-member rooms, limits and strict parsing. Isolated workspace experiments exercise the product engine through actual game 1.2.15.2 and 1.2.14 Server/Client bytecode. The experimental adapter is not lobby integration. 70 real communication assertions pass across both builds, covering matching/modified/missing code, failed entrypoints, timeout, room reentry and native reconnect. That describes the dev.8 experiment. Current dev.9 validation has 477 standard checks and 104 actual lobby integration checks; see [integration coverage](LOBBY_HANDSHAKE.md#validation-and-remaining-acceptance) for remaining manual acceptance.
+Player IDs, sessions and manifests are self-reported, and the native server does not authenticate them. Random challenges isolate stale and duplicate traffic; they do not authenticate identity or prevent cheating. This protocol alone does not guarantee cross-machine play, official-server behavior or sustained multiplayer state.

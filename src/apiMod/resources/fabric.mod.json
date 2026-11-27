@@ -4,6 +4,14 @@
   "version": "0.3.8",
   "name": "Acbric API",
   "description": "Fabric-style API layer for Airships: Conquer the Skies.",
+  "custom": {
+    "acbric": {
+      "description": {
+        "en": "Fabric-style API layer for Airships: Conquer the Skies.",
+        "chi": "《飞艇：征服天空》的 Fabric 风格 API 层。"
+      }
+    }
+  },
   "icon": "assets/acbric_api/icon.png",
   "environment": "client",
   "entrypoints": {

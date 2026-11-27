@@ -1,45 +1,43 @@
 # Developer documentation map
 
-[中文](DEVELOPMENT.zh-CN.md) · Current source/API: **0.3.8**, unreleased.
+[中文](DEVELOPMENT.zh-CN.md) · Current source/API: **0.3.8**.
 
-Start here for the current contracts. The documentation index links to installation and build guides; topic documents define behavior. Changelogs and dated workspace research are historical evidence, not alternate current specifications. New interfaces need matching English/Chinese documentation, a minimal example, bounded failure behavior and regression coverage.
+Topic documents define current behavior; changelogs and historical snapshots do not replace current contracts. New public interfaces need matching English/Chinese documentation, an example and bounded failure behavior.
 
 ## First MOD workflow
 
-1. Prepare your own game files and JDK 21 as described in [build guide](BUILDING.md). Keep a separate game/user-data directory for testing.
-2. Run `gradlew.bat build syncModTemplateLibs`, copy `acbric-mod-template` to an independent project and follow its [README](../acbric-mod-template/README.md). Do not redistribute game classes/resources with MOD source.
+1. Prepare your own game files and JDK 21 or newer as described in the [build guide](BUILDING.md). Keep a separate game/user-data directory for testing.
+2. Copy `acbric-mod-template` to an independent project and configure `local.properties` as described in its [README](../acbric-mod-template/README.md). Do not redistribute game classes or resources with MOD source.
 3. Give the MOD a unique ID and an `acbric` entrypoint. Implement both initializer methods when overriding the context form; the old no-argument method remains required for compatibility. See [API](API.md).
-4. Pick the smallest suitable service from the table below. Use an existing event/API before introducing a game-version-specific mixin. Declare the minimum API version actually used; the template's dev.10 minimum does not cover newer UI/settings/command calls.
+4. Pick the smallest suitable service from the table below. Use an existing event/API before introducing a game-version-specific mixin, and declare the minimum API version actually used.
 5. Build the independent JAR, place one version in the configured external framework's `Acbric/mods/`, restart, and open **Acbric API → Details → Developer tools**. Check entrypoint status separately from loaded status. Inspect errors and export diagnostics when needed.
-6. Test English and Chinese, unavailable contexts, failure paths and registration cleanup. Save code and logs needed to reproduce the result. GUI acceptance and multiplayer tests are separate from headless unit checks.
+6. Test English and Chinese, unavailable contexts, failure paths and registration cleanup.
 
 ## Capabilities and authoritative contracts
 
 | Need | Contract | Minimum API / boundary |
 |---|---|---|
-| Initialization, context, paths and logging | [API](API.md) | Per-member versions apply. |
-| Events and renamed UI callbacks | [Events](EVENTS.md) | dev.1; old `ONE_SHOT_*` stays historical. |
-| Managed subscriptions and event errors | [Scopes](EVENT_SCOPES.md) | dev.6; exceptions still propagate. |
+| Initialization, context, paths and logging | [API](API.md) | Follow the current API guide. |
+| Events and renamed UI callbacks | [Events](EVENTS.md) | Old `ONE_SHOT_*` remains a compatibility hook. |
+| Managed subscriptions and event errors | [Scopes](EVENT_SCOPES.md) | Exceptions still propagate. |
 | Managed native resources | [Resources](BUNDLED_RESOURCES.md) | Preserve user changes; explicit migration. |
-| Local JSON config | [Config](CONFIG.md) | dev.5; no automatic broadcasting. |
-| Campaign JSON and recovery | [Data](CAMPAIGN_DATA.md), [lifecycle](CAMPAIGN_LIFECYCLE.md) | dev.3 / dev.4; storage is not runtime synchronization. |
-| Shared rule declarations | [Rules](SHARED_RULES.md) | dev.10; freeze at creation, read from save on resume. |
-| Explicit old-save conversion | [Save migration](RULE_SAVE_MIGRATION.md) | dev.11; preview and separate destination. |
-| Java MOD management | [Management](MOD_MANAGEMENT.md) | dev.12; restart-based, not runtime unload. |
-| Shared UI / text / cleanup | [UI](UI.md) | dev.13 base, dev.18 binding/choice, dev.19 editing/footer, dev.20 submit. |
-| Combat command-panel controls | [Command-panel UI](COMMAND_PANEL_UI.md) | 0.3.8; native labels/toggles/buttons, window/panel anchors, horizontal rows and vertical sidebars, four items per MOD, no gameplay synchronization. |
-| Draft-based settings forms | [Settings](SETTINGS.md) | dev.18; MOD defines effect timing. |
-| Commands and help/completion | [Commands](COMMANDS.md) | dev.20; shared gameplay execution reserved. |
-| In-game tools / diagnostic snapshots | [Developer tools](DEVELOPER_TOOLS.md) | dev.20; bounded local capture/export. |
-| Startup identity / reports | [Diagnostics](DIAGNOSTICS.md) | Since dev.2; report layouts are internal. |
-| Code identity and lobby protocol | [Manifests](CODE_MANIFEST.md), [handshake](CODE_HANDSHAKE.md), [lobby](LOBBY_HANDSHAKE.md) | dev.7–9; not authentication or state replication. |
+| Local JSON config | [Config](CONFIG.md) | No automatic broadcasting. |
+| Campaign JSON and recovery | [Data](CAMPAIGN_DATA.md), [lifecycle](CAMPAIGN_LIFECYCLE.md) | Storage is not runtime synchronization. |
+| Shared rule declarations | [Rules](SHARED_RULES.md) | Freeze at creation; read from the save on resume. |
+| Explicit old-save conversion | [Save migration](RULE_SAVE_MIGRATION.md) | Preview and write a separate destination. |
+| Java MOD management | [Management](MOD_MANAGEMENT.md) | Restart-based; no runtime unload. |
+| Shared UI / text / cleanup | [UI](UI.md) | Components, input, window lifetime and scaling. |
+| Combat command-panel controls | [Command-panel UI](COMMAND_PANEL_UI.md) | Native controls and anchors; no gameplay synchronization. |
+| Draft-based settings forms | [Settings](SETTINGS.md) | The MOD defines effect timing. |
+| Commands and help/completion | [Commands](COMMANDS.md) | Shared gameplay execution is not available. |
+| In-game tools / diagnostic snapshots | [Developer tools](DEVELOPER_TOOLS.md) | Bounded local capture and export. |
+| Startup identity / reports | [Diagnostics](DIAGNOSTICS.md) | Report layouts are internal. |
+| Code identity and lobby protocol | [Manifests](CODE_MANIFEST.md), [handshake](CODE_HANDSHAKE.md), [lobby](LOBBY_HANDSHAKE.md) | Not authentication or state replication. |
 
 Public packages define MOD contracts. Classes in `impl`, `mixin`, `UiRuntime` and `DeveloperConsoleUi` are internal adapters even when Java visibility is public. Diagnostic record APIs are public; JSON/file layouts remain internal. Existing public signatures and documented event ordering must remain compatible unless a separately agreed change says otherwise.
 
-## Maintainer validation
+## Maintainer checks
 
-Run `gradlew.bat build` for isolated regression fixtures. Use `externalDistZip -PbundleRuntime` for a framework-only distribution. Legacy `distZip` includes local game content and is not for public sharing. Keep standalone test MODs outside the framework source set/default distribution. Compile documentation examples against the produced API JAR. Compare prior public binary signatures, then exercise new hooks through real Fabric/Mixin on both maintained game builds. Recording-renderer tests do not replace Windows clipboard/IME/focus or OpenGL acceptance.
-
-When adding a command, put the behavior in a reusable service first. Expose bilingual metadata and a closeable registration; query runtime state again when executing. The first console release intentionally limits built-ins to diagnosis and local export. Future settings/save commands must use existing validation and synchronization contracts.
+Run `build full` before release and use `externalDistZip` for a framework-only distribution with a Java 21 runtime by default; use `-PbundleRuntime=false` for a minimal package. Keep standalone test MODs outside the framework source set and default distribution. Mixin changes require checks against real game bytecode and loading; recording-renderer tests do not replace IME, focus or OpenGL testing.
 
 Release history: [English](CHANGELOG.md) / [Chinese](CHANGELOG.zh-CN.md).

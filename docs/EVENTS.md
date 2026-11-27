@@ -1,9 +1,8 @@
 # UI events and compatibility
 
-The new API is `0.3.3-dev.1` (unreleased). Mods using the new fields must declare
-`"acbric_api": ">=0.3.3-dev.1"` in `fabric.mod.json` and compile against this API.
-Existing 0.3.2 API members remain available. This is an additive change, not a
-guarantee that every third-party mixin or every game version is compatible.
+Applies to `acbric_api 0.3.8`. Mods using these fields must declare
+`"acbric_api": ">=0.3.8"`. The events do not guarantee compatibility with every
+third-party mixin or game version.
 
 ## Rename ship panel
 
@@ -72,11 +71,10 @@ If your intended feature is one-shot weapons/buoyancy/power, renaming the event
 subscription cannot implement it. Those mechanics need separately verified game
 hooks and a new, explicitly documented API. Never silently move the legacy hooks.
 
-New hooks must document the exact game class/method, supported game build evidence,
+New hooks must document the exact game class/method, supported game build,
 before/after timing, argument meaning, cancellation, exception handling and ordering.
 Keep compatibility hooks stable; use accurate names in new templates and examples.
-Add a regression against the transformed game method when changing injection points.
 
-## Opt-in managed subscriptions (dev.6)
+## Managed subscriptions
 
 EventScope adds ownership diagnostics and grouped cleanup without changing the existing UI ordering/cancellation rules. Legacy registrations retain their semantics; scoped registrations deactivate retained snapshots when closed. See [the scope contract](EVENT_SCOPES.md).

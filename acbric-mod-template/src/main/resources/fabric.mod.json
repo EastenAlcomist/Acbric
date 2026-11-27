@@ -4,6 +4,14 @@
   "version": "${modVersion}",
   "name": "${modName}",
   "description": "${modDescription}",
+  "custom": {
+    "acbric": {
+      "description": {
+        "en": "${modDescriptionEnglish}",
+        "chi": "${modDescriptionChinese}"
+      }
+    }
+  },
   "icon": "assets/acbric_template_mod/icon.png",
   "environment": "*",
   "entrypoints": {
@@ -12,6 +20,6 @@
     ]
   },
   "depends": {
-    "acbric_api": ">=0.3.3-dev.10"
+    "acbric_api": ">=0.3.8"
   }
 }

@@ -1,14 +1,8 @@
-# Campaign lobby code check (dev.9–dev.10)
-
-> From 0.3.6 preparation intent is retained per member, gameplay settings are distributed host-authoritatively and the status button opens the multiplayer lobby panel; this document describes 0.3.6, and the historical dev.9–dev.10 behavior differences are in the [changelog](CHANGELOG.md#036--the-lobby-no-longer-clears-preparation-in-bulk-gameplay-settings-become-host-authoritative-2026-10-03).
-
-> See [dev.11 conversion](RULE_SAVE_MIGRATION.md) for save preflight, explicit adoption/migration and save-as boundaries. Normal loading still does not migrate.
-
-> dev.10 also requires [matching declared rules](SHARED_RULES.md). Code status below is only one prerequisite; unconfirmed rules block ready/start. Rules freeze before generation and resume uses saved values.
+# Campaign lobby code check
 
 **English** | [中文](LOBBY_HANDSHAKE.zh-CN.md)
 
-dev.9 connects the [internal handshake](CODE_HANDSHAKE.md) to native multiplayer campaign lobbies. Checks begin automatically on entry. Pending, different, unverifiable or timed-out code blocks preparation and game start. dev.9 added no public MOD networking API; dev.10 stores rules within existing campaign extension data.
+Acbric connects the [internal handshake](CODE_HANDSHAKE.md) to native multiplayer campaign lobbies. Checks begin automatically on entry. Pending, different, unverifiable or timed-out code blocks preparation and game start. Code checks also require [matching shared rules](SHARED_RULES.md); rules freeze before generation and resume uses saved values. No public MOD networking API is added.
 
 ## Player behavior
 
@@ -23,7 +17,7 @@ An `Acbric` status button replaces the connection text at the top left, in Engli
 | Unverifiable | Inspect startup reports for failed entrypoints, hashing failures or limits |
 | Timed out | Check connections and framework versions; the framework retries automatically, and the panel also offers a manual re-check |
 
-There is no bypass switch. Code match is only one requirement; native prerequisites and every player's preparation remain necessary. From 0.3.6 preparation intent is **retained per member**: only a machine whose session changed (reconnect, manual re-check, switching rooms) must prepare again; routine lease renewal, other members joining or leaving, gameplay-setting updates and the native changes the host handles such as map settings and empire selection no longer revoke everyone's preparation. After the native resync (`ResumeScreen` rebuilding the lobby clears every player's ready flag and does not copy `readySent`), the framework re-sends preparation once automatically when this machine had actually clicked ready and the gate allows it, so the player does not have to click again in the lobby.
+There is no bypass switch. Code match is only one requirement; native prerequisites and every player's preparation remain necessary. Preparation intent is **retained per member**: only a machine whose session changed (reconnect, manual re-check, switching rooms) must prepare again; routine lease renewal, other members joining or leaving, gameplay-setting updates and host-handled changes such as map settings and empire selection do not revoke everyone's preparation. After native `ResumeScreen` rebuilds the lobby, the framework re-sends preparation once automatically when this machine had clicked ready and the gate allows it.
 
 After a check round times out no manual intervention is needed: the framework backs off with the number of failed rounds (5/10/20/30 seconds) and starts the next round automatically on the same session token, so it does not drag other players' preparation down. The rules exchange likewise retries automatically in repeated windows instead of stalling permanently after a timeout.
 
@@ -60,14 +54,8 @@ The host accepts preparation only for the full current context. Bare native read
 
 The Client mixin observes socket and reconnect-flag changes because native `isConnectedRaw` may remain true during reconnect. `ResumeScreen` can recreate a lobby without calling `processWelcome`; the recovery hook transfers room context and the expressed **preparation intent** and closes the old session, and preparation is restored automatically once the new lobby completes its handshake.
 
-Protocol fields and `impl` bridges are not stable MOD APIs. New mixins are `ClientConnectionMixin`, `LobbyNetworkMixin` and `StrategicLobbyMixin`; existing `ResumeScreenMixin` is extended, bringing dev.9 to 19; dev.10 adds the generation hook for 20 total. The status button redirects native rendering calls; another mod targeting those same calls can conflict. Check Mixin logs when integrating such mods.
+Protocol fields and `impl` bridges are not stable MOD APIs. Lobby integration uses `ClientConnectionMixin`, `LobbyNetworkMixin`, `StrategicLobbyMixin` and `ResumeScreenMixin`; another MOD targeting the same calls can conflict, so check Mixin logs.
 
-## Validation and remaining acceptance
+## Known limits
 
-The dev.9 baseline passed 477 headless checks, including 44 new lobby checks. Native games 1.2.15.2 and 1.2.14 each run a real Server plus two independent Fabric/Client processes for LAN and ordinary-room paths. Ten final experiments pass 104 top-level checks, covering retry, stale proofs, native reconnect, recovery handoff, ready/start blocking and modified/missing/failed mods.
-
-Probes use minimal lobby/world fixtures. They execute real welcome, receive, ready and condition methods, and blocked startGame calls; successful cases validate canStart without generating worlds. Recovery invokes the transformed RETURN hook, not the full recovery screen flow. Ordinary-room tests still use a local Server, with the probe filling the native preprocessing queue; official authentication is not exercised. Rendering targets transform successfully, but full GUI layout, successful game start, complete save/resume/recovery, cross-machine/official-server play and sustained sessions need manual acceptance.
-
-Current dev.10 validation: 541 standard assertions; 14 experiments/204 network checks across two versions. See [rule validation scope](SHARED_RULES.md#verification).
-
-Current 0.3.6 validation: all 16 suites pass with 1135 checks (`handshake` 134 and `rules` 132, the two suites together adding 25 over 0.3.5.1), covering per-member preparation retention, sessions surviving members coming and going, a digest change retaining preparation and the grace window, automatic retry after a timeout, host-snapshot adoption and refusal, and the periodic rules-exchange retry window. The following still need manual acceptance: the ready/start flow in the real game, the visible preparation state after a resync, whether the panel's mod controls actually take effect, and cross-machine or official-server play.
+The protocol uses self-reported identity and code manifests, not authentication, anti-cheat or atomic start under network partitions. Full GUI layout, successful start, complete resume/recovery, cross-machine play, official servers and sustained sessions require targeted verification. See [save conversion](RULE_SAVE_MIGRATION.md) for explicit adoption; normal loading never migrates.

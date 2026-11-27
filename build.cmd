@@ -9,7 +9,7 @@ rem    build clean               clean, then compile
 rem    build help                show this text
 rem    build <gradle task...>    anything else is forwarded to gradlew
 rem
-rem  This script does exactly two things: locate a JDK 21, and hand the command
+rem  This script does exactly two things: locate JDK 21 or newer, and hand the command
 rem  to gradlew. All build logic lives in build.gradle, so the IDE, CI and a
 rem  hand-typed gradlew behave identically.
 rem
@@ -40,12 +40,12 @@ call :find_jdk
 call :cleanup
 
 if not defined ACBRIC_JAVA_HOME (
-  echo [build] No JDK 21 found.
+  echo [build] No compatible JDK found ^(requires 21 or newer^).
   echo.
-  echo   This project requires JDK 21 ^(build.gradle sets sourceCompatibility = 21^).
+  echo   This project requires JDK 21 or newer ^(Java source/target = 21^).
   echo   Either:
-  echo     1. install a JDK 21 ^(Eclipse Adoptium, Microsoft OpenJDK, Corretto, ...^), or
-  echo     2. set JAVA_HOME to an existing JDK 21 and run build again:
+  echo     1. install JDK 21 or newer ^(Eclipse Adoptium, Microsoft OpenJDK, Corretto, ...^), or
+  echo     2. set JAVA_HOME to an existing compatible JDK and run build again:
   echo          set JAVA_HOME=C:\path\to\jdk-21
   echo.
   echo   Current JAVA_HOME = "%JAVA_HOME%"
@@ -55,7 +55,7 @@ if not defined ACBRIC_JAVA_HOME (
 )
 set "JAVA_HOME=%ACBRIC_JAVA_HOME%"
 
-rem 原始命令行，用于检测 cmd.exe 在 '=' 处拆参数（见 :run 的提示）
+rem Raw command line, used to detect cmd.exe splitting an argument at '='.
 set "RAW=%*"
 set "TASKS=assemble"
 set "EXTRA="
@@ -82,9 +82,9 @@ shift
 goto :parse
 
 :run
-rem cmd.exe 会把 "-Pkey=value" 在 '=' 处拆成两个参数，%1..%9 拿到的已经是拆开的，
-rem 只有 %* 保留原样。检测到这种情况时给一句提示，否则使用者只会看到
-rem Gradle 莫名其妙的 "Task 'value' not found"。
+rem cmd.exe splits "-Pkey=value" at '=', so %1..%9 already contain two arguments.
+rem Only %* retains the original text. Print a hint instead of exposing Gradle's
+rem confusing "Task 'value' not found" error.
 set "RAW_HAS_EQ="
 if not defined RAW goto :run_now
 echo %RAW%| findstr "=" >nul
@@ -100,7 +100,7 @@ echo [build] note: cmd.exe splits an argument at '='; quote it, e.g.
 echo [build]       build %TASKS% "-Pacbric.suites=event"
 echo [build]       (or set ACBRIC_SUITES=event and just run: build %TASKS%)
 :run_now
-echo [build] JDK 21  = %JAVA_HOME%
+echo [build] JDK     = %JAVA_HOME%
 echo [build] gradlew %TASKS%%EXTRA%
 call gradlew.bat %TASKS% %EXTRA%
 set "CODE=%ERRORLEVEL%"
@@ -118,7 +118,7 @@ popd
 exit /b 0
 
 rem ---------------------------------------------------------------------------
-rem  Locate a JDK 21: JAVA_HOME -> java on PATH -> common install locations.
+rem  Locate JDK 21 or newer: JAVA_HOME -> java on PATH -> common install locations.
 rem  Only a major version >= 21 is accepted, so a PATH pointing at Java 8 gives
 rem  a clear message instead of a confusing compile failure.
 rem ---------------------------------------------------------------------------

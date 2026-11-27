@@ -2,7 +2,7 @@
 
 [English](EVENT_SCOPES.md) | **中文**
 
-从 `acbric_api >=0.3.3-dev.6` 起，可通过 `AcbricModContext.eventScope(name)` 创建 `net.fabricacs.api.event.EventScope`，集中管理订阅并给回调错误关联 MOD、事件与用途。范围必须由 MOD 显式关闭；框架不会猜测它属于应用、界面还是战役。
+适用于 `acbric_api 0.3.8`。`AcbricModContext.eventScope(name)` 创建 `net.fabricacs.api.event.EventScope`，集中管理订阅并给回调错误关联 MOD、事件与用途。范围必须由 MOD 显式关闭；框架不会猜测它属于应用、界面还是战役。
 
 ## 使用
 
@@ -47,7 +47,7 @@ application.close(); // 取消剩余订阅，重复调用无副作用。
 - MOD 接受一个新世界实例时，关闭旧 `campaign` 范围，创建新范围并重新绑定局部监听器。RESTORED 也要处理世界替换；不要重新初始化共享数据。
 - EXITED 仅在与当前绑定世界匹配时关闭战役范围。不要顺便关闭 application，否则下一局不会再收到创建/加载通知。
 
-CREATED/LOADED 不保证世界已是当前活动界面，真实时机以[生命周期契约](CAMPAIGN_LIFECYCLE.zh-CN.md)为准。需要“只在活动战役工作”的 MOD 应结合自身界面/活动世界判断管理范围。示例 v3.1 演示绑定与释放，不把每次 JSON 构造当成真正进入游戏。
+CREATED/LOADED 不保证世界已是当前活动界面，真实时机以[生命周期契约](CAMPAIGN_LIFECYCLE.zh-CN.md)为准。需要“只在活动战役工作”的 MOD 应结合自身界面和活动世界判断管理范围。
 
 ## 运行期报告
 
@@ -65,4 +65,4 @@ CREATED/LOADED 不保证世界已是当前活动界面，真实时机以[生命�
 
 旧 `register/registerWithHandle/registerOnce` 不自动获得 MOD 归属或新增错误记录，原有快照和异常语义保持。新方式同样按注册顺序同步执行：第一个 CANCEL 中止后续分发，异常保留原对象并继续向外传播，不吞错、不自动禁用，不自动重试。代理会解包反射异常；未在接口声明的 checked exception 仍可能被 Java Proxy 包装，建议使用接口声明的异常或 RuntimeException/Error。
 
-本轮未增加通用网络指令、联机一致性握手或热卸载能力。模板已使用受管理订阅；工作区独立 v3.1 示例提供 F12 手动诊断探针，战役 schema 仍是 3，配置 schema 仍是 2。
+本接口不提供通用网络指令、联机一致性握手或热卸载能力。模板默认使用受管理订阅。

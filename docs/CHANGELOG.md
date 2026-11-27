@@ -1,384 +1,156 @@
 # Changelog
 
-## 0.3.8 — Owned Steam launch and Workshop access (2026-11-21)
+[中文](CHANGELOG.zh-CN.md)
 
-The player home now offers **Steam launch (owned copy)** while direct launch remains the default. This mode is limited to App 342560 installations registered in a real Steam library and invokes `steam.exe -applaunch 342560`; Steam validates the signed-in account's licence. The original `Airships.exe` starts an Acbric Packr bridge, which uses the existing `ExternalLauncher` to start the game JVM in the instance directory. The child inherits the Steam app/client environment, and the provider verifies `SteamAppId`, `SteamGameId` and `SteamClientLaunch` before enabling Steamworks. Direct launch is never mislabelled as Steam.
+This page records user-visible behavior, API and compatibility changes. Build and test commands are in the [build guide](BUILDING.md).
 
-Steam mode writes `instances/<instance>/config/steam-launch.json`, enumerates loader JARs explicitly, and avoids the broken `--cwd` option in this Packr build. Acbric still sets the actual instance working directory for the game JVM. On first Steam launch or after MOD updates, the game may wait while it synchronizes subscriptions from the Workshop.
+## 0.3.8 (unreleased)
 
-Validation: the targeted `external` suite passes 255 checks and all 16 suites pass **1208**. A clean distribution and isolated instance completed first-run synchronization of 10 Workshop subscriptions, reached the real Main menu, rendered 30 frames, and verified Java 21, Steamworks initialization, App ID 342560, UGC subscriptions, instance cwd/data, Java/native MOD roots, menu audio and automatic exit. A size/mtime snapshot confirms the source game installation was unchanged. Other Steam accounts, accounts without subscriptions, cross-machine runs and long interrupted-download recovery remain unverified.
+### 2026-11-27 — External releases include Java 21 by default
 
-## 0.3.8 — Combat command-panel controls (2026-11-18)
+- `externalDistZip` now runs JDK 21 `jlink` and includes `runtime/` by default, so players do not need a separate Java installation.
+- `-PbundleRuntime=false` explicitly creates a minimal package without a runtime. The default runtime task fails clearly when the build JDK is not Java 21.
 
-Added `AcbricModContext.commandPanelUi()` and `net.fabricacs.api.combat.CommandPanelUi`. MODs can register up to four native-style items per MOD and 32 globally for the main combat command panel; the first surface includes buttons, toggles and status labels. Text, toggle state, tooltips and enabled states may be dynamic. Buttons and toggles use native `MyDraw.button` / `MyDraw.toggle` and accepted interactions flow through existing Hooks; status labels use the native panel border and game font. `CommandPanelPlacement` supports above-left/center/right native-panel anchors and top/middle/bottom viewport anchors with left/center/right alignment; each group also takes a `-4096..4096` pixel offset and is clamped to the safe area. `CommandPanelLayout.HORIZONTAL` keeps a row; `VERTICAL` stacks equal-width items into one sidebar window. Equal anchor, offset and layout share a group, while omitted placement retains the original panel-above-center behavior.
+### 2026-11-27 — Embedded native ACMODs become a default API capability
 
-Buttons appear only after the main panel has laid out in an interactive combat state; countdown, spectator/playback, direct control, non-navigation tools and hidden UI are skipped. The surface does not resize the native panel, provide hotkeys or synchronize gameplay. Shared effects still require deterministic simulation or a native networked command path. See [command-panel UI](COMMAND_PANEL_UI.md).
+- The API now scans local and Steam-downloaded native MODs by default. Exactly one `*.jar` under `AcbricMod/` enables the `carries AcbricMOD` suffix and `Enable bundled ACMOD` action.
+- Installation reuses Fabric metadata validation and atomic publication, copies into Acbric's Java MOD folder, and removes the disabled selection. Same-name conflicts, multiple JARs, damaged metadata and protected IDs are rejected.
+- The standalone `acbric_embedded_mods` is no longer required and must not be installed alongside the updated API.
+- Validation: all 16 suites pass 1223 checks, including 83 in `mods`; a real Knot probe recognizes both local and Steam carriers and directly calls transformed `ModsScreen$5.name` to verify the row suffix injection.
 
-Validation: the UI suite grows from 134 to 159 checks for mixed label/toggle/button registration, toggle inversion, horizontal/vertical layout retention, grouped-height sidebar positioning, registration isolation, duplicate/capacity rejection, default/custom placement retention, all anchor families, offset clamping, deferred dynamic labels, activation, idempotent close and re-registration; all 16 current suites pass **1190 checks**. Framework compilation verifies the `CommandButtonsPanel.moveInH` shadow and native draw signatures; an isolated Knot run on game 1.2.15.2 confirms the transformed `CommandButtonsPanel` AFTER injection and bridge load. GPU placement, dynamic sub-panel overlap, UI scaling, mouse focus switching and multiplayer authority still require in-game acceptance.
+### 2026-11-23 — Localized Java MOD descriptions
 
-## 0.3.7.1 — Preserve native UI raster quality (2026-11-06)
+- `fabric.mod.json` may provide `custom.acbric.description` for the native languages `en`, `chi`, `de`, `fr`, `jpn`, `kor` and `ru`.
+- The native MOD list and Acbric details view follow the active game Locale, falling back to English and then the top-level `description`.
+- The template provides `modDescriptionEnglish` and `modDescriptionChinese`. Chinese `gradle.properties` values use Unicode escapes to avoid Java Properties decoding corruption.
 
-Fix blurred percentage UI: 0.3.7 stretched Small bitmap fonts and borders even though vanilla provides separate Medium/Large assets. 100/150/200% now reuse native Small/Medium/Large objects exactly; intermediate values downsample the next tier, including native CJK and dyslexic font variants. Fixed title behavior, saved settings, camera, resolution and texture filters remain unchanged. Existing ARC dev.12 works with this framework patch. See [the UI contract](UI.md).
+### 2026-11-21 — Steam launch and Workshop
 
-Validation: framework 1162 checks / 16 suites; real Knot on games 1.2.15.2 and 1.2.15.3 passes 729 checks each, including native font/border/CJK object identity at all three tiers. At 2560×1600, isolated before/after GPU runs reproduce the old blur and verify the fix: the ARC panel's 1180×710 interior region at 200% is pixel-identical to native Large. Also rendered 50/137/150%; original installation hashes remain unchanged for 5317 files. Evidence: `build/ui-scale-visual/sharp-before`, `sharp-after` and ARC `build/runtime-tests/ui-scale-sharp-final`. Full gameplay-screen coverage remains separate.
+- The player home offers **Steam launch (owned copy)** while direct launch remains the default.
+- Steam mode is limited to Steam App `342560`. The child JVM inherits the Steam environment, and the provider checks App/Client/Launch identity before enabling Steamworks.
+- Steam may synchronize Workshop subscriptions on first launch or after MOD updates, delaying the main menu.
 
-## 0.3.7 — Percentage sizing for native UI (2026-11-06)
+### 2026-11-18 — Combat command-panel controls
 
-Added `UiScale.setPercent(int)`, `percent()` and `useVanilla()`. Any integer from 50 to 200 is accepted; 100% is the vanilla Small baseline and 0 from the getter means vanilla mode. Installation alone keeps Auto / Small / Medium / Large. Changes apply before the next render; invalid requests retain the previous value. Persistence and player-facing controls belong to the consuming MOD. ARC Overhaul dev.12 supplies them and now requires API 0.3.7.
+- Added `context.commandPanelUi()` for up to four buttons, toggles or status labels per MOD and 32 globally.
+- Supports panel-above and viewport nine-grid anchors, bounded offsets, horizontal rows and vertical sidebars.
+- The API handles drawing and accepted interaction only. It does not synchronize gameplay, resize the native panel or provide hotkeys.
 
-Native controls, body fonts and scrollbars rebuild from their original Small metrics, without cumulative scaling, changed texture crops, camera zoom or resolution changes. Fixed-size native titles retain their original size to respect layouts with fixed title spacing. The Draw adapter covers both constructor overloads and supplies scaled texture views to native repeated-border rendering. Existing native preferences and source assets are retained; selecting vanilla restores the current native preset. See [UI contract and example](UI.md#percentage-scaling-of-the-native-ui-037).
+## 0.3.7.1 — Native UI sharpness (2026-11-06)
 
-Validation: the existing `ui` suite gains 27 assertions (134 total); all 16 framework suites pass 1162 checks. ARC's real Knot harness checks both game 1.2.15.2 and 1.2.15.3, including the actual `MyDraw` constructor with Hooks, native settings injection targets, geometry, configuration drafts, validation, saving, defaults and native preset restoration. An isolated 1600×900 GPU run checks menu scaling, native settings, English/Chinese ARC settings and restoring vanilla. Large percentages can exceed fixed native layouts; this does not certify all gameplay screens, third-party renderers or multiplayer. Detailed ARC results are maintained in its test guide; test fixtures and game assets are excluded from distributions.
+- 100%/150%/200% use native Small/Medium/Large assets directly; intermediate sizes sample from the next larger tier.
+- Native font tiers, fixed title size, texture filtering and rendering resolution remain unchanged.
 
-## 0.3.6 — The lobby no longer clears preparation in bulk, gameplay settings become host-authoritative (2026-10-03)
+## 0.3.7 — Native UI percentage scaling (2026-11-06)
 
-Version bumped to **`0.3.6`**; every existing `>=0.3.3-dev.3` / `>=0.3.3-dev.10` declaration still holds and **no downstream mod needs changing**.
+- Added `UiScale.setPercent(50..200)`, `percent()` and `useVanilla()`.
+- 100% is native Small and 0 means vanilla. The API manages a process-wide display request but does not persist settings.
 
-**Preparation is no longer revoked in bulk.** Preparation proofs are now bound per member to that member's own verified session: only a machine whose session actually changed (reconnect, manual re-check, switching rooms) must prepare again. Routine 30-second lease renewal, other members joining or leaving the room, rule-value updates and the host handling native changes such as map settings and empire selection no longer make everyone press ready again. A member-set change only adds or removes check targets (`CodeHandshakeSession` session tokens survive members coming and going) and separately revokes the start grant. After a code-handshake round times out the player no longer has to click **Re-check**: the wait backs off with the number of failed rounds (5/10/20/30 seconds) and the next round opens automatically on the same session, so it never drags other players' preparation down; the rules exchange likewise retries in repeated ten-second windows instead of stalling permanently after a timeout. Once a player has actually clicked ready, the adapter layer remembers that intent: after the native resync (`ResumeScreen` rebuilding the lobby clears every player's `ready` flag and does not copy `readySent`, the native root cause of "resync cancels everyone's preparation") the framework re-sends preparation once automatically, so the player does not have to click again in the lobby.
+## 0.3.6 — Lobby preparation and host-authoritative rules (2026-10-03)
 
-**Gameplay settings become host-authoritative.** The host broadcasts one shared-rule snapshot of its own; every other player first confirms locally, with its own declared versions and validators, that it is acceptable, and then adopts it as this machine's rules for the campaign. Players no longer have to hand-match settings such as "starting cities, cash, AI fleets" to the host, and local configuration files are not rewritten; a missing MOD, a version mismatch or a failing local validator still blocks preparation/start (the status shows "cannot apply host settings"). What freezes before generation is that adopted snapshot. Rule values therefore no longer take part in the per-bit preparation gate comparison: proofs within one digest stay valid, and a digest change only keeps accepting the previous digest's proofs inside the 5-second grace window instead of restarting the code check; a member repeatedly reporting different rules only delays confirmation instead of degrading permanently to unverifiable.
+- Preparation proof is retained per player session; member changes, rule updates and native lobby changes no longer clear everyone's preparation.
+- Timed-out code checks retry automatically with backoff, and native `ResumeScreen` reconstruction restores previously expressed preparation intent.
+- New campaigns adopt the host's rule snapshot after local validation. Local configuration files are not overwritten.
+- The lobby status button opens a panel for re-checking, MOD settings and restart-based MOD enable/disable.
+- `UiWindow` limits are 4096 nodes and depth 32.
 
-**Multiplayer lobby panel.** Clicking the `Acbric` status button at the lobby's top left opens a panel instead of re-checking: the panel holds status plus manual re-check, the gameplay-settings entry points registered by MODs (ARC's starting settings and AI fleets, for example) and enable/disable-on-next-start for Java MODs (AcMod) and native MODs. Toggling writes each side's state and takes effect after a restart; there is no hot reload inside the lobby, which would invalidate an already confirmed code manifest.
+## 0.3.5.1 — Separate Java and native MOD roots (2026-09-30)
 
-**Component tree limits raised.** The `UiWindow` depth limit goes 24 → 32 and the unique-node limit 512 → 4096 (the exception text follows). Settings pages generated as "one row per loaded entry" (100+ AI fleets, for example) previously exceeded 512 nodes, so the whole window failed to construct and the settings page could not be opened at all.
+- Fixed shared mode replacing `fabric.modsFolder`, which prevented Java MODs from loading.
+- Java `.jar` files always use the framework `mods`; native MODs and `acbric_vanilla/` use the active data environment's native MOD root.
+- The compile baseline and compatibility target are game 1.2.15.3, with continued 1.2.15.2 support.
 
-Verification: all 16 suites pass with 1135 checks (1110 in 0.3.5.1; `handshake` 134 and `rules` 132, the two suites together adding 25: per-member preparation retention, sessions surviving members coming and going, a digest change retaining preparation and the grace window, automatic retry after a timeout, host-snapshot adoption and refusal, and the periodic rules-exchange window). The companion ARC overhaul dev.10 passes 622 checks on game 1.2.15.3 (a paged window stays below 512 nodes with 48 fleets, search filters by ID/display name case-insensitively, and duplicate IDs and untypeable names are reported). Ready/start in the real game, the visible preparation state after a resync, the panel's enable/disable effect and cross-machine play still need manual acceptance.
+## 0.3.5 — Shared data environment (2026-09-30)
 
-## 0.3.5.1 — Java MODs no longer stop loading in shared mode (2026-09-30)
+- **Sync now** uses vanilla saves and MODs directly without copying.
+- Optional **Environment isolation** mirrors vanilla data into an instance and backs up every overwritten or removed item.
+- The mode is stored per instance. Returning to shared mode keeps isolated copies, and the framework never deletes the vanilla folder.
 
-Version bumped to **`0.3.5.1`**; every existing `>=0.3.3-dev.3` / `>=0.3.3-dev.10` declaration still holds and **no downstream mod needs changing**.
+## 0.3.4 — Engine input compatibility (2026-09-30)
 
-Preparing the native MOD root no longer overwrites `fabric.modsFolder` with `acbric.external.mods`. The two roots are now independent — native MODs (and `acbric_vanilla/` bundled resources) live in the vanilla data folder's `mods`, Java `.jar` files stay in the framework `mods` — and the previous overwrite made Fabric look for `.jar` files in the vanilla folder, so Java MODs (including gameplay MODs such as ARC) stopped loading entirely while vanilla folder MODs kept working.
+- Removed the hard-coded `SlickEngine$MyInput` type, supporting both Slick and LWJGL3 input implementations.
+- Ended the `0.3.3-dev` line.
 
-Hardened in the same round: launching no longer fails when the vanilla data folder is missing or unusable — it falls back to the instance copy so the game still starts — while the explicit **Sync now** action still reports "run the original game once". The acceptance fixture and the EXE acceptance script now verify both MOD roots separately and check the shared layout inside a redirected APPDATA fixture.
+## 0.3.3-dev.33 — Windows player launcher (2026-09-27)
 
-Compile baseline: `libs/asplit-A.zip` / `asplit-B.zip` moved from 1.2.15.2 (copied 2026-09-24) to game **1.2.15.3** (verified through `AGame.VERSION`; the archives come from the local Steam installation dated 2026-09-26). A clean rebuild and the full suite pass on the new baseline. 0.3.4, 0.3.5 and the earlier pre-packaged 0.3.5.1 builds were compiled against 1.2.15.2; published assets are not rewritten, and **0.3.5.1 onward uses 1.2.15.3**. The game's own `lib/*.jar` files are identical between both versions, so nothing else needed replacing.
+- Added `Acbric.exe` with game discovery, first setup, direct launch, diagnostic export and local update/restore.
+- Legacy CMD tools moved to `advanced/`; existing instance scripts remain compatible.
 
-Verification: the `external` suite gains 5 checks (the two MOD roots never overwrite each other, the fallback when no Java folder is given, and falling back to the instance copy without a vanilla folder) and all 16 suites pass with 1110 checks.
+## 0.3.3-dev.30–32 — Installation and list fixes
 
-## 0.3.5 — Data environment: vanilla saves and MODs shared by default, optional isolation (2026-09-30)
+- dev.30: the native MOD list remains visible when only Java MODs are installed.
+- dev.31: clarified first setup, loading saved setup and corrupt-configuration messages.
+- dev.32: bounded retries for Windows `AccessDeniedException` during first instance publication.
 
-Version bumped to **`0.3.5`**. Under SemVer `0.3.5 > 0.3.4`, so every existing `>=0.3.3-dev.3` / `>=0.3.3-dev.10` declaration still holds and **no downstream mod needs changing**.
+## 0.3.3-dev.25–29 — External installer and updates
 
-**Sync now** only detects the vanilla save and MOD folders and uses them directly — no file is copied. At launch both the native user-data directory and the native MOD scan point at the vanilla folder (new property `acbric.external.dataDir`, with `acbric.external.mods` following the mode), so designs and MODs exist once on disk and the original game and Acbric share them. Detection prefers `customDataDirectoryLocation` from the installation's `launch_settings.json` and otherwise `%APPDATA%\AirshipsGame`; a missing or read-only folder fails explicitly instead of creating or guessing one. When an instance needs its own copy, use **Settings → Environment isolation**: the vanilla data is mirrored into the instance `userdata` and framework `mods` (a full mirror — extra items are removed and everything overwritten or removed is first backed up to `instances/default/userdata/.acbric-sync-backup/<timestamp>/`) and the mode switches only after that succeeds; a failed mirror keeps the previous environment. The mirror holds the instance and shared-MOD locks and refuses while the game runs; Java `.jar` files and framework files in `mods` are never copied or deleted. Selecting Sync now returns to sharing, the isolated copies stay on disk and the vanilla folder is never deleted. The mode is recorded per instance in `acbric-launcher/environment.json`. No public API or networking change.
+- Added the external launcher, clean `externalDistZip`, instance setup wizard, Steam discovery, local ZIP updates and previous-version restore.
+- `Acbric.exe`, launch scripts and `mods/` now share one layout.
+- Legacy layouts are not migrated automatically.
 
-Verification: the `external` suite gains 65 checks (detection rules, zero-copy sharing, launch arguments and launch settings in both modes, mirroring with backups, a failed mirror keeping the previous environment, and the real home button plus settings entry) and all 16 suites pass with 1105 checks.
+## 0.3.3-dev.24 — External menu and Unicode paths (2026-09-26)
 
-## 0.3.4 — End of the dev line, engine input type no longer hard-coded (2026-09-30)
+- External launch reaches the real game menu and loads native resources and audio from paths containing Chinese characters.
+- The known native terrain GL issue remains deferred and is not suppressed.
 
-Version bumped from `0.3.3-dev.33` to **`0.3.4`**, published as the patch release after dev.33.
-Under SemVer `0.3.4 > 0.3.3-dev.33`, so every existing `>=0.3.3-dev.3` / `>=0.3.3-dev.10`
-declaration still holds and **no downstream mod needs changing**.
+## 0.3.3-dev.22–23 — External preflight and cache isolation
 
-### Fix: the framework no longer hard-codes the engine's input type
+- Added external preflight for game A/B archives, dependency order, duplicate classes, version, code fingerprint and instance locking.
+- Launch settings and user data stay inside the instance; texture reads and raw caches are isolated by source.
 
-`AirshipGameMixin.acbric$unwrapUi` cast `AirshipGame.getMyInput`'s return value to
-`SlickEngine.MyInput` and hard-coded that type in the `CallbackInfoReturnable` generic too.
-apiMod is compiled against game 1.2.15.2, where `getMyInput` returns `SlickEngine$MyInput`;
-with the LWJGL3 engine backend it returns `Lwjgl3Engine$MyInput`, so the cast throws
-`ClassCastException`. It only fires when the UI mask is active (a text field has focus).
+## 0.3.3-dev.20–21 — Developer tools and console
 
-- `AirshipGameMixin`: now `CallbackInfoReturnable<Object>` with no cast, letting the target
-  method's return type decide;
-- `UiBridge`: two `raw instanceof SlickEngine.MyInput` checks are always false for the LWJGL3
-  engine and silently take the wrong branch. Added `isEngineInput(Input)`, which recognises
-  both engines' MyInput by class name (apiMod cannot reference `Lwjgl3Engine`).
+- Added namespaced commands, typed arguments, help, completion, closeable registration and an in-game console.
+- The console offers status, MOD diagnostics, filtered messages and asynchronous export; `~` / `GRAVE` is a fixed shortcut.
 
-**Constraint**: the framework must not hard-code a concrete engine's input type.
-2026-09-27 dev.33: adds the Windows Acbric.exe player launcher, automatic Steam discovery, combined check/save and a reusable play home. Chinese/English selection persists. Ordinary failures show readable guidance; technical details and bounded diagnostic exports are opt-in. Settings retain advanced setup and hand off updates/restoration to a temporary helper after the launcher exits, preserving existing transactions and locks. Legacy CMD entries move to advanced; existing instance scripts remain compatible. No gameplay/API contract changes.
+## 0.3.3-dev.13–19 — Shared UI and settings
 
-dev.33 verification: 1040 checks across 16 suites pass. The real Windows GUI EXE with bundled Java was tested for first setup, reopening in English, starting the actual game (30 menu frames and native audio), and returning to the launcher. Source game files remain unchanged. dev.32→dev.33→restore matches all owned files and preserves player markers; native maintenance waits for the parent, reopens after update, and recovers a simulated interrupted transaction. UI fixtures are test-only; full campaigns, networking and other devices were not rerun.
+- dev.13: labels, buttons, toggles, single-line text, layouts, panels, scrolling, modal windows and managed cleanup.
+- dev.14: English/Chinese selection follows the game Locale.
+- dev.15–17: native drawing, text positioning, focus-return hit testing and close glyph fixes.
+- dev.18: explicit settings fields, drafts, validation, defaults, reload and disk conflict protection.
+- dev.19: selection, clipboard, key repeat, fixed footer and close confirmation.
 
-2026-09-27 documentation cleanup: moved 46 root-level topic documents into docs with bilingual navigation by purpose. README now describes current usage; agent guidance retains engineering constraints and earlier notes are archived. Updated development versions, external MOD paths, template links, distribution copy rules and player quick starts. Distribution documentation now lives in docs; product API and game behavior are unchanged.
+## 0.3.3-dev.12 — Java MOD enable/disable
 
-2026-09-26 dev.30: fixes the MOD list disappearing when only Java MODs are installed. Vanilla render gates the entire list on getAvailableMods, which intentionally excludes synthetic Java rows. The screen's visibility check now includes these rows without changing vanilla resource loading, Apply, Reload or restart-based Java selection. Adds an actual-screen regression without native/bundled resource MODs, covering refresh/reopen and disabled-MOD restart.
+- The MOD list can enable or disable directly scanned Java `.jar` files on the next start without hot unload or archive deletion.
+- The launcher filters disabled entries before Loader resolution and checks protected components, dependencies, aliases and conflicts.
+- Owned bundled native resources follow the Java MOD state; older directories require explicit migration.
 
+## 0.3.3-dev.8–11 — Multiplayer identity and rules
 
-2026-09-26 dev.32: bounds retries for AccessDeniedException while atomically publishing a new instance directory; no per-file copy fallback. Rechecks the target before each attempt and stops on conflict. Persistent failures retain paths, existence status, Java/OS and initial/final exceptions; interruption is preserved. Cleanup failures are suppressed onto the original save error. Tests use real Windows handles denying delete sharing for recovery, persistent denial, conflicts and interruption; the remote cause is not identified.
+- dev.8: internal code handshake with bounded retries, session expiry and explicit unverifiable states.
+- dev.9: lobby code checks, status UI and ready/start guards.
+- dev.10: shared gameplay rule declarations, pre-generation freezing and resume validation.
+- dev.11: saved-rule inspection, explicit adoption, direct conversion and write-new, never overwriting the source.
 
-2026-09-26 dev.31: orders the first setup row as Steam lookup, check, save; renames Load existing instance to Load saved setup. A fresh empty folder shows first-time guidance, preserving paths without creating files. Missing managed configuration, corruption, oversized files and legacy data remain protected. Missing and over-64-KiB configurations now have separate bilingual diagnostics.
-2026-09-26 dev.29: Setup can find Steam installations through the registry and library lists, with manual selection when none is found. Local ZIP updates, automatic restoration after write failures and manual restoration of the previous framework preserve MODs, instances, saves, settings and the launch binding. Changed files are not overwritten; interrupted maintenance requires recovery before launch. Player-facing 使用说明.txt / QUICK_START.txt and Update Acbric.cmd are included at the release root. See INSTALLER.md / INSTALLER.zh-CN.md. No online auto-update or new MOD API. Earlier records below are historical.
+## 0.3.3-dev.7 — Code manifests
 
-dev.28 validation: 977 standard checks, 36 real external-loading checks and six adversarial scanner tests pass. The root CMD beside Setup launches ARC before and after relocation/rebinding, each rendering 30 menu frames with native audio. MOD discovery/installation, bundles, manager selection and template targets pass. Two script routing checks cover relative/absolute instances and Chinese/space/& paths. Invalid/missing bindings, missing instances, busy locks and relocation diagnostics are covered; all 5,325 source game files remain unchanged. Chinese/English panels inspected; full campaign/network/Workshop not rerun. Uncommitted/unpushed, player runtimes unchanged. Evidence: workspace 99-研究工具/Acbric同层启动与MOD目录-dev28-20260926.
+- Export loaded MODs, game identity and `acbric` entrypoint state, with strict offline comparison.
+- `CODE_MATCH` proves startup code identity only; it does not authenticate peers or synchronize state.
 
-2026-09-26 dev.28: Setup.cmd, root Start Acbric.cmd and mods now share the same directory inside Acbric. Saving in setup updates the default instance binding; the root entry launches the most recently saved instance. Instance-local entries remain compatible. Manually copy dev.27 sibling MODs into Acbric/mods. Missing/invalid bindings, missing instances and framework relocation are diagnosed without guessing another instance. Bilingual prompts, path API docs and template targets are updated; dev.27 and earlier records below are historical.
+## 0.3.3-dev.6 — Event scopes
 
-dev.27 validation: 968 standard checks, 36 real external-loading checks and six adversarial distribution tests pass. Two extracted-package launches with ARC each render 30 real menu frames and initialize audio, covering shared Java/native discovery, native/Java installation, bundles, manager toggles, fleet paths, shared-folder busy rejection, relocation/rebinding and template installation targets. All 5,325 installation file contents remain unchanged. Chinese/English panel renders inspected; full campaign, multiplayer and all fleet editing operations were not rerun. Uncommitted/unpushed; player runtimes not overwritten. Evidence: workspace 99-研究工具/Acbric统一MOD目录-dev27-20260926.
+- Added `context.eventScope` for grouped unsubscription, ownership diagnostics and stale-snapshot deactivation.
+- Managed callback exceptions still propagate without automatic disable or retry.
 
-dev.27: Java MOD `.jar` files and native MOD folders now share **`mods` beside Acbric**. Setup shows the full path and offers Open MOD folder. The API still loads automatically from `Acbric/core`; saves, configuration and logs remain in the instance. Instances using the same framework share MOD files but retain separate settings. Only one game session may use a shared MOD folder, preventing concurrent bundled-resource changes. Old folders are not migrated automatically; copy wanted MODs manually. dev.26 and earlier entries below are historical.
+## 0.3.3-dev.5 — MOD configuration
 
-2026-09-26 dev.26: first installer phase is implemented as the bilingual Setup.cmd / setup.ps1 instance wizard, reusing external preflight, core verification and instance locking. It previews paths without writing, creates new instances, loads wizard-managed instances for rebinding, atomically saves configuration and generates acbric-launcher/Start Acbric.cmd. It can launch the game and open instance/log folders. Corrupt or modified entries are preserved and stale previews cannot overwrite concurrent saves. Legacy data is not imported. See INSTALLER.md / INSTALLER.zh-CN.md. Automatic discovery, automatic desktop shortcuts, upgrade/rollback and uninstall are not implemented; the GL issue remains deferred. Based on 944435a, uncommitted/unpushed; entries below are historical.
+- Added strict per-MOD JSON configuration with defaults, validation, explicit migration, reload, backup and atomic save.
+- Configuration does not broadcast or silently reset damaged or future-version files.
 
-dev.26 validation: 961 standard checks pass (26 new setup/UI checks; two existing symlink-permission skips), plus 36 real external-loading/core-guard checks and six adversarial distribution scan tests. The extracted package is configured through setup.ps1 and its generated CMD is executed; with ARC, initial and post-relocation/rebind launches each render 30 real menu frames and initialize audio. Chinese/space/& paths, busy rejection, changed bundles, invalid installation, UTF-8 template builds and Java 8 rejection pass; all 5,325 installation file contents remain unchanged. Chinese/English panel renders were inspected. Native folder pickers/all DPI settings and full campaign/media/network scenarios were not rerun. Evidence: workspace 99-研究工具/Acbric实例安装器-dev26-20260926.
+## 0.3.3-dev.3–4 — Campaign data and lifecycle
 
-2026-09-26 scope change: the user cancelled automatic migration from legacy layouts. Players will follow the new instructions to create an isolated instance, reinstall MODs and configure it. A legacy-data migration tool is outside the current refactor and is not a release prerequisite. Next: installer game selection, instance creation, saved paths and launch entry, followed by framework update/uninstall. This decision only concerns moving old installation data; existing MOD configuration, save-rule and bundled-resource migration APIs remain. This round updates documentation only.
+- dev.3: campaign JSON stored per MOD ID; reads return defensive snapshots, writes do not broadcast and damaged declared blocks abort loading.
+- dev.4: `CREATED`, `LOADED`, `RESTORED` and `EXITED` distinguish generation, load, local recovery and leaving an active campaign.
 
-2026-09-26 dev.25: formal external launch via `start.ps1` / `ExternalLauncher` and a game-free `externalDistZip` are implemented. The API loads from distribution core; child output goes to instance logs and the resolved core is checked before game classpath unlock/preLaunch. Explicit paths, instance locking and cache isolation remain in effect. The template references local game/framework paths through UTF-8 local.properties; distribution allowlists exclude copied dependencies and private paths. See EXTERNAL_START.md / EXTERNAL_START.zh-CN.md. The known GL issue remains deferred and non-blocking. Next: legacy migration, then installer/update/uninstall. Changes are recorded on dev, not pushed; legacy distZip is still not a clean framework package. dev.24 and older entries below are historical.
+## 0.3.3-dev.2 — Startup diagnostics
 
-Validation: 935 standard checks pass (two existing symlink-permission skips), plus 36 real external-loading checks. Missing/mismatched resolved cores are rejected before preLaunch; Java 8 is rejected by bootstrap. Two extracted-package production launches in Chinese/space paths render 30 real menu frames and initialize audio; the second verifies bundled Java precedence. Separate API + ARC logs cover two menu launches. Busy-instance rejection, changed-core hashes, missing installation and standalone template compilation using UTF-8 local paths pass. Six adversarial distribution scan tests pass. All runtime scenarios preserve all 5,325 installation file contents. Evidence: workspace 99-研究工具/Acbric正式外部发行-dev25-20260926. Full campaign/media scenarios were not rerun this round; prior dev.24 results keep their original limits and do not imply other-device/Workshop/arbitrary-MOD acceptance.
+- Read `AGame.VERSION` before dependency resolution and hash ordered game archives.
+- Write a per-launch session report distinguishing loaded code, missing entrypoints, initialization in progress, success and failure.
 
-## Media acceptance and native rendering finding (2026-09-26)
+## 0.3.3-dev.1 — API compatibility baseline
 
-2026-09-26 media acceptance: dev.24 baseline `42426a0` is committed, not pushed; subsequent campaign/media tests and documentation are uncommitted. DLC/native MOD reload and real GIF tests pass 35 functional assertions per process (70 total): four GIFs, normal 960×640/15 frames and half-size slow motion 480×320/30 frames, without overwriting older exports. All 5,325 installation file contents remain unchanged; 924 standard checks pass (two existing permission skips). However, each process records 454,032 repeated native GL errors: status PASS_WITH_NATIVE_GL_ERRORS. A strict legacy-layout control with external adapters inactive reproduces the same terrain-rendering error (2,268 in the first frame). This is not clean graphics acceptance; no rendering fix or error suppression was added. On 2026-09-26 the user deferred this low-priority issue and removed it as a blocker for the installation refactor. It reproduces in the legacy layout, but there is no vanilla control without Acbric, so attribution to the framework or game remains unconfirmed. Normal external startup still returns EXTERNAL_NOT_READY in the current code; next implement the formal external entrypoint and clean distribution/templates, followed by migration and installer work. Product JARs are identical to dev.24; ARC source and player runtimes are unchanged. Legacy distZip is still not a clean release.
-
-## Campaign validation follow-up (2026-09-26)
-
-2026-09-26: dev.24 committed as `42426a0`, not pushed. Follow-up external campaign tests are uncommitted: 31 API-only and 32 API + ARC Overhaul dev.3 checks on 1.2.15.3, totaling 63 campaign checks. Native generation, initial assets, save, new-process load and normal exit pass; changed local ARC settings do not overwrite saved settlements/balances. The 924 standard checks pass (two existing symlink permission skips); all 5,325 installation file contents remain unchanged in each scenario. Product JARs are identical to dev.24; ARC source and player runtime copies are unchanged. Normal external startup remains blocked. Next are GIF and DLC/native MOD combinations, then clean packaging/templates, migration and installer work. Legacy distZip still contains game dependencies and is not a clean framework release.
-
-Reproduction and coverage limits: [external installation](EXTERNAL_INSTALL.md). No API version bump; only test fixtures, runner and documentation changed.
-
-## 0.3.3-dev.24 — Native external menu and Unicode audio loading (2026-09-26)
-
-- dev.23 committed as `b431406`; continue with a test harness that calls actual Main and exits after 30 completed menu renders. Cold and warm-cache runs use real GPU, assets and audio, with Java writes/network guarded inside an isolated test. The test-only deprecated SecurityManager requires JDK 21 and is absent from the product.
-- Real testing exposed OpenAL error 126 with a Chinese installation path. External Main now uses JVM Unicode loading to preload the selected installation DLL before LWJGL lookup. No DLL copies/downloads/global PATH edits; legacy mode is unchanged, and DLL failure retains its cause in launch diagnostics.
-- 924 standard checks, 36 headless external checks, 142 legacy ARC checks pass. Both real menu runs initialize OpenGL 4.6 / OpenAL Soft, with 147 instance raw-cache files and all 5,325 installation file contents unchanged. Two pre-existing standard symlink cases remain skipped on this host.
-- Record targeted write-path review and bilingual reproduction in [EXTERNAL_INSTALL](EXTERNAL_INSTALL.md). Full campaign/save/reload, GIF export, broad DLC/MOD combinations and online functionality remain unaccepted; normal external launch is still blocked. Existing distZip is not a clean release.
-- dev.24 is committed at user request; no push or player installation replacement.
-
-## 0.3.3-dev.23 — External settings and texture-cache isolation (2026-09-26)
-
-- Continue from committed dev.22 (`40f599a`). Merge original launch settings with instance overrides before native initialization; force userdata/GIF output inside the instance, preserve malformed input and fail without global fallback. Disable external developer checksum/random-data paths.
-- Intercept the native texture-file loader and skip source `.tex` migration. Mirror requested assets by source/content into the instance; keep native file reads/cache writes there. Prefer PNG over unverified original raw, support raw-only and nested/generated assets, repair invalid raw lengths before native mmap, and invalidate metadata on MOD reload. Legacy paths and public API contracts are unchanged.
-- **924 standard checks** (+20), **36 real Knot external checks** on 1.2.15.3 and **142 legacy ARC checks** across 1.2.15.2 / 1.2.14 pass. All **5,325 installation file contents remain unchanged**. Texture tests replace only terminal GPU image construction, not native file IO.
-- Normal external startup remains blocked; Main/GPU/native DLL loading/full campaign/GIF/DLC/Workshop/multiplayer acceptance and remaining write-path review are pending. Disk cache has no automatic garbage collection. See [scope and reproduction](EXTERNAL_INSTALL.md).
-- dev.23 is committed at user request; no push or player runtime replacement. Legacy `distZip` is still not a clean release; distribution, template migration and installer work remain.
-
-## 0.3.3-dev.22 — External-install preflight and loading prototype (2026-09-26)
-
-- Add a checker that does not initialize game classes, a Windows Java bootstrap check, and `preflightTools` containing explicit launch dependencies only. Early temporary reports preserve failures even when installation/instance paths are invalid.
-- Parse real JSON; inspect root A/B, stable dependency order, duplicate classes, critical dependencies, version/code fingerprint, basic resource directories and x64 DLL PE headers. Retain the established steamworks version exclusion.
-- External Provider uses explicit paths, instance locking and write checks. A real Knot probe reads selected installation code directly; an early Mixin separates native resources and instance userdata. Legacy startup and public API signatures remain unchanged.
-- **904 standard checks** (32 added); **25 external checks on 1.2.15.3**, with **5,325 installation file contents unchanged**; **71×2=142 ARC checks** on legacy layouts for 1.2.15.2 / 1.2.14. Windows PowerShell 5.1 clearly rejects Java 8 and passes preflight with Java 21.
-- No normal Main invocation or GPU/native DLL loading/full generation/DLC/Workshop/multiplayer acceptance; the earlier full UI matrix was not rerun. Normal external launch returns `EXTERNAL_NOT_READY`. Resource caches, LaunchSettings overrides, clean distribution/templates, migration and installer remain later phases; existing distZip is still not a clean framework package.
-- See [external-install instructions](EXTERNAL_INSTALL.md). dev.22 is committed at user request; not pushed, and no player runtime copy was replaced.
-
-
-## 0.3.3-dev.21 — Console shortcut (2026-09-26)
-
-Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physical `GRAVE`; Shift is optional) to open the console with the command field focused. The opening key is consumed. Ctrl/Alt/Meta combinations, inactive displays, native error/help/chat overlays, and existing Acbric windows do not trigger it. Close another Acbric window before using the shortcut. While the console is open this key remains ordinary text; use Esc/X/Close to dismiss. Holding the key cannot repeatedly reopen it. This is a fixed console shortcut, not a general key-binding API.
-
-872 standard checks and 464 real Fabric integration checks across both game versions pass, including 50 new shortcut assertions. Existing console-demo 0.1.0 and UI showcase 0.3.0 need no update. Windows real focus/keyboard-layout acceptance remains interactive.
-
-
-## 0.3.3-dev.20 — Developer tools and console (2026-09-26)
-
-- Built-in API-details entries, status/MOD snapshots, filtered paged messages, detail/copy and asynchronous diagnostic export.
-- Public namespaced commands with typed positional arguments, metadata-driven help/static completion and closeable registration; game-thread/context checks, SHARED reserved and refused.
-- Bounded capture of existing logging/startup/resource diagnostics, preserving event exception semantics; no global stdout interception or automatic gameplay synchronization.
-- Compatible text-field onSubmit; console Enter/history/Tab behavior, bilingual UI and documentation.
-- Consolidated current README/API/developer navigation; standalone console-demo 0.1.0 remains outside the default framework distribution.
-- 872 standard and 414 real Fabric checks across two game builds pass. Two existing symlink scenarios skipped; OS/GPU/full-game acceptance remains interactive.
-
-
-dev.19 validation: 810 standard checks (41 new), and 356 across two real Fabric game builds (169 main + 5 restart + 4 corrupt-config startup each). All 80 public types/428 member signatures from dev.18 are retained. Clipboard success uses a substitute; failure uses actual headless AWT. Native font/input paths are checked with GPU-free drawing terminals; Windows clipboard, screenshots, IME and focus transitions still require manual validation. dev.18 and earlier counts below are historical.
-
-## Development build — API 0.3.3-dev.19
-
-dev.19 adds font-measured caret placement, drag/Shift selection, Ctrl+C/X, and held navigation/deletion keys. Settings use a fixed action footer and confirm before Cancel/X/Esc discard a draft. Existing constructors, programmatic close and lifecycle cleanup retain their behavior. Companion showcase: 0.3.0. See [UI contract](UI.md) and [settings contract](SETTINGS.md).
-
-2026-09-26 player acceptance: the user reported no problems testing dev.18 and requested a commit. All 28 changed files matched the build-validation snapshot before acceptance notes were added. Code is unchanged; the existing 769 standard checks and 304 integration checks across two game versions remain the validation evidence. No detailed manual test matrix was supplied, so this feedback does not establish coverage of every GPU, IME or third-party MOD combination.
-
-Final validation: 769 standard checks (57 new) and 304 checks across two game versions covering Fabric/UI, showcase saving, fresh-process reload and corrupt-config startup; dev.17 public signatures retain 71 types/354 members. English/Chinese UI and settings examples are compiled. Drawing terminals are GPU-free; player feedback is recorded above, and automated checks do not cover OS display, IME or focus switching.
-
-## Development build — API 0.3.3-dev.18
-
-dev.18 adds explicit MOD settings forms, numeric/choice controls and controlled text binding, with draft apply/cancel/defaults/reload and memory/disk conflict protection. New APIs: ModConfig.defaults()/save(expected,data), ConfigField, ConfigEditor and SettingsUi. MOD code implements effect timing; configuration is not automatically synchronized and existing campaigns are not rewritten. See [settings API](SETTINGS.md).
-
-2026-09-26 player feedback: the user accepted the dev.17 UI fixes and approved proceeding. This stage includes shared components, details/tool entries, English/Chinese support, text positioning, focus-return hit testing, and the close glyph. Existing validation: 712 standard checks and 230 integration checks across two game versions. All 34 changed files matched the tested snapshot before this commit; only acceptance notes were then added. Unchanged code was not retested. This does not establish coverage of every GPU, IME, or third-party MOD combination.
-
-## Development build — API 0.3.3-dev.17
-
-dev.17 corrects shared-UI hit testing when Slick click-event coordinates drift from the current cursor. Native clicks still trigger actions; hit testing uses the polled cursor with scaling, masking and missing-cursor fallback preserved. Title-bar close now uses the supported X glyph. Offset replay passes; Windows focus switching still needs a real-game retest.
-
-## Development build — API 0.3.3-dev.16
-
-The caret incorrectly used MyDraw.tw (large-font toggle width including decoration). It now measures AGame.FOUNT, matching the rendered text, and centers text and caret vertically. Click semantics and focus are unchanged. The latest player log contained no new exception; this does not rule out missing input events. acbric-ui-input.log and acbric-ui-input.previous.log in the game user-data directory retain up to 64 KiB each. They record display activity, mouse press/release, native clicks, navigation keys, and framework barrier/layout/hit decisions, never text content. A write failure disables diagnostics without interrupting gameplay.
-
-## Development build — API 0.3.3-dev.15
-
-Fix Details returning to the main menu: modal input masking set the cursor to null, but native MyDraw.button requires a non-null drawing coordinate. Restore drawing cursor/state at render HEAD, before Screen.render; keep pointer/keyboard masking in input. Handle the close-release frame and an absent device cursor. Both old game builds reproduce the dev.14 failure; the fixed builds pass 132 UI/locale/native-render checks using real AirshipGame.render and MyDraw.button with a no-GPU terminal. Standard build: 698 checks; actual GPU visuals still require acceptance.
-
-## Development build — API 0.3.3-dev.14
-
-Fix Chinese detection for the native `chi` locale (also recognize `zh`/`zho`). Add `AcbricLanguage`, dynamic UI entry labels, localized default message actions and MOD description fields. Showcase 0.1.1 follows game language instead of the system locale. Lobby labels use the same selector. Add eight language assertions (698 total); both real Fabric game probes cover switching and language mismatch. No network protocol changes.
-
-## Development build — API 0.3.3-dev.13
-
-- Add public shared UI: labels, buttons, toggles, Unicode single-line editing, row/column/panel/scroll layouts, focus, tooltips, modal children and managed cleanup. See [UI contract](UI.md).
-- Add framework MOD details/tool entries using the same components; preserve restart-based management, row icons and selection feedback. Independent showcase remains outside this repository.
-- Mask native input after scaling while continuing game ticks. Guard opening/closing clicks, stale scroll hits, disabled ancestors, screen changes and cleanup reentrancy. Legacy event timing remains unchanged.
-- Add 38 standard checks (690 total). Real Fabric probes cover both game builds, native input loops and scaling, tool factories, actual details callbacks, and clip restoration through a recording renderer. OpenGL, IME and full GUI acceptance remain pending; previous multiplayer/restart results were not rerun in full.
-
-## Development build — API 0.3.3-dev.12
-
-- Add Java MOD enable/disable controls, disk inventory including disabled archives, initialization failure and pending restart states; see [contract](MOD_MANAGEMENT.md). Changes save immediately and apply on the next restart.
-- Merge persisted and external disabled IDs in the launcher before dependency resolution, entrypoints and Mixin application. Protect core mods; precheck dependencies, versions, aliases, hard conflicts and nested metadata. Use config locks, snapshot conflict checks and atomic replacement; keep JAR files intact.
-- Block owned bundled native resources according to the startup snapshot, preserving preferences and files. Legacy unowned directories require explicit migration. Update launcher and API together; an older launcher makes UI management read-only.
-- Add 55 checks (652 total) and real restart-chain tests for both game builds covering entrypoints, Mixin execution, nested libraries, inventory and native resources. Still 21 mixins; no new stable public API. Rendered GUI/mouse interaction and full campaigns remain outside headless validation.
-
-
-- Both builds pass 114 restart checks, 56 old-launcher/failed-entry/button-callback checks and six expected startup failures. All 57 public types/237 member signatures from dev.11 remain.
-
-## Development build — API 0.3.3-dev.11
-
-- Add read-only saved-rule reports, registered direct schema upgrades, explicit missing-rule adoption and immutable conversion previews. Publish a separate native directory save; never overwrite the source or an existing destination. See [contract](RULE_SAVE_MIGRATION.md).
-- Run rule preflight at native file-load return before world construction, with MOD IDs and versions; keep the constructor check before LOADED. Loading/serialization never executes converters. Adds one mixin (21 total).
-- Keep unrelated binary chunks, MOD namespaces and absent rule entries. Reject malformed/unsupported storage, stale source/declarations and invalid conversion outputs. Single-file save conversion is outside this release.
-- Add 56 checks (597 total), six real Fabric processes/136 checks and four dual-client experiments/54 checks. Separate workspace test MOD provides legacy/v1/v2 variants; it changes no combat mechanics. Full procedural generation, GUI and cross-machine acceptance remain pending.
-
-
-## Development build — API 0.3.3-dev.10
-
-- Add `context.sharedRules`, immutable snapshots and explicit candidate updates; see [shared rules](SHARED_RULES.md). New campaigns freeze confirmed values before generation; resume reads saved values without changing local config.
-- Extend lobby checks with declared rules and field paths; changed candidates revoke preparation. Internal ready metadata v2 binds the rule digest. Adds `WorldGenScreenMixin` (20 mixins total).
-- Persist the reserved rule set through existing campaign data. Reject missing/incompatible declared rules before LOADED; retain absent MOD entries and do not silently migrate old saves. Existing nonparticipating MOD APIs remain.
-- Add 64 checks (541 total), a disabled-by-default template example and bilingual guides. Two game snapshots pass 14 real local-network experiments (204 top-level checks). Public baseline signatures remain: 31 types/125 members and dev.6's 46 types/185 members.
-- Real-loader checks pass with original sample/template and current template. An exploratory mixed fixture failed on a separate shot-target MOD's Steam-incompatible Redirect; it is not claimed compatible or changed here. Full GUI/world generation/cross-machine acceptance remains pending.
-
-
-[中文改动记录](CHANGELOG.zh-CN.md) | [API guide](API.md) ([中文](API.zh-CN.md))
-
-## Unreleased — API build 0.3.3-dev.9
-
-- Connect campaign lobbies to automatic code checks, a bilingual status/retry button and native ready/start guards. Preserve native resource and player requirements; direct actions also recheck conditions. See [integration contract](LOBBY_HANDSHAKE.md).
-- Bind preparation and host updates to the complete current member/session batch. Revoke stale preparation after context/reconnect changes, native setup changes or retry. Preserve unchanged intent during routine renewal; complete host updates provide a bounded start window.
-- Track native socket/reconnect generations and transfer room context when ResumeScreen recreates a lobby without a new welcome. Support native LAN channel 0, preserve unrelated messages and filter reserved protocol tails before campaign interpretation.
-- Use the in-memory startup manifest. Add three mixins (19 total), extend the recovery hook, retain public MOD APIs and save formats. Legacy MODs need no rebuild; peers still need matching framework/code. Shared settings/state synchronization is not added.
-
-Validation: 477 standard assertions (44 new lobby checks), 104 top-level checks in ten final native Server/dual Fabric Client experiments on 1.2.15.2 and 1.2.14, and retained original 31 types/125 members plus dev.6's 46 types/185 members. Probes cover real lobby methods and transformed recovery hooks with minimal fixtures, not full GUI, successful world generation or official-server authentication. Full new/resumed campaign and cross-machine acceptance remains manual.
-
-## Previous development build — API 0.3.3-dev.8
-
-- Add a package-private code-handshake protocol and state machine: per-context/per-peer challenges, roster invalidation, bounded retries, explicit timeout, expiring confirmation and immutable diagnostic snapshots. See [contract](CODE_HANDSHAKE.md).
-- Bound wire messages and manifests below native transport limits; oversized manifests remain explicitly unverifiable. Reject stale/history/misaddressed messages and unsupported formats without falling back to success.
-- Preserve raw numeric types during strict protocol/manifest parsing before serialization. Existing configuration normalization is unchanged.
-- No lobby UI, ready/start gate or automatic multiplayer synchronization is connected. No public MOD API or mixin changes.
-
-Validation: 433 standard assertions (77 new handshake checks). Actual native Server plus independent Fabric clients on games 1.2.15.2 and 1.2.14 exercise the product engine through an experimental adapter; 70 real communication assertions and six CLI checks pass; original 31 types/125 members and dev.6's 46 types/185 members are retained. GUI and cross-machine acceptance remain outside this stage.
-
-## Previous development build — API 0.3.3-dev.7
-
-- Export a local startup code manifest from resolved Loader roots, game identity and Acbric entrypoint results. Handle nested/development roots, normalized content hashes, bounded reads and explicit unverifiable states.
-- Add a strict offline JSON comparator and `compareCodeManifests` Gradle task with directional differences and distinct match/difference/unverifiable/invalid outcomes. See the bilingual [tool guide](CODE_MANIFEST.md).
-- Preserve public MOD APIs and all 16 mixins. No room handshake, ready gate, shared-settings exchange or automatic synchronization is added. Startup export failure only warns.
-
-Validation: 356 standard checks (45 new manifest checks); two actual Fabric/game probes export 8/13 resolved containers including nested and legacy mods, while existing 5 event, 10 storage and 31 lifecycle/demo checks pass per game. Six CLI process checks cover all exit outcomes and real-manifest self-comparison. Original 31 types/125 members and dev.6's 46 public types/185 members remain. No live multiplayer or full GUI acceptance claim.
-
-## Previous development build — API 0.3.3-dev.6
-
-- Add EventScope/context.eventScope(name): grouped cleanup, one-shot consumption, stale-snapshot deactivation and listener-reference release. MODs explicitly manage application/campaign lifetimes.
-- Name all 34 built-in events. Managed failures report MOD/event/scope/thread context in the current startup session runtime-events.jsonl, with occurrence/count/byte limits and best-effort logging that preserves original exceptions.
-- Preserve legacy registration, order, cancellation and exception behavior; legacy listeners are not automatically wrapped. Update the template and independent demo v3.1 (F12 probe; campaign schema 3/config schema 2 unchanged). See bilingual [contracts](EVENT_SCOPES.md).
-
-Validation: 311 standard checks (81 new scope checks and 27 diagnostic checks). Games 1.2.15.2 and 1.2.14 each pass 5 transformed-event diagnostic, 10 campaign-storage and 31 lifecycle/demo checks. The former loads the new template, the latter legacy mods. All 31 original public types/125 members and dev.5's 45 public types/174 members remain. Probes use minimal fixtures, with explicit event dispatch for some policies. Full GUI/live multiplayer acceptance remains manual.
-
-## Previous development build — API 0.3.3-dev.5
-
-- Add `AcbricModContext.config` and `ModConfig`/`ConfigSnapshot`/`ConfigException`: strict namespaced JSON, missing defaults, validation, explicit migration/reload and defensive snapshots.
-- Save through a locked, conflict-checked, same-directory atomic replacement with a one-generation raw backup. Corrupt/future files and failed migrations are not silently reset. See the bilingual [configuration contract](CONFIG.md), included in distributions.
-- Extend the separate demo to schema 3: F11 reloads local preferences; gameplay increments are frozen in campaign data. New multiplayer campaigns and old-save migrations use deterministic defaults, not peer-local config. Existing public members, storage format and the 16 mixins are unchanged.
-
-Validation: 203 headless checks (62 new config checks). Games 1.2.15.2 and 1.2.14 each pass 10 campaign-data and 28 lifecycle/demo-v3 checks through real Fabric; configuration-policy checks also dispatch events explicitly. The 1.2.14 run includes legacy mods. All 31 original public types and 125 members/descriptors remain. Evidence is recorded in the workspace research directory. Full GUI and live multiplayer testing remain manual; dev.4 user feedback is not dev.5 acceptance.
-
-## Previous development build — API 0.3.3-dev.4
-
-- Add `AirshipsCampaignEvents.CREATED`, `LOADED`, `RESTORED` and `EXITED`. Generation readiness precedes the first autosave/state snapshot; JSON loading occurs after extension restoration; recovery hands off actual world identities without replaying initialization.
-- Track active campaign references per client and release them on observed menu/lobby transitions or normal application exit. Temporary screens and recovery waiting do not imply exit. See [lifecycle contracts](CAMPAIGN_LIFECYCLE.md) and its Chinese counterpart, included in distributions.
-- Supply a separate workspace demo mod with schema 1/2 builds, explicit migration, a read-only restoration callback, on-screen data and singleplayer test controls. It is not included as a default framework mod. Storage format and existing public members are unchanged.
-
-Validation: 141 standard assertions; real Fabric probes on games 1.2.15.2 and 1.2.14 each pass the existing 10 campaign-data checks plus 18 lifecycle/demo-v2 checks. The demo-v1 probe passes 16 lifecycle/demo checks. Recovery checks use a transformed RETURN handler and minimal screen fixtures, not a live network connection. Full GUI generation/autosave and multiplayer acceptance remain manual.
-
-User feedback after testing dev.4: no issues found so far. No per-scenario checklist was supplied; this does not establish complete multiplayer/recovery coverage.
-
-## Previous development build — API 0.3.3-dev.3
-
-- Add `AcbricModContext.campaignData(worldMap)` and the `net.fabricacs.api.save` API for campaign JSON data isolated by mod ID. Reads return defensive snapshots; writes validate and copy; explicit migration commits only after a successful callback and validation. Reject downgrades and retain data belonging to absent mods.
-- Attach storage to `WorldMap` serialization/restoration, including native disk saves and state recovery. A separate unversioned block prevents the game's same-age cache from hiding updates; its JSON text payload supports null values unsupported by the native binary/hash encoding. Capture immutable data when registering each deferred write.
-- Read old saves without an extension as empty. Reject missing, damaged or unsupported declared blocks instead of replacing data with defaults. Save/hash operations never run migration callbacks. Writes do not broadcast network commands.
-- Add bilingual [campaign data documentation](CAMPAIGN_DATA.md) and an opt-in, compiled `CampaignDataExample` in the template. The template now requires API `>=0.3.3-dev.3`; existing public members and event semantics are retained. City-upgrade features, automatic object attributes and network command APIs remain outside this change.
-
-Validation: 131 standard headless assertions (31 new campaign assertions). Real Fabric probes on Steam `1.2.15.2` and packaged `1.2.14` each pass 10 additional campaign checks covering transformed map construction, native binary save/load, `CampaignWorld` round trips, actual `StoredState` recovery, same-age hash changes and frozen earlier snapshots. These supplement the existing 18 target classes and 22 rename-panel combinations per build. User feedback confirms dev.1 and dev.2 run normally; dev.3 still needs full gameplay and live multiplayer/reconnect acceptance.
-
-## Previous development build — API 0.3.3-dev.2
-
-- Read `AGame.VERSION` from bytecode before Fabric dependency resolution, without initializing game classes. Report recognized versions (including four-component versions) as the built-in `airships` version. Preserve an unrecognized raw value with a warned `0.0.0` fallback.
-- Fingerprint the ordered game code archives using SHA-256; record per-archive hashes, version source and shadowed definitions. This identifies inputs, not compatibility.
-- Write per-session local launch and `acbric` entrypoint reports under `game/logs/acbric/<UUID>/`. Distinguish loaded mods, mods without an Acbric entrypoint, pending/running initialization, success and failure. Retain each entrypoint result and stack trace; partial failure is not overwritten by a later success.
-- Preserve entrypoint failure continuation and propagation of main-method failures. Diagnostic file-write errors warn without preventing startup. No new public mod APIs, city-upgrade functionality or generic configuration service is introduced.
-- Include the English API guide and bilingual diagnostic guides in distributions. See [diagnostics](DIAGNOSTICS.md) for fields, phases and coverage limits.
-
-**Dependency compatibility:** mods pinned to the previous `airships =0.0.0` placeholder may now fail Fabric resolution. Use tested real versions, or `*` when intentionally unconstrained; the framework does not bypass dependency checks. Public API signatures and event behavior remain unchanged; the template still supports API `>=0.3.3-dev.1`.
-
-Validation: standard build passes 100 headless assertions (20 new); 31 baseline public types / 125 existing member descriptors remain available. Real Fabric/Mixin probes passed against Steam `1.2.15.2` with mixed libraries and packaged `1.2.14` with separated libraries and its existing mods. Each probe loads 18 target classes and exercises 22 rename-panel combinations. A real failing entrypoint constructor still permits the next entrypoint to run; a deliberately failing main method retains a nonzero exit and `MAIN_FAILED` report. These are isolated headless checks, not full GUI, gameplay, save or multiplayer acceptance. Previous manual feedback applies to `0.3.3-dev.1` only.
-
-## Previous development build — API 0.3.3-dev.1
-
-Existing public API method names, types and JVM descriptors remain compatible with the
-0.3.2 baseline; some Event methods now synchronize registry access.
-This is an unpublished development version. New event consumers and the updated template
-declare `acbric_api >=0.3.3-dev.1`; old 0.3.2 API members remain available.
-
-- Preserve the game's data-loading failure result and diagnostics. `DATA_LOADED` now
-  reports the actual result. A data pack previously accepted because its errors were
-  suppressed may now fail to load; fix its data rather than treating failure as success.
-- Validate all bundled resource paths before extraction, reject linked destination
-  directories/ancestors, and extract into a staging directory outside the scanned mods
-  folder. Publish only after successful extraction; failed extraction is cleaned up
-  and can be retried. Unmanaged directories are preserved. Windows access-denied
-  failures during the final move receive a short, bounded retry.
-- Separate launch libraries from game libraries in distributions, and prevent Loader,
-  Mixin, ASM and the launch shim from being loaded again by the game class loader in
-  legacy combined-library layouts. Archives containing these infrastructure classes
-  are treated as launch libraries, even if renamed.
-- Add the distribution `run.bat` and framework LICENSE; check that the launcher exists
-  before assembling a distribution. The launcher uses the bundled Java runtime.
-- Make standard `build` compile/package the API and run headless regression checks.
-  Fix Java source encoding to UTF-8, specify Java 21 output and declare `java >=21` in
-  the API metadata. Remove the machine-specific JDK path from Gradle properties.
-- Track bundled resource ownership with SHA-256 hashes. Update/remove unchanged owned
-  files, preserve user edits/deletions and unowned collisions, and record conflicts.
-  Stage directory replacements with a recovery journal and retain original backups.
-  Provide explicit offline migration for old directories; only matching files are
-  adopted, and no unknown legacy content is replaced. See [resource management](BUNDLED_RESOURCES.md).
-- Fix once-listener removal, cancellation, recursive/concurrent invocation and retained
-  dispatcher snapshots. A consumed once-listener uses the factory's empty-list invoker
-  to produce the event's neutral result. Handles identify one registration and repeated
-  unregistration is harmless. Ordinary dispatcher snapshots and exception propagation
-  retain their previous behavior.
-- Validate the staged install candidate with Fabric Loader's metadata parser before
-  publishing it. Invalid JSON, schemas, IDs and metadata structure are rejected;
-  dependency resolution, nested archive contents and mixin execution are not preflighted.
-- Display nested Fabric mod origins without calling unsupported path accessors. Isolate
-  individual row-construction failures and avoid duplicate rows on repeated refresh.
-
-- Add `RENAME_SHIP_*` draw/tick events with `RENAME_SHIP` context. Deprecate the
-  twelve mislabeled `ONE_SHOT_*` fields and three context labels without removal
-  or rerouting. Legacy groups run first; cancellation skips subsequent groups, the
-  original method and all AFTER groups. See [event contract and migration](EVENTS.md).
-
-### Deliberately unchanged / remaining limits
-
-Unmanaged directories are not migrated automatically. Backups are retained and are not
-automatically pruned; removing a Java mod does not automatically delete its extracted
-resources. Nested/directory mod resource extraction is still unsupported.
-
-Legacy one-shot UI hooks still trigger on RenameShipPanel by compatibility design.
-Actual one-shot weapon, buoyancy and power action events are not introduced here.
-Listener exceptions still propagate.
-
-### Validation scope
-
-`build` runs 80 assertions covering error-result observation, resource ownership,
-migration, rollback/recovery, extraction boundaries, subscription semantics, metadata
-validation, rename-panel hook contexts and launch classpath selection (symbolic-link checks may skip without OS
-privileges). Local integration probes also exercise transformed game methods,
-old example mod loading, nested list refresh, staged installs and launch paths. Those
-probes use locally supplied game binaries and are not a claim of complete GUI, gameplay,
-save or multiplayer compatibility.
-
-The separately assembled full runtime was manually tested and reported to behave
-normally, close to the original package. No exhaustive scenario/mod matrix was supplied.
-
-This maintenance also documents the complete API in Chinese and adds Chinese file
-headers and focused implementation comments across all 43 Java source files and
-owned build/launch scripts. Comment maintenance does not change runtime logic.
+- Preserved 0.3.2 public members, added `RENAME_SHIP_*` and retained deprecated `ONE_SHOT_*` behavior in place.
+- Fixed data-load error propagation, one-shot events, resource ownership, classpath separation and MOD metadata validation.
+- Standardized Java 21 output, UTF-8 source and Chinese responsibility comments.

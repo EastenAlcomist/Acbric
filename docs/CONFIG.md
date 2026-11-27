@@ -1,14 +1,10 @@
 # MOD configuration API
 
-dev.18 adds explicit MOD settings forms, numeric/choice controls and controlled text binding, with draft apply/cancel/defaults/reload and memory/disk conflict protection. New APIs: ModConfig.defaults()/save(expected,data), ConfigField, ConfigEditor and SettingsUi. MOD code implements effect timing; configuration is not automatically synchronized and existing campaigns are not rewritten. See [settings API](SETTINGS.md).
-
-> See [dev.11 conversion](RULE_SAVE_MIGRATION.md) for save preflight, explicit adoption/migration and save-as boundaries. Normal loading still does not migrate.
-
-> dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
-
 **English** | [中文](CONFIG.zh-CN.md)
 
-Requires `acbric_api >=0.3.3-dev.5` and JDK 21. Files live under the Fabric game directory at `config/<modId>/<name>.json`, normally `game/config/` in a distribution. This is separate from native saves and native mods. Existing manually managed configuration files are neither scanned nor adopted.
+Applies to `acbric_api 0.3.8` and JDK 21 or newer. Files live under the Fabric game directory at `config/<modId>/<name>.json`, normally `game/config/` in a distribution, separate from native saves and native mods. Existing manually managed files are neither scanned nor adopted.
+
+Explicit settings forms are documented in the [settings API](SETTINGS.md); shared gameplay values use [shared rules](SHARED_RULES.md) and [save conversion](RULE_SAVE_MIGRATION.md). Normal loading does not migrate, and configuration writes do not broadcast.
 
 ## Example
 
@@ -101,4 +97,4 @@ Configuration is not a save, is not checksummed or broadcast, and has no file wa
 
 Matching MODs do not imply matching configuration. Without authoritative parameter transfer, peers must not derive shared state from their own files. The independent v3 demo freezes `newCampaignIncrement` for new singleplayer campaigns. Old-schema migration, missing data on load and new multiplayer campaigns use deterministic 1; existing saved rules are retained. F11 reloads local settings only; F6/F8 multiplayer writes remain blocked. RESTORED still only rebinds and reads.
 
-dev.5 originally provided no configuration GUI; dev.18 settings forms are linked above. Automatic broadcast/migration and a general network-command API remain out of scope. See [campaign data](CAMPAIGN_DATA.md) and [lifecycle](CAMPAIGN_LIFECYCLE.md).
+The framework does not provide automatic broadcast, automatic migration or a general network-command API. See [campaign data](CAMPAIGN_DATA.md) and [lifecycle](CAMPAIGN_LIFECYCLE.md).

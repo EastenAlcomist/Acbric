@@ -1,6 +1,6 @@
 # 命令 API
 
-[English](COMMANDS.md) · 从 `acbric_api 0.3.3-dev.20` 开始提供，尚未发布稳定版。
+[English](COMMANDS.md) · 适用于 `acbric_api 0.3.8`。
 
 命令是框架与 MOD 服务的共同入口，游戏内控制台和 Java 调用方使用同一注册表。它不提供 shell、脚本解释、热重载或网络传输。
 
@@ -24,7 +24,7 @@ final class Example implements AcbricInitializer {
 }
 ```
 
-在 `fabric.mod.json` 声明 `"acbric_api": ">=0.3.3-dev.20"` 和 `"java": ">=21"`。调用方式为 `your_mod_id:echo "hello world"`。按所需生命周期保留注册句柄，调用 `close()` 注销。应用级命令不应托管给临时窗口；Java MOD 停用仍须重启。
+在 `fabric.mod.json` 声明 `"acbric_api": ">=0.3.8"` 和 `"java": ">=21"`。调用方式为 `your_mod_id:echo "hello world"`。按所需生命周期保留注册句柄，调用 `close()` 注销。应用级命令不应托管给临时窗口；Java MOD 停用仍须重启。
 
 ## 公开接口
 
@@ -66,4 +66,4 @@ final class Example implements AcbricInitializer {
 
 说明和结果每种语言最多 8192 个 UTF-16 单元。诊断缓冲将控制台消息截到 4096，存储和显示限制详见[开发者工具](DEVELOPER_TOOLS.zh-CN.md)。ID、枚举值、命令名在中英文界面一致；框架帮助跟随游戏语言，MOD 文本由作者提供。
 
-内置命令与测试步骤见[开发者工具](DEVELOPER_TOOLS.zh-CN.md)，开发文档入口见[开发导航](DEVELOPMENT.zh-CN.md)。
+内置命令与控制台操作见[开发者工具](DEVELOPER_TOOLS.zh-CN.md)，开发文档入口见[开发导航](DEVELOPMENT.zh-CN.md)。

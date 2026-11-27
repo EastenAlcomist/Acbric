@@ -34,7 +34,7 @@ case "${1:-}" in
   ./test.sh <suite>...      只跑指定套件 / run selected suites (unique prefix works: ev -> event)
   ./test.sh list            列出套件 / list available suites
 
-  套件 / suites: data bundle classpath event rename mods
+  运行 / run "test list" 查看当前套件列表 / list current suites.
   CI 与 gradlew build 始终跑全部套件，不受这里影响。
 EOF
         exit 0

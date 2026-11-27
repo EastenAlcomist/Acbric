@@ -7,6 +7,7 @@ package net.fabricacs.api.impl;
 import com.zarkonnen.airships.Mod;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.fabricmc.loader.api.metadata.ModOrigin;
 import net.fabricmc.loader.api.metadata.Person;
@@ -20,7 +21,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -68,8 +72,7 @@ public final class FabricModListBridge {
                     Mod mod = newSyntheticMod(entry.id());
                     mod.id = SYNTHETIC_ID_PREFIX + entry.id();
                     mod.name.put(Locale.ENGLISH, displayName(entry.metadata()));
-                    descriptions(mod, zh -> entry.metadata().getDescription() + (zh ? "\n\nFabric MOD 标识：" : "\n\nFabric mod ID: ") + entry.id()
-                            + (zh ? "\n版本：" : "\nVersion: ") + entry.metadata().getVersion().getFriendlyString() + (zh ? "\n来源：" : "\nSource: ") + entry.archive());
+                    descriptions(mod, entry.metadata(), entry.archive().toString());
                     mod.preemptedBy = mod;
                     Mod.mods.add(mod);
                 }
@@ -183,7 +186,7 @@ public final class FabricModListBridge {
 
         mod.id = SYNTHETIC_ID_PREFIX + metadata.getId();
         mod.name.put(Locale.ENGLISH, displayName(metadata));
-        descriptions(mod, zh -> description(container, zh));
+        descriptions(mod, metadata, sourcePaths(container));
         mod.logo = icon(container);
         mod.tags.add("fabric");
 
@@ -210,19 +213,27 @@ public final class FabricModListBridge {
         return name == null || name.isBlank() ? metadata.getId() : name;
     }
 
-    /** 原生 LocalisedString 按 Locale 查找；同时登记游戏 chi 和标准中文标签。 */
-    private static void descriptions(Mod mod, java.util.function.Function<Boolean,String> text) {
-        mod.description.put(Locale.ENGLISH, text.apply(false));
-        String chinese = text.apply(true);
-        for (Locale locale : java.util.List.of(Locale.forLanguageTag("chi"), Locale.forLanguageTag("zho"),
-                Locale.CHINESE, Locale.SIMPLIFIED_CHINESE, Locale.TRADITIONAL_CHINESE)) mod.description.put(locale, chinese);
+    /** 将 custom 描述中的每个语言键写入原版 Mod.description，并按 Locale 精确查找。 */
+    private static void descriptions(Mod mod, ModMetadata metadata, String source) {
+        Map<Locale, String> localized = localizedDescriptionEntries(metadata);
+        if (localized.isEmpty()) {
+            mod.description.put(Locale.ENGLISH, description(metadata, Locale.ENGLISH, source));
+            for (Locale locale : chineseLocales()) {
+                mod.description.put(locale, description(metadata, locale, source));
+            }
+            return;
+        }
+        for (Map.Entry<Locale, String> entry : localized.entrySet()) {
+            mod.description.put(entry.getKey(), description(metadata, entry.getKey(), source));
+        }
+        mod.description.putIfAbsent(Locale.ENGLISH, description(metadata, Locale.ENGLISH, source));
     }
 
-    private static String description(ModContainer container, boolean zh) {
-        ModMetadata metadata = container.getMetadata();
+    private static String description(ModMetadata metadata, Locale locale, String source) {
+        boolean zh = net.fabricacs.api.util.AcbricLanguage.isChinese(locale);
         ArrayList<String> lines = new ArrayList<>();
 
-        String description = metadata.getDescription();
+        String description = localizedDescription(metadata, locale);
         if (description != null && !description.isBlank()) {
             lines.add(description);
             lines.add("");
@@ -239,12 +250,130 @@ public final class FabricModListBridge {
             lines.add((zh ? "作者：" : "Authors: ") + authors);
         }
 
-        String paths = sourcePaths(container);
-        if (!paths.isBlank()) {
-            lines.add((zh ? "来源：" : "Source: ") + paths);
+        if (source != null && !source.isBlank()) {
+            lines.add((zh ? "来源：" : "Source: ") + source);
         }
 
         return String.join("\n", lines);
+    }
+
+    /**
+     * 解析 Java MOD 的可选双语描述。
+     *
+     * <p>标准 Fabric metadata 的 description 是单字符串；Acbric MOD 可以在
+     * custom.acbric.description 中提供任意游戏语言键。当前 Locale 没有对应值时
+     * 回退英文，再无英文时回退原始 description。</p>
+     */
+    static String localizedDescription(ModMetadata metadata, boolean chinese) {
+        return localizedDescription(metadata, chinese ? Locale.forLanguageTag("chi") : Locale.ENGLISH);
+    }
+
+    /** 按游戏 Locale 解析本地化描述；所有游戏语言使用同一个解析器。 */
+    static String localizedDescription(ModMetadata metadata, Locale locale) {
+        String fallback = metadata.getDescription() == null ? "" : metadata.getDescription();
+        Map<String, String> localized = descriptionValues(metadata);
+        if (localized.isEmpty()) return fallback;
+        if (locale == null) locale = Locale.ENGLISH;
+        for (String key : descriptionKeys(locale)) {
+            String text = localized.get(key);
+            if (text != null && !text.isBlank()) return text;
+        }
+        return fallback;
+    }
+
+    private static Map<Locale, String> localizedDescriptionEntries(ModMetadata metadata) {
+        LinkedHashMap<Locale, String> result = new LinkedHashMap<>();
+        Map<String, String> values = descriptionValues(metadata);
+        for (String key : values.keySet()) {
+            for (Locale locale : localeAliases(key)) result.put(locale, values.get(key));
+        }
+        String chinese = firstValue(values, "chi", "zh", "zho");
+        if (chinese != null) {
+            for (Locale locale : chineseLocales()) result.putIfAbsent(locale, chinese);
+        }
+        if (!result.containsKey(Locale.ENGLISH)) {
+            String english = metadata.getDescription();
+            if (english != null && !english.isBlank()) result.put(Locale.ENGLISH, english);
+        }
+        return result;
+    }
+
+    private static Map<String, String> descriptionValues(ModMetadata metadata) {
+        LinkedHashMap<String, String> result = new LinkedHashMap<>();
+        try {
+            if (!metadata.containsCustomValue("acbric")) return result;
+            CustomValue value = metadata.getCustomValue("acbric");
+            if (value.getType() != CustomValue.CvType.OBJECT) return result;
+            CustomValue.CvObject root = value.getAsObject();
+            if (!root.containsKey("description")) return result;
+            CustomValue description = root.get("description");
+            if (description.getType() != CustomValue.CvType.OBJECT) return result;
+            CustomValue.CvObject localized = description.getAsObject();
+            for (Map.Entry<String, CustomValue> entry : localized) {
+                CustomValue candidate = entry.getValue();
+                if (candidate.getType() != CustomValue.CvType.STRING) continue;
+                String text = candidate.getAsString();
+                if (text != null && !text.isBlank()) result.put(entry.getKey(), text);
+            }
+        } catch (RuntimeException | LinkageError ignored) {
+            // 第三方自定义值不应让整个 MOD 列表刷新失败；回退到标准描述。
+        }
+        return result;
+    }
+
+    private static List<String> descriptionKeys(Locale locale) {
+        ArrayList<String> keys = new ArrayList<>();
+        String tag = locale.toLanguageTag();
+        if (!tag.isBlank()) keys.add(tag);
+        String language = locale.getLanguage();
+        if (!language.isBlank() && !keys.contains(language)) keys.add(language);
+        String text = locale.toString();
+        if (!text.isBlank() && !keys.contains(text)) keys.add(text);
+        switch (language) {
+            case "ja" -> keys.add("jpn");
+            case "ko" -> keys.add("kor");
+            case "chi", "zh", "zho" -> {
+                for (String key : List.of("chi", "zh", "zho")) if (!keys.contains(key)) keys.add(key);
+            }
+            default -> { }
+        }
+        if (net.fabricacs.api.util.AcbricLanguage.isChinese(locale)) {
+            for (String key : List.of("chi", "zh", "zho")) if (!keys.contains(key)) keys.add(key);
+        }
+        if (!keys.contains("en")) keys.add("en");
+        return keys;
+    }
+
+    private static Locale localeFor(String key) {
+        try {
+            return key == null || key.isBlank() ? null : Locale.forLanguageTag(key);
+        } catch (RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private static List<Locale> localeAliases(String key) {
+        ArrayList<Locale> result = new ArrayList<>();
+        Locale direct = localeFor(key);
+        if (direct != null) result.add(direct);
+        if (key == null) return result;
+        switch (key.toLowerCase(Locale.ROOT)) {
+            case "jpn", "ja" -> result.add(Locale.JAPANESE);
+            case "kor", "ko" -> result.add(Locale.KOREAN);
+            case "chi", "zh", "zho" -> result.addAll(chineseLocales());
+            default -> { }
+        }
+        return result;
+    }
+
+    private static String firstValue(Map<String, String> values, String... keys) {
+        for (String key : keys) if (values.containsKey(key)) return values.get(key);
+        return null;
+    }
+
+    private static List<Locale> chineseLocales() {
+        return List.of(Locale.forLanguageTag("chi"), Locale.forLanguageTag("zho"),
+                Locale.CHINESE, Locale.SIMPLIFIED_CHINESE, Locale.TRADITIONAL_CHINESE);
     }
 
     private static Image icon(ModContainer container) {

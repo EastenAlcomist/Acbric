@@ -2,7 +2,7 @@
 
 **English** | [中文](EVENT_SCOPES.zh-CN.md)
 
-Since `acbric_api >=0.3.3-dev.6`, `AcbricModContext.eventScope(name)` creates a `net.fabricacs.api.event.EventScope` that groups subscriptions and attributes callback failures to a MOD, event and purpose. MODs close scopes explicitly; the framework does not infer application, screen or campaign lifetime.
+Applies to `acbric_api 0.3.8`. `AcbricModContext.eventScope(name)` creates a `net.fabricacs.api.event.EventScope` that groups subscriptions and attributes callback failures to a MOD, event and purpose. MODs close scopes explicitly; the framework does not infer application, screen or campaign lifetime.
 
 ## Usage
 
@@ -47,7 +47,7 @@ Scopes manage subscription lifetime, not game-thread scheduling, external side-e
 - When accepting a different world instance, close the previous campaign scope, create another and rebind local listeners. RESTORED also replaces the world; do not reinitialize shared data.
 - On EXITED, close the campaign scope only if the world matches your binding. Keep application observers so subsequent campaigns still receive notifications.
 
-CREATED/LOADED do not guarantee that a world is the active screen; consult [lifecycle contracts](CAMPAIGN_LIFECYCLE.md). MODs needing active-campaign-only behavior must use their own active-world/screen checks. The v3.1 demo illustrates binding/release without treating every JSON construction as entering gameplay.
+CREATED/LOADED do not guarantee that a world is the active screen; consult [lifecycle contracts](CAMPAIGN_LIFECYCLE.md). MODs needing active-campaign-only behavior must use their own active-world/screen checks.
 
 ## Runtime reports
 
@@ -65,4 +65,4 @@ Adds `Event(String name, InvokerFactory<T>)` and `name()`. The original construc
 
 Legacy `register/registerWithHandle/registerOnce` do not automatically gain ownership or new error reporting and retain their snapshot/exception behavior. Managed callbacks remain synchronous and ordered; the first CANCEL stops further dispatch, and the original throwable propagates. No swallowing, automatic disabling or retries. Reflection wrappers are unwrapped; checked exceptions not declared by the callback interface may still be wrapped by Java Proxy, so use declared exceptions or RuntimeException/Error.
 
-This revision adds no general network-command API, multiplayer handshake or hot unloading. The template now uses managed subscriptions. The independent v3.1 demo provides an F12 diagnostic probe while retaining campaign schema 3 and config schema 2.
+This API does not provide a general network-command API, multiplayer handshake or hot unloading. The template uses managed subscriptions by default.

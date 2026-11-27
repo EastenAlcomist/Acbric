@@ -1,10 +1,8 @@
-# 本地代码清单与离线比较（dev.7）
-
-> dev.10：显式声明共享规则、生成前固化及续局检查见 [共享规则](SHARED_RULES.zh-CN.md)。原有本地配置/存储写入仍不自动广播；下文分版本验证记录保留为历史。
+# 本地代码清单与离线比较
 
 [English](CODE_MANIFEST.md) | **中文**
 
-这是联机一致性检查的第一阶段：导出本地启动代码清单，并比较两份文件。dev.8 新增[内部握手核心](CODE_HANDSHAKE.zh-CN.md)，dev.9 接入[战役大厅准备/开局门禁](LOBBY_HANDSHAKE.zh-CN.md)，尚未实现自动状态同步。类与 JSON 格式属于框架内部诊断工具，不是新增的稳定 MOD API。
+本工具导出本地启动代码清单并比较两份文件。运行期房间检查见[内部握手](CODE_HANDSHAKE.zh-CN.md)与[战役大厅接入](LOBBY_HANDSHAKE.zh-CN.md)。类与 JSON 格式属于框架内部诊断工具，不是稳定 MOD API，也不提供自动状态同步。
 
 ## 导出与比较
 
@@ -22,14 +20,7 @@ game/logs/acbric/<本次启动的会话 ID>/code-manifest.json
 .\gradlew.bat compareCodeManifests '-PmanifestLeft=C:/reports/left.json' '-PmanifestRight=C:/reports/right.json'
 ```
 
-完整分发布局下，也可以在运行包根目录执行：
-
-```powershell
-.\jre\bin\java.exe -Dfile.encoding=UTF-8 -cp 'game/mods/acbric-api.jar;libs/*;libs/asplit-A.zip;libs/asplit-B.zip' net.fabricacs.api.impl.CodeManifestCompare C:/reports/left.json C:/reports/right.json
-$LASTEXITCODE
-```
-
-工具只读两份清单，标准输出为 JSON，不启动游戏、不访问网络。`libs/*` 不包含 ZIP，必须保留上面的两项 `asplit` 依赖。开发仓库 JAR 名称则为 `build/libs/Acbric-1.0-SNAPSHOT-api-mod.jar`。
+工具只读两份清单，标准输出为 JSON，不启动游戏、不访问网络。它需要已准备的开发编译依赖；稳定入口是上面的 Gradle 任务。
 
 | 状态 / 进程退出码 | 含义 |
 | --- | --- |
@@ -65,8 +56,4 @@ MOD 算法为 `acbric-loaded-roots-v1`，遍历 Loader 已解析的实际根目�
 
 散列在启动阶段同步执行一次，不进入渲染热路径。前后目录属性检查可识别常见的边读边改，但没有锁定整个文件系统；清单不是运行中内存字节码证明。更改 MOD 文件后应重启并重新导出。两个异常清单不能通过比较。
 
-## 验证范围
-
-标准构建通过 356 项无界面回归，新增清单检查 45 项；Windows 符号链接权限不足的检查按日志标为跳过。两套实际游戏字节码（1.2.15.2 / 1.2.14）的隔离 Fabric 加载链均导出成功，覆盖真实嵌套 MOD、新模板及旧 MOD；既有事件、存档、生命周期探针继续通过。另验证四种 CLI 退出码及两份真实清单的自比较。GUI、真实双客户端通信和线上服务尚未验收。
-
-后续验证：dev.8 当前标准检查总计 433 项，两版真实本机 Server/Client 已验证内部握手；前述 dev.7 数量和未测范围是当轮记录。dev.9 已进一步[接入大厅](LOBBY_HANDSHAKE.zh-CN.md)，标准检查共 477 项，接入范围及剩余验收单独记录。
+清单只覆盖列出的启动代码身份；它不认证玩家，也不能证明原生资源、共享配置、存档状态或运行期模拟一致。

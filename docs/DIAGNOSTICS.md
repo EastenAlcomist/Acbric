@@ -1,10 +1,10 @@
 # Game identity and startup diagnostics
 
-dev.22 adds [external-install preflight](EXTERNAL_INSTALL.md) with reports before game discovery: temporary reports on failure, plus instance copies on success. The new mode requires valid identity/complete fingerprints and rejects duplicate ordinary classes, rather than using the legacy unknown/0.0.0 fallback described below. Preflight success does not establish startup or compatibility. Existing launch-report protocol and public APIs remain unchanged.
-
 **English** | [中文](DIAGNOSTICS.zh-CN.md)
 
-Startup identity/reports were introduced in dev.2; this page describes the internal report behavior retained in dev.20. The public snapshot API and in-game tools added in dev.20 are documented in [DEVELOPER_TOOLS.md](DEVELOPER_TOOLS.md). File layouts remain internal; event order, cancellation and exception propagation are unchanged.
+Applies to `acbric_api 0.3.8`. The public snapshot API and in-game tools are documented in [DEVELOPER_TOOLS.md](DEVELOPER_TOOLS.md). File layouts are internal diagnostic formats, not stable MOD APIs.
+
+External-install preflight runs before game discovery. Failures write temporary reports; successful preflight reports are copied into the instance. External mode requires a recognized version and complete code fingerprints and rejects duplicate ordinary game classes. Preflight success does not establish startup or compatibility.
 
 ## Game identity
 
@@ -63,10 +63,10 @@ The report phase distinguishes resource preparation, entrypoint initialization, 
 
 Reports use temporary files and atomic replacement where supported, with a replacement fallback. They are diagnostic snapshots, not a crash-proof transaction log. Errors before the provider locates game inputs, early Loader failures, unrelated pre-launch callbacks, background-thread errors and forced termination are not all captured. Preserve the normal console/Fabric log alongside these reports. Stack traces may contain local paths or mod-provided messages; review them before sharing.
 
-## Runtime event diagnostics (dev.6)
+## Runtime event diagnostics
 
 Managed EventScope callback failures use runtime-events.jsonl in the same startup session. Legacy registrations are unchanged. See [ownership, limits and exception contracts](EVENT_SCOPES.md).
 
-## Local code manifest (dev.7)
+## Local code manifest
 
 After Acbric entrypoint processing, `code-manifest.json` is exported in the same session directory. See [coverage, fingerprint rules and offline comparison](CODE_MANIFEST.md). This does not certify complete initialization or multiplayer compatibility.

@@ -2,19 +2,42 @@
 
 [English](MOD_MANAGEMENT.md) | **中文**
 
-从 `acbric_api 0.3.3-dev.12` 开始，MOD 界面提供 Java/Fabric MOD 的启用与停用。**修改在下次启动生效，必须同时更新启动器 JAR 和 API JAR。** 不卸载当前进程中的类或 Mixin，不删除、改名或移动 MOD 归档。
+适用于 `acbric_api 0.3.8`。MOD 界面提供 Java/Fabric MOD 的启用与停用。**修改在下次启动生效；启动器与 API 必须来自同一发行版。** 不卸载当前进程中的类或 Mixin，不删除、改名或移动 MOD 归档。
+
+## Java MOD 多语言描述
+
+Java/Fabric MOD 的可选描述可以写在 `fabric.mod.json` 的 `custom.acbric.description` 下，而不改变标准 `description` 字段的兼容语义：
+
+```json
+{
+  "description": "English fallback description.",
+  "custom": {
+    "acbric": {
+      "description": {
+        "en": "English description.",
+        "chi": "中文描述。",
+        "de": "Deutsche Beschreibung.",
+        "fr": "Description française.",
+        "jpn": "日本語の説明。",
+        "kor": "한국어 설명.",
+        "ru": "Описание на русском."
+      }
+    }
+  }
+}
+```
+
+键使用原版游戏语言代码，当前版本包括 `en`、`chi`、`de`、`fr`、`jpn`、`kor`、`ru`；Acbric 按当前游戏 Locale 选择，`zh`/`zho` 与 `chi`、`ja` 与 `jpn`、`ko` 与 `kor` 互为兼容标签。当前语言缺失或格式错误时先回退英文，再回退顶层 `description`，因此旧 Java MOD 无需修改。该描述用于原版 MOD 列表的 Fabric 条目和 Acbric 的 MOD 详情页；标准 Fabric metadata 本身仍只保存顶层单字符串。
 
 ## 使用方式
 
-从 dev.30 起，即使没有任何原版 MOD，Acbric API 和 Java MOD 行也会正常显示；停用后的 Java MOD 仍可在重启后找到。修复只调整此界面的空列表判断，Java 行仍不进入原版资源加载、应用或重载集合。
-
-本地复验：使用新解压框架与新实例，只放不带 `acbric_vanilla` 配套资源的 Java MOD，不放原版 `info.json` 文件夹。检查 API/Java 行、刷新、重开列表以及停用后重启。自动化入口为 `python tools/test_external_release.py --game-dir <游戏目录> --java-home <JDK21> --tag <新名称> --installer --java-only`。旧 dev.29 实测未进入列表绘制分支；dev.30 两进程共 26 项真实界面断言通过，涵盖空表、不可用原版条目、混合条目、刷新重开和停用重启；原版可用/启用集合未被 Java 行污染。另有 988 项标准检查；5,325 个输入游戏文件内容不变。不包含完整战役、联机或全部按钮的人工点击验收。
+即使没有任何原版 MOD，Acbric API 和 Java MOD 行仍会显示；停用后的 Java MOD 在重启后仍可找到。Java 行不进入原版资源加载、应用或重载集合。
 
 1. 打开游戏的 MOD 管理界面，找到标有 Fabric 的条目。
 2. 点击该行的“停用”或“启用”。配置立即保存，状态显示“待重启停用”或“待重启启用”；再次点击可撤销。
 3. 退出并重新启动整个游戏。停用后的条目仍在列表中，可以重新启用。
 
-0.3.6 起，**联机大厅面板**也能做同样的操作，不需要退出大厅：点击大厅左上角的 `Acbric` 状态按钮，面板里列出 Java MOD（AcMod）与原生 MOD 的当前状态，并提供“下次启动停用/启用”。大厅原本没有任何 MOD 启停界面，原生 MOD 界面也固定返回主菜单、无法回到大厅；面板只写启用状态、不热重载，避免让已经确认的代码清单失效。
+联机大厅面板也提供同样的操作，不需要退出大厅：点击大厅左上角的 `Acbric` 状态按钮，可查看 Java MOD（AcMod）与原生 MOD 的当前状态，并选择“下次启动停用/启用”。面板只写启用状态，不热重载。
 
 原版“应用”“重载”“重置”“全部禁用”按钮仍只控制原版数据 MOD，不提交或撤销 Java MOD 选择。Java 条目不进入原版热重载集合。存档、MOD 配置和资源文件保留；缺少玩法 MOD 的存档是否可用仍由该 MOD 的设计决定。
 
@@ -22,7 +45,7 @@
 
 ## 管理范围与依赖
 
-- 支持有效 MOD 扫描目录直属的普通、小写 `.jar` 文件；外部发行是 Setup.cmd 同级 `mods`（`fabric.modsFolder`，与原生 MOD 根相互独立）；旧布局默认 `game/mods`，也识别 `fabric.modsFolder`。隐藏文件不作为候选。
+- 支持有效 MOD 扫描目录直属的普通、小写 `.jar` 文件；外部发行是 `Acbric.exe` 同层 `mods`（`fabric.modsFolder`，与原生 MOD 根相互独立）；旧布局默认 `game/mods`，也识别 `fabric.modsFolder`。隐藏文件不作为候选。
 - `acbric_api`、`fabricloader`、`airships`、`java`、`mixinextras` 为保护组件。嵌套 MOD、开发目录、多路径和外部类路径来源只读；通过父 MOD 管理其内嵌依赖。
 - 预检查必需依赖 `depends`、版本、`provides` 别名和硬冲突 `breaks`。停用时先停依赖者，启用时先启依赖库；不自动连带修改其他 MOD。
 - 检查父 JAR 声明的嵌套元数据，便于重新启用带内嵌库的 MOD。嵌套读取有深度、数量和大小限制。复杂候选版本选择、循环依赖组合和未扫描的外部来源不保证可在界面中逐项调整；最终依赖解析由 Fabric 执行。
@@ -30,9 +53,15 @@
 
 这不是完整 MOD 安装器或版本升级器；安装仍校验元数据并拒绝同名覆盖。删除、下载更新、自动修复依赖及热加载未包含在本版。
 
+## 原版 MOD 内嵌 ACMOD
+
+API 默认扫描本地与 Steam 下载的原版 MOD。只要原版 MOD 根目录存在 `AcbricMod/`，并在其中放置唯一一个小写 `.jar`，该原版行就显示“携带AcbricMOD”，同时提供“启用携带ACMOD”。点击后 API 校验 Fabric 元数据、复制到 Java MOD 文件夹并移除该 ID 的停用项；再次启动游戏后由 Fabric 加载。按钮随后显示“已启用”。
+
+同名但内容不同的 JAR、损坏元数据、多个 JAR、受保护 ID 和链接路径都会拒绝或报告冲突，不覆盖现有文件。该功能已内置于 API，不需要另装 `acbric_embedded_mods`。
+
 ## 配套原版资源
 
-停用 Java MOD 后，已解包在本地原生 MOD 根下 `<Java MOD ID>`（外部发行是 Setup.cmd 同级 mods） 且具有有效 `.acbric-bundle.json` 归属记录的资源，在下次启动被屏蔽。普通原生启用偏好和资源字节不改写；重新启用 Java MOD 后恢复正常的原生启用判断，**不会强制打开玩家原来关闭的资源 MOD**。
+停用 Java MOD 后，已解包在本地原生 MOD 根下 `<Java MOD ID>`（外部发行是 `Acbric.exe` 同层 `mods`）且具有有效 `.acbric-bundle.json` 归属记录的资源，在下次启动被屏蔽。普通原生启用偏好和资源字节不改写；重新启用 Java MOD 后恢复正常的原生启用判断，**不会强制打开玩家原来关闭的资源 MOD**。
 
 屏蔽按目录归属判定，因此 `info.json` 的原生 ID 可以不同。旧版无归属记录的配套资源必须先按 [资源迁移说明](BUNDLED_RESOURCES.md) 显式迁移，界面不会假定这些目录已经安全停用。仅与 Java MOD 同名的独立原生目录不会自动被接管。手动移到其他目录的副本、缓存副本及没有归属记录的资源不属于该屏蔽机制。
 
@@ -55,8 +84,4 @@ Provider 定位游戏时读取配置，合并外部 `fabric.debug.disableModIds`
 
 配置损坏导致无法启动时，关闭游戏，备份并修正文件；需要全部恢复时可显式改成空 `disabledMods` 数组。若仅停用依赖库导致 Fabric 报缺少依赖，应启回依赖库或同时停用依赖它的 MOD。框架不会静默绕过 Loader 的错误。
 
-## 验证与边界
-
-标准构建包含启停配置、保护组件、依赖/别名/冲突和文件冲突回归。两套游戏字节码通过独立 Fabric 进程的启用→停用→重新启用流程，验证入口和真实 Mixin 是否执行、嵌套依赖、实际列表以及原生资源判断。
-
-无界面验证不等于实际绘制/鼠标点击验收，也不覆盖完整战役或所有第三方 MOD。以上管理实现属于内部功能，未新增稳定的公共管理 API。
+以上管理实现属于内部功能，不是稳定的公共 MOD API。启停不会验证第三方 MOD 的玩法、完整战役存档或任意组合的兼容性。
