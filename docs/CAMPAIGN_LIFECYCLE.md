@@ -1,12 +1,8 @@
 # Campaign lifecycle events
 
-> See [dev.11 conversion](RULE_SAVE_MIGRATION.md) for save preflight, explicit adoption/migration and save-as boundaries. Normal loading still does not migrate.
-
-> dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
-
 **English** | [中文](CAMPAIGN_LIFECYCLE.zh-CN.md)
 
-Available since `acbric_api 0.3.3-dev.4` in `net.fabricacs.api.event.AirshipsCampaignEvents`. Existing events and campaign-data APIs remain available; storage still uses dev.3 format 1.
+Applies to `acbric_api 0.3.8`. `net.fabricacs.api.event.AirshipsCampaignEvents` provides these lifecycle events; storage follows the [campaign-data contract](CAMPAIGN_DATA.md).
 
 ## Events and timing
 
@@ -52,8 +48,6 @@ AirshipsCampaignEvents.EXITED.register(object -> {
 });
 ```
 
-The workspace's standalone `acbric-campaign-demo` project provides a complete example. Its listeners explicitly prepare its own namespace during creation/loading. The framework does not do this for other mods.
-
 ## Active sessions and recovery boundaries
 
 Each client owns its active-campaign reference; there is no global world cache. Input-boundary observation recognizes strategic maps, technology screens and campaign-associated UniScreens. Unknown temporary screens preserve the reference instead of implying an exit. Recovery waiting does not exit; a successful recovery hook updates the reference before RESTORED. Ordinary screen refresh does not duplicate these events.
@@ -62,8 +56,4 @@ EXITED covers observed active campaigns. Save objects constructed and then disca
 
 RESTORED is a local notification that recovered state has been installed; peers need not reach it simultaneously. Only rebind handles, rebuild local views or read data. Do not mutate shared counters, grant resources or migrate. Java mods are not sandboxed against violating this contract.
 
-## Validation scope
-
-The standard build passes 141 assertions. Real Fabric/Mixin probes on games 1.2.15.2 and 1.2.14 cover generation preparation, successful/failed JSON construction, recovery waiting/installation conditions, identity deduplication, normal exit and demo migration. Recovery checks invoke the transformed target's RETURN handler using isolated minimal screen fixtures; they do not establish a real network connection or provide full GUI acceptance. Existing save/event checks also pass.
-
-Manual acceptance must still cover campaign creation, initial autosaves, exit/reload, demo v1→v2 migration, absent-mod preservation and live multiplayer recovery. See the [campaign-data contract](CAMPAIGN_DATA.md).
+Data, migration and recovery boundaries are in the [campaign-data contract](CAMPAIGN_DATA.md). RESTORED only reports that local recovery completed; peers may reach it at different times and must not generate shared state from that notification.

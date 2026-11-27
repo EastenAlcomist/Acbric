@@ -2,13 +2,11 @@
 
 [English](README.md) · [文档总目录](docs/README.zh-CN.md)
 
-**此文档部分使用AI编写，并未进行完整的人工审查，如发现问题，请联系开发者**
-
-Acbric 将 Fabric Loader 与《Airships: Conquer the Skies》连接起来，让 Java MOD 使用API和 Mixin 扩展游戏，同时兼容原版 JSON MOD。
+Acbric 将 Fabric Loader 与《Airships: Conquer the Skies》连接起来，让 Java MOD 通过 API、事件和 Mixin 扩展游戏，同时兼容原版 JSON MOD。
 
 当前开发版为 **0.3.8**。版本以 [fabric.mod.json](src/apiMod/resources/fabric.mod.json) 为准；完整历史见[改动记录](docs/CHANGELOG.zh-CN.md)。
 
-游戏兼容：**适配《Airships: Conquer the Skies》1.2.15.3**。编译基线是 1.2.15.3，理论兼容旧版本。
+当前编译基线为《Airships: Conquer the Skies》**1.2.15.3**，并兼容 1.2.15.2；其他游戏版本不保证可用。
 
 ## 从这里开始
 
@@ -21,13 +19,13 @@ Acbric 将 Fabric Loader 与《Airships: Conquer the Skies》连接起来，让 
 
 ## 玩家安装
 
-完整解压带 Java 的 `Acbric-external-<version>.zip`，打开其中的 `Acbric.exe`。首次自动查找 Steam 游戏，确认后点击“使用此游戏”；未找到时手动选择游戏文件夹。以后仍打开同一个 EXE，点击“开始游戏”。Java MOD 的 JAR 和原版 MOD 文件夹都放在同层 `mods`。详细步骤见[使用指南](docs/INSTALLER.zh-CN.md)。
+完整解压带 Java 的 `Acbric-external-<version>.zip`，打开其中的 `Acbric.exe`。首次自动查找 Steam 游戏，确认后点击“使用此游戏”；未找到时手动选择游戏文件夹。以后仍打开同一个 EXE。Java MOD 的 JAR 始终放在 Acbric 同层 `mods`；原生 MOD 使用当前数据环境的 `mods`。详细步骤见[使用指南](docs/INSTALLER.zh-CN.md)。
 
-游戏使用已有的独立安装；实例保存存档、设置、缓存和日志。仓库及外部发行包不含游戏代码、资源或第三方功能 MOD。
+游戏本体需单独安装。实例保存该配置下的设置、缓存和日志；默认模式直接使用原版存档与 MOD。仓库及外部发行包不含游戏代码、资源或第三方功能 MOD。
 
 ## 框架开发
 
-准备 JDK 21 和自有游戏的本地编译依赖，按[构建指南](docs/BUILDING.zh-CN.md)配置环境。以下命令均在仓库根目录执行：
+准备 JDK 21 或更高版本和自有游戏的本地编译依赖，按[构建指南](docs/BUILDING.zh-CN.md)配置环境。以下命令均在仓库根目录执行：
 
 ```powershell
 .\build.cmd       # 编译
@@ -35,7 +33,7 @@ Acbric 将 Fabric Loader 与《Airships: Conquer the Skies》连接起来，让 
 .\test.cmd mods   # 按修改范围选择套件
 ```
 
-对外打包使用 `externalDistZip`，带 Java 21 时增加 `-PbundleRuntime`；具体命令见[外部发行指南](docs/EXTERNAL_START.zh-CN.md)。
+对外打包使用 `externalDistZip`，默认携带 Java 21 runtime；需要精简包时增加 `-PbundleRuntime=false`，具体命令见[外部发行指南](docs/EXTERNAL_START.zh-CN.md)。
 
 ## 目录
 
@@ -48,7 +46,7 @@ Acbric 将 Fabric Loader 与《Airships: Conquer the Skies》连接起来，让 
 | `src/dist/` | 发行入口脚本与玩家简明说明 |
 | `acbric-mod-template/` | 可复制为独立项目的 MOD 模板 |
 | `gradle/` | 构建包装器 |
-| `build/`、`.gradle/` | 本地构建产物、验证记录与缓存，不纳入 Git |
+| `build/`、`.gradle/` | 本地构建产物与缓存，不纳入 Git |
 | `libs/`、`game/` | 自备编译依赖与旧布局测试资料，不纳入 Git |
 
 

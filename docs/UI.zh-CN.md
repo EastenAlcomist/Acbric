@@ -1,18 +1,12 @@
-# 公共 UI 组件（dev.13）
+# 公共 UI 组件
 
-战斗命令面板控件是 0.3.8 新增的独立小型原生界面，见[命令面板 UI](COMMAND_PANEL_UI.zh-CN.md)。
+[English](UI.md) · 适用于 `acbric_api 0.3.8`
 
-dev.18 新增显式字段的 MOD 设置页、数字/选项组件和受控文本绑定；草稿应用、取消、默认值、重读及双重冲突保护。新增 ModConfig.defaults()/save(expected,data)、ConfigField、ConfigEditor、SettingsUi。生效时机由 MOD 处理，不自动同步配置或修改已有战役。详见 [设置 API](SETTINGS.zh-CN.md)。
+框架 MOD 详情页和功能 MOD 共用原生字体、面板、按钮与开关。战斗命令面板控件是独立的原生界面，见[命令面板 UI](COMMAND_PANEL_UI.zh-CN.md)；显式字段的设置页见[设置 API](SETTINGS.zh-CN.md)。
 
-2026-09-26 实机反馈：用户确认 dev.17 本轮 UI 修复可以继续推进。本阶段包含公共组件、详情/工具入口、中英文、输入框定位、切屏坐标与关闭字形修复。已有 712 项标准检查、两版共 230 项集成检查；本次提交前 34 个变更文件与已验证快照完全一致，仅补充验收记录，不重复运行未变更代码的测试。此确认不扩大为全部 GPU/输入法/第三方 MOD 组合已验收。
+## 注册工具窗口
 
-[English](UI.md) | 中文
-
-适用于未发布的 `acbric_api 0.3.3-dev.13`。框架 MOD 详情页和功能 MOD 使用同一套组件；字体、面板、按钮和开关沿用游戏绘制。没有接入浏览器或另一套 GUI 运行时。
-
-## 从注册入口开始
-
-在带 `AcbricModContext` 的初始化方法里注册工厂，**不要在初始化期间直接打开窗口**。游戏启动后，在原生 MOD 列表找到自己的 Java MOD，点击“详情”，再点击注册的工具按钮。
+在带 `AcbricModContext` 的初始化方法中注册工厂，不要在初始化期间直接打开窗口。游戏启动后，在原生 MOD 列表中选择自己的 MOD，进入“详情”并点击工具入口。
 
 ```java
 import net.fabricacs.api.AcbricInitializer;
@@ -26,146 +20,112 @@ public final class Example implements AcbricInitializer {
 
     @Override public void onInitializeAcbric() { }
 
-    @Override public void onInitializeAcbric(AcbricModContext context) {
-        context.ui().register("settings", "设置 / Settings", () ->
+    @Override
+    public void onInitializeAcbric(AcbricModContext context) {
+        context.ui().register("tools", "工具 / Tools", () ->
             new UiWindow("Example", 480, 420, true, Ui.column(10,
                 Ui.label(() -> "Count: " + count),
                 Ui.toggle("Enabled", () -> enabled, value -> enabled = value),
                 Ui.textField(name, 64, value -> name = value),
                 Ui.button("Add", handle -> count++).enabled(() -> enabled),
-                Ui.button("Confirm", handle -> handle.confirm(
-                    "Confirm", "Reset count?", "Yes", "No", () -> count = 0)),
                 Ui.button("Close", UiWindowHandle::close))));
     }
 }
 ```
 
-MOD metadata 中声明 `"depends": { "acbric_api": ">=0.3.3-dev.13" }`。UI 本身不需要 MOD 自写 Mixin。上述变量仅在本进程中保存；持久化仍需显式调用 [配置 API](CONFIG.zh-CN.md)，战役数据仍用 [战役存储 API](CAMPAIGN_DATA.zh-CN.md)。界面操作不自动广播。
+在 `fabric.mod.json` 声明 `"acbric_api": ">=0.3.8"` 和 `"java": ">=21"`。组件不需要 MOD 自写 Mixin。示例状态只存在于当前进程；需要持久化时使用[配置 API](CONFIG.zh-CN.md)或[战役数据 API](CAMPAIGN_DATA.zh-CN.md)。界面操作不会自动广播。
 
 ## 公开接口
 
 | 接口 | 用途与约束 |
 | --- | --- |
 | `context.ui()` / `new ModUi(modId)` | 取得带 MOD 归属的入口；优先使用 context。归属用于诊断，不是权限隔离。 |
-| `ModUi.register(id, label, Supplier<UiWindow>)` | 初始化期可用；只保存工厂，不执行它。返回 `Registration`，可查询 `id()`、`isRegistered()` 和幂等 `close()`。 |
-| `ModUi.open(window)` | 已有有效 Screen、没有原生错误/帮助/聊天覆盖层时，在游戏线程打开根窗口，返回句柄。 |
-| `UiWindow(title, width, maxHeight, modal, content[, onClose])` | 不可变窗口描述；居中，按内容收缩高度，受当前视口限制，超长内容自动纵向滚动。 |
-| `UiWindowHandle.dialog(window)` | 仅栈顶窗口可打开模态子窗口；不允许非模态子窗口。 |
-| `handle.message(title, text)` | 带“确定 / OK”按钮的消息框；需要自定义按钮文案时自己构造子窗口。 |
-| `handle.confirm(title, text, yes, no, Runnable)` | 确认时先关闭子窗口再调用动作；取消和 Esc 不调用动作。 |
-| `handle.manage(AutoCloseable)` | 托管资源或订阅范围；返回原资源，窗口关闭时逆序释放。 |
-| `handle.modId()` / `isOpen()` / `close()` | 查询归属及状态；关闭幂等，关闭父窗口同时关闭子窗口。 |
+| `ModUi.register(id, label, Supplier<UiWindow>)` | 初始化期可用，只保存工厂。返回 `Registration`，提供 `id()`、`isRegistered()` 和幂等 `close()`。 |
+| `ModUi.open(window)` | 在游戏线程、有效 Screen 且无原生错误/帮助/聊天覆盖层时打开根窗口。 |
+| `UiWindow(title, width, maxHeight, modal, content[, onClose])` | 不可变窗口描述；居中、按内容收缩并受视口限制，超长正文纵向滚动。 |
+| `window.withFooter(UiNode)` | 返回带固定页脚的新窗口描述；正文和页脚各自滚动。 |
+| `window.onCloseRequest(Consumer<UiWindowHandle>)` | 玩家通过 X、Esc 或 `requestClose()` 关闭时先执行回调。 |
+| `handle.dialog(window)` | 仅栈顶窗口可打开模态子窗口。 |
+| `handle.message(title, text)` | 显示带确定按钮的消息框。 |
+| `handle.confirm(title, text, yes, no, Runnable)` | 确认时先关闭子窗口再执行动作；取消和 Esc 不执行。 |
+| `handle.manage(AutoCloseable)` | 托管资源或订阅范围，窗口关闭时逆序释放。 |
+| `handle.modId()` / `isOpen()` / `close()` | 查询归属和状态；关闭幂等，父窗口关闭时同时关闭子窗口。 |
 
-一个运行时同时只允许一个根窗口，最多包含 8 层窗口。第二个根窗口直接 `open` 会抛 `IllegalStateException`；需要先关闭现有根窗口。详情页工具按钮会自动关闭详情页后打开目标窗口。注册入口按 `MOD ID + entry ID` 隔离，重复注册拒绝；入口 ID 为 `[a-z][a-z0-9_-]{0,63}`，全局最多 256 个。注册直到显式注销或进程退出；关闭一次窗口不会注销工具入口。
+同时只允许一个根窗口，最多 8 层。第二个根窗口会抛出 `IllegalStateException`。设置页工具按钮会先关闭详情页再打开目标窗口。入口 ID 匹配 `[a-z][a-z0-9_-]{0,63}`，按 `MOD ID + entry ID` 隔离，重复注册拒绝，全局最多 256 个。关闭窗口不会注销工具入口。
 
-`UiRuntime` 及其嵌套类型虽然因适配层访问而为 public，**属于内部实现，不是 MOD 扩展 API**。`api.impl`、`api.mixin` 同样不是公开契约。
+`UiRuntime` 及其嵌套类型、`api.impl` 和 `api.mixin` 属于内部实现，不是公开扩展契约。
 
 ## 组件与布局
 
-| 工厂 / 修饰器 | 行为 |
+| 工厂或修饰器 | 行为 |
 | --- | --- |
-| `Ui.label(String / Supplier<String>)` | 多行、自动换行文字；动态值在绘制布局时读取。 |
-| `Ui.button(String / Supplier<String>, Consumer<UiWindowHandle>)` | 点击或聚焦后 Enter 激活，收到所属窗口句柄。 |
-| `Ui.toggle(String, BooleanSupplier, Consumer<Boolean>)` | 读取当前值并把新值交给 MOD；MOD 自己更新状态。 |
-| `Ui.textField(initial, maxLength, Consumer<String>)` | 单行输入；每个打开的窗口独立保存编辑状态，文本实际变化时通知。初始值不是动态绑定。 |
-| `Ui.column(gap[, Align], nodes...)` | 纵向排列，Align 控制有指定宽度的子项水平对齐。 |
-| `Ui.row(gap[, Align], nodes...)` | 横向排列，Align 控制竖向对齐；未指定宽度的子项平分剩余空间。 |
+| `Ui.label(String / Supplier<String>)` | 自动换行的多行文字，动态值在布局时读取。 |
+| `Ui.button(String / Supplier<String>, Consumer<UiWindowHandle>)` | 点击或聚焦后按 Enter 激活。 |
+| `Ui.toggle(String, BooleanSupplier, Consumer<Boolean>)` | 读取当前值并提交新值，由 MOD 更新状态。 |
+| `Ui.textField(initial, maxLength, Consumer<String>)` | 单行输入；每次打开的窗口有独立编辑状态，初始值不是动态绑定。 |
+| `Ui.column(gap[, Align], nodes...)` | 纵向排列。 |
+| `Ui.row(gap[, Align], nodes...)` | 横向排列，未指定宽度的子项平分剩余空间。 |
 | `Ui.panel(padding, child)` | 原生面板背景和内边距。 |
-| `Ui.scroll(height, child)` | 有限高度纵向滚动区，裁剪绘制和点击；鼠标滚轮控制，支持嵌套。 |
+| `Ui.scroll(height, child)` | 有限高度滚动区，裁剪绘制和命中。 |
 | `Ui.space(height)` | 空白间隔。 |
-| `node.width(value)` | 指定期望宽度，空间不足时缩小；默认使用父级分配宽度。 |
-| `node.enabled(BooleanSupplier)` | 动态启用；父容器禁用影响所有后代，激活前重新检查。 |
-| `node.tooltip(String)` | 鼠标悬停提示，禁用组件也可解释原因。 |
+| `node.width(value)` | 指定期望宽度；空间不足时缩小。 |
+| `node.enabled(BooleanSupplier)` | 动态启用，并由祖先状态继承。 |
+| `node.tooltip(String)` | 悬停提示，禁用控件也可显示原因。 |
 
-`Align` 可取 `START / CENTER / END / STRETCH`。默认 column 为 STRETCH、row 为 CENTER。修饰器返回新节点，必须使用返回值。单棵树禁止重复使用同一节点对象，最多 4096 个节点、深度 32（0.3.6 起；此前为 512 / 24）。数值以 GUI 逻辑单位表示，跟随游戏按钮缩放；窗口宽度 160–4096，最大高度 120–4096；组件宽度 1–4096，间距 0–4096，滚动高度 24–4096。
+`Align` 可取 `START / CENTER / END / STRETCH`；column 默认 `STRETCH`，row 默认 `CENTER`。修饰器返回新节点，必须使用返回值。一棵树不能重复使用同一节点对象，最多 4096 个节点、深度 32。窗口宽度 160–4096，最大高度 120–4096；组件宽度和间距 0–4096，滚动高度 24–4096。超限会抛出错误，不会截断。
 
-布局与绘制按节点数线性增长，滚动只裁剪绘制、不减少每帧测量：按「每一条已加载条目一行」生成窗口（例如数百支 AI 舰队）时应先分页或过滤，把一次显示的节点数控制在几百以内，而不是依赖上限放宽。超过上限仍会明确抛错，不会静默截断。
+布局和绘制成本随节点数线性增长。滚动只裁剪绘制，不减少每帧测量；大量条目应先分页或过滤。Supplier 应只读取当前状态，不执行磁盘 I/O、不修改窗口栈，并可在绘制和输入阶段多次调用。动态文本每次最多读取 16384 个 UTF-16 单元。
 
-布局和供应器应保持纯读取，不做磁盘 I/O、不修改窗口栈。Supplier 可每帧及输入阶段多次调用。动态标签每次读取最多 16384 个 UTF-16 单元。框架不解释组件文字中的游戏颜色标记：方括号显示为全角括号，底层文本值保持原样。
+## 输入与窗口寿命
 
-## 输入与寿命
+- 普通窗口拦截范围内的鼠标输入；范围内鼠标或键盘焦点会遮蔽原生快捷键，窗外单击清除焦点。
+- 模态窗口遮蔽普通游戏输入，但不会暂停模拟、网络或 Screen tick。
+- Tab / Shift+Tab 切换可见且启用的控件；Enter 激活按钮或开关；Esc 请求关闭拥有键盘焦点的顶层窗口。
+- 文本支持 Unicode 码点长度限制、左右/Home/End、Backspace/Delete、Ctrl+A/C/X/V、拖动和 Shift+方向键选区。组合音标和 ZWJ 字素簇仍按码点处理。
+- Backspace/Delete 和导航键按下后立即执行，长按约 400 ms 后开始重复，每 45 ms 最多一次。Enter、Esc、按钮、粘贴和剪贴板操作不会合成重复。
+- `onSubmit` 仅用于文本框；有焦点时 Enter 在编辑完成后提交。
+- Screen 切换、原生错误/帮助/聊天覆盖层、正常退出或异常会关闭窗口。原因包括 `CLOSED / SCREEN_CHANGED / GAME_EXIT / NATIVE_DIALOG / ERROR / PARENT_CLOSED`。
+- 关闭时先标记句柄，再从子到父、每个窗口逆序释放托管资源。普通清理异常会记录并继续；关闭回调中不能再打开窗口。
+- 打开、交互和关闭必须在游戏线程。工具注册/注销可并发，但工厂在游戏线程执行。
 
-- 普通窗口拦截自身范围内的鼠标操作；窗外鼠标输入可继续交给游戏。鼠标在窗内或窗口拥有键盘焦点时，原生快捷键被遮蔽。窗外单击移除键盘焦点。
-- 模态窗口遮蔽游戏普通键盘/鼠标入口。**不会暂停模拟、网络或 Screen 的 tick**；菜单弹窗不等于单机暂停菜单。
-- Tab / Shift+Tab 在可见且启用的控件间切换；Enter 激活按钮或开关；Esc 请求关闭当前拥有键盘输入的顶层窗口。首次绘制前不接受点击，滚动后等下一次布局再命中。
-- 文本支持 Unicode 码点长度限制、左右/Home/End、Backspace/Delete、Ctrl+A/C/X/V。dev.19 起点击按原生正文的实际字宽定位光标；拖动、Shift+点击和 Shift+导航键选择局部文本。长文本水平滚动以显示光标；不会拆开 emoji 的代理对，但组合音标/ZWJ 字素簇仍按码点处理。
-- 改变游戏 Screen、原生错误/帮助/聊天覆盖层出现或正常退出时关闭窗口。`onClose` 原因包括 `CLOSED / SCREEN_CHANGED / GAME_EXIT / NATIVE_DIALOG / ERROR / PARENT_CLOSED`。父窗口连带关闭的子窗口收到 `PARENT_CLOSED`。
-- 先标记所有待关闭句柄，再从子到父释放资源；每个窗口内部逆序释放，最后调用 `onClose`。普通清理异常会记录并继续释放。关闭后释放组件回调引用；不能在清理回调中重新开窗口。强杀进程不保证回调。
-- 打开、交互和关闭须在游戏线程；异步任务不能直接改句柄。注册/注销工具入口可并发，但工厂始终在游戏线程执行。常规运行时回调异常会关闭所属窗口并报告错误；虚拟机级错误不作恢复保证。
+默认关闭按钮、Esc 和 `requestClose()` 可被 `onCloseRequest` 改写；`close()` 始终无条件关闭。Screen 切换、原生覆盖层、退出、异常和父级清理也会直接关闭，不会等待确认。
 
-在自己管理的游戏线程入口可这样绑定窗口寿命：
+可将订阅范围绑定到窗口寿命：
 
 ```java
 UiWindowHandle handle = context.ui().open(window);
-var scope = handle.manage(context.eventScope("settings-window"));
-// scope.register(...); // 窗口关闭时自动注销这个范围
+var scope = handle.manage(context.eventScope("window"));
+// scope.register(...); // 窗口关闭时自动注销
 ```
 
-现有旧事件时序不变。UI 拦截发生在游戏完成输入缩放之后；第三方 HEAD 注入、直接读取底层 Slick 输入或自行绘制的界面不受统一管控。这里不提供安全隔离，也不承诺与任意重定向同一方法的 Mixin 共存。
+## 本地化
 
-## 本轮范围与验证
+在游戏线程使用 `AcbricLanguage.isChinese()` 或 `AcbricLanguage.text(英文, 中文)`。每次调用读取游戏当前 Locale：`chi`、`zh`、`zho` 识别为中文；空值或其他语言回退英文。不要读取系统 Locale 或在入口初始化时缓存语言。
 
-当前仍不提供拖动窗口、拖动滚动条、滑块、下拉列表、树、表格、富文本、图标组件或主题系统。dev.18 已提供显式声明字段的设置页及模态选项列表，见 SETTINGS.zh-CN.md。框架详情页保留重启启停语义，不实现 Java 热卸载。
+`context.ui().register("tools", () -> AcbricLanguage.text("Open tools", "打开工具"), () -> window())` 会在详情页绘制时读取入口名称。窗口工厂应在打开时选择文案；切换语言后重新打开窗口。第三方 MOD metadata 不会自动翻译。
 
-标准回归验证布局、输入、Unicode、禁用和清理；两套真实 Fabric 游戏字节码探针验证注入、原生输入循环、打开帧防穿透、工具入口和原生绘制适配器的裁剪恢复。底层绘制使用录制替身，尚不等于 OpenGL 实机验收。真实字体、分辨率/GUI 缩放、输入法和第三方 MOD 组合仍需在游戏里检查。工作区独立 `acbric-ui-showcase` 提供可安装测试 MOD，不是框架默认内容。
+## 绘制与当前边界
 
-## 中英文界面（dev.14）
+输入遮蔽在 input 阶段可能使用空坐标；绘制适配器在 render HEAD 和关闭释放帧恢复非空绘制状态，不解除点击/按键遮蔽。原生失败写入游戏原生日志，框架启动报告位于 `game/logs/acbric/`。
 
-游戏线程中使用 `net.fabricacs.api.util.AcbricLanguage.isChinese()` 或 `text(英文, 中文)`。每次调用读取**游戏**当前语言；原生 `chi`、标准 `zh`/`zho` 均识别为中文，空值或其他语言回退英文，不读取系统默认语言。
+当前不提供可拖动窗口、拖动滚动条、滑块、下拉列表、树、表格、富文本、图像控件或主题系统。没有多行编辑、双击选词、撤销/重做或专用 IME 候选面板。框架 Java MOD 管理仍为重启生效，不热卸载。
 
-`context.ui().register("tools", () -> AcbricLanguage.text("Open tools", "打开工具"), () -> window())` 在详情页绘制时解析入口名称；原 String 重载保留。窗口工厂在打开时选择文案，不在 MOD 初始化时缓存语言；切换语言后重新打开窗口。框架和配套示例后续同步支持英文、中文，第三方 MOD 自己的任意 metadata 不自动翻译。
+第三方 HEAD 注入、直接读取底层 Slick 输入或自行绘制的界面不受统一路由；UI 遮蔽不是安全隔离，也不保证与任意重定向同一方法的 Mixin 共存。真实字体、分辨率、输入法和第三方 MOD 组合仍需在游戏中验证。
 
-## 原生绘制修复（dev.15）
+## 原版界面缩放
 
-输入遮蔽可在 input 阶段使用 null 坐标；原生绘制要求非空坐标，因此在 render HEAD、底层 Screen 绘制前恢复仅供绘制使用的状态，关闭后的释放帧也要处理。设备无坐标时使用屏幕外位置，不解开点击/按键遮蔽。回归现在实际执行 AirshipGame.render/MyDraw.button，只有 Frame 绘制终端不连接 GPU，不再把按钮方法本身替换掉。原生异常写入用户数据目录的 `log.txt`，与框架 `game/logs/acbric/` 下启动报告不同。
-
-## 输入定位与诊断（dev.16）
-
-光标误用 MyDraw.tw（大字体加开关按钮装饰宽度），改为和正文相同的 AGame.FOUNT 度量，并让文字及光标一起垂直居中。未更改点击语义或强制重置焦点。最新用户运行日志未见新异常，但不能据此排除事件丢失。新增 acbric-ui-input.log 和 acbric-ui-input.previous.log，位于游戏用户数据目录，每份最多 64 KiB；记录焦点、鼠标按下/释放、原生点击、导航键和框架屏障/布局/命中结果，不记录文本。输入日志写入失败停止诊断，不中断游戏。
-
-`active=false` 表示窗口失焦，`null` 表示没有可读取的显示状态。`downButton=1` 是左键按下，随后 `downButton=0` 是释放；释放不保证生成 `click=true`。`release-barrier` 表示关闭后的释放屏障，`await-render` 表示等待有效布局，`click-miss`/`click-disabled` 表示未命中/禁用，`click-BUTTON` 表示动作路径已进入（不保证回调成功）。复现后保留两份日志及原生日志 log.txt，并记下时间、控件和截图/切屏顺序。此记录不能替代 Windows 实机焦点验证。
-
-## 切屏坐标与关闭按钮（dev.17）
-
-玩家日志 03:22:39–03:22:42 显示多次按下位置和点击事件位置约相差 119 像素，布局有效且释放屏障为 false。此证据支持坐标错位，不是点击没有送达。适配层对 Slick 输入将命中坐标统一为已经过 ScaledInput 的 cursor；仍需收到左键 clicked 才执行，悬停/按住不会合成点击。自定义 Input 保持事件坐标语义，缺失 cursor 时回退 clicked。若点击释放后至采样前鼠标继续移动，新 UI 以采样位置为准。底层为何在 Windows 切屏后暂时产生偏移尚未证实；没有修改原生游戏或全局鼠标状态。日志新增同帧 cursor 与 event 坐标便于验证。标题关闭按钮从缺失字形的 × 改为 X，中英文均可用。
-
-## 文本编辑和固定操作区（dev.19）
-
-- 点击使用最近绘制的正文测量、裁剪和水平偏移；Slick 仍使用游戏缩放后的悬停坐标命中，原生 clicked 决定普通按钮触发。文本拖动只由左键按下开始，释放到其他按钮不会激活它；模态子窗口、失焦或控件失效会取消拖动。
-- 无 Shift 的左/右键把选区折叠到前/后端；Shift+左右/Home/End 扩展选区。输入、粘贴和删除替换当前选区。Ctrl+A 全选，Ctrl+C 只复制选区，Ctrl+X 在系统剪贴板写入成功后才删除。剪贴板不可用/被占用时保留原文，不导致窗口关闭；没有选区时 C/X 不做操作。粘贴过滤控制字符和孤立代理字符；纯过滤内容不会删除选区。
-- Backspace/Delete/左右/Home/End 按下立即执行，持续按住约 400 ms 后每 45 ms 最多执行一次。长帧不补发积压；释放、文本焦点变化、子窗口、失焦或受控模型外部更新时停止。恢复焦点后需重新按键才开始重复。Enter、Esc、按钮动作和剪贴板不合成重复，普通字符继续使用游戏 typedText/输入法提交。
-- `window.withFooter(UiNode)` 返回带固定页脚的新窗口描述；正文与页脚共同检查节点唯一性、数量和深度，各自裁剪/滚动。正常分辨率下页脚不随正文滚动；极低分辨率或很高页脚仍可能裁剪，可在页脚区域滚动。不能把同一节点同时用于正文和页脚。
-- `window.onCloseRequest(Consumer<UiWindowHandle>)` 返回带玩家关闭回调的新描述；X、Esc 和 `handle.requestClose()` 走此回调。默认直接 close；回调可通过 confirm 让玩家决定，再调用 `handle.close()`。仅顶层窗口可 requestClose；已关闭句柄不做操作。
-- `handle.close()` 仍是无条件幂等关闭，不受确认回调拦截。Screen 切换、原生覆盖层、退出、异常及父级清理也不弹确认；这些路径必须释放资源。`onClose` 仅在真正关闭时执行。旧 5/6 参数 UiWindow 构造签名与访问器保留；新窗口描述增加 footer/closeRequest 组件。
-
-新增 API 需要 `acbric_api >=0.3.3-dev.19`。没有多行编辑、双击选词、撤销/重做、拖动滚动条或专用 IME 候选面板。界面与手册继续同时维护英文、中文。
-
-输入框的字符测量按原生字体字宽和字距一次扫描完成；仅绘制水平视口可见片段。花括号、反斜杠不解释为游戏命令，方括号沿用全角显示；底层文本保持原样。
-
-
-## 文本提交（dev.20）
-
-`UiNode.onSubmit(Consumer<UiWindowHandle>)` 仅用于文本框，返回保留其他修饰的新描述。有焦点时 Enter 在编辑后提交；普通文本框的 Tab 仍切换焦点。框架控制台使用内部适配完成历史与 Tab 补全，不改变其他 MOD 文本框的行为。详见 [命令](COMMANDS.zh-CN.md)。
-
-
-## 原版界面百分比缩放（0.3.7）
-
-`net.fabricacs.api.ui.UiScale` 调整原版按钮、面板、滚动条及字体度量，Acbric 窗口也跟随变化。只安装 API 仍保留原版大小。
+`UiScale` 调整原版按钮、面板、滚动条、字体度量及 Acbric 窗口；只安装 API 时保持原版大小。
 
 ```java
 import net.fabricacs.api.ui.UiScale;
 
-UiScale.setPercent(125);  // 50..200 的任意整数；100 = 原版“小”档
-int requested = UiScale.percent(); // 0 表示沿用原版，并非测量后的百分比
-UiScale.useVanilla();     // 恢复当前自动/小/中/大档位
+UiScale.setPercent(125);           // 50..200；100 = 原版小号
+int requested = UiScale.percent(); // 0 = 沿用原版
+UiScale.useVanilla();
 ```
 
-使用者须声明 `"acbric_api": ">=0.3.7"`。请求在下一次绘制前统一应用；越界时抛出 `IllegalArgumentException`，保留上一次请求。支持在初始化入口提交，不要求游戏实例已创建。它是进程级显示偏好，多个调用者以最后一次请求为准；API 不写配置，也不将值纳入战役共享规则。调用 MOD 负责设置入口与显式保存。
+请求在下一次绘制前统一应用；越界抛出 `IllegalArgumentException` 并保留上一次请求。初始化阶段可以提交，不要求游戏实例已创建。值为进程级偏好，多个调用者以最后一次请求为准；API 不保存配置，也不进入共享规则。
 
-100% 对应原版**小号**素材及度量基线，不是当前自动档位。尺寸取整到 UI 像素，正数边框至少保留 1 像素；字体测量与绘制使用相同取整。纹理裁切、基线素材、原版偏好、分辨率、世界镜头与输入坐标保持原值。Draw 适配器保留 `Frame.nativeRenderer()`；调用方不要把 `Draw.frame()` 本身强转为某个引擎实现类。原版档位或字体变更后从原始资源重建；未改变的帧复用结果。恢复原版不累乘缩放。
+100% 对应原版小号素材和度量，不是当前自动档位。尺寸取整到 UI 像素，正数边框至少保留 1 像素。原生档位或字体变化后从原始资源重建，恢复原版不会累乘缩放。固定标题字号保持原版设置；硬编码布局的界面不会自动适配大比例。
 
-原版各档位共用的固定标题字号保持不变，因为部分页面的标题行距写死。大比例需要足够的屏幕空间；使用硬编码布局的原版页面和绕过游戏 UI 度量自行绘制的第三方界面不会自动得到自适应布局。独立 ARC Overhaul 提供双语设置页及 `config/arc_overhaul/ui-scale.json` 持久化，不进入框架默认发行包。
-
-### 位图清晰度（0.3.7.1）
-
-100%、150%、200% 直接使用原版小、中、大档位的素材与度量，包含中文后备字体和阅读障碍字体偏好。中间比例使用较高档位向下缩放，低于 100% 时使用小档位。这替换了 0.3.7 放大小号位图、导致文字和边框模糊的做法。原生档位使用不同字体及手工调整的度量，因此百分比是界面大小偏好，并非把小号的每个像素一律乘相同比例；中间比例的布局可能与 0.3.7 略有不同。缺少高档位字段时回退可用低档位。非整数位图尺寸仍需采样，不修改全局纹理过滤或游戏渲染分辨率。
+100%、150%、200% 直接使用原版小、中、大档素材和度量；中间比例使用较高档位向下采样，低于 100% 使用小档位。缺少高档字段时回退可用低档位。该过程不修改全局纹理过滤或游戏渲染分辨率。

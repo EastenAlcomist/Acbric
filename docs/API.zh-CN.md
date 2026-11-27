@@ -1,38 +1,31 @@
 # Acbric API 开发手册
 
-从 dev.21 起，按 **Esc 下方、数字 1 左侧的 ~ 键**（物理键 `GRAVE`，可带 Shift）直接打开控制台并聚焦命令框，开窗按键不会混入文本。Ctrl/Alt/Meta 组合、窗口失焦、原生错误/帮助/聊天覆盖层以及已有 Acbric 窗口时不触发；先关闭其他 Acbric 窗口再使用快捷键。控制台打开后该键仍可输入普通字符，用 Esc/X/关闭退出。长按不会反复开窗。这是固定控制台入口，尚未提供通用改键 API。
-
 [English](API.md) | **中文**
 
-当前文档导航：[开发流程](DEVELOPMENT.zh-CN.md)、[命令 API](COMMANDS.zh-CN.md)、[开发者工具与诊断](DEVELOPER_TOOLS.zh-CN.md)。`context.commands()` 自 dev.20 提供，支持类型参数、帮助/补全和可注销注册；旧公开接口保持兼容。
+当前文档导航：[开发流程](DEVELOPMENT.zh-CN.md)、[命令 API](COMMANDS.zh-CN.md)、[开发者工具与诊断](DEVELOPER_TOOLS.zh-CN.md)。
 
-适用版本：**`acbric_api 0.3.8`**，开发版本，尚未发布稳定版。本文以本仓库源码为准；旧 0.3.2 二进制不含 `RENAME_SHIP_*`，战役数据接口要求 dev.3 或更新版本。
+适用版本：**`acbric_api 0.3.8`**。本文以当前源码为准，版本变化见[改动记录](CHANGELOG.zh-CN.md)。
 
-- 安装、编译和启动：[README.zh-CN.md](BUILDING.zh-CN.md)。
-- 本次兼容性调整：[CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)。
+- 安装、编译和启动：[构建指南](BUILDING.zh-CN.md)。
 - UI 事件的英文契约：[EVENTS.md](EVENTS.md)。
 - 内嵌原版资源、冲突和迁移：[BUNDLED_RESOURCES.md](BUNDLED_RESOURCES.md)。
 - 游戏构建身份与启动报告：[DIAGNOSTICS.zh-CN.md](DIAGNOSTICS.zh-CN.md)。
 - 战役数据、迁移与联机边界：[CAMPAIGN_DATA.zh-CN.md](CAMPAIGN_DATA.zh-CN.md)。
-
-- [MOD 配置：默认值、校验、迁移、备份和显式重载](CONFIG.zh-CN.md)，要求 dev.5。
+- MOD 配置：[默认值、校验、迁移、备份和显式重载](CONFIG.zh-CN.md)。
 
 ## 1. 开发准备与入口
 
-使用 JDK 21、匹配游戏版本的 `asplit-A.zip` / `asplit-B.zip` 和本版 API JAR。框架 API 输出 Java 21 字节码；模板暂保留 Java 17 源码/目标设置，但读取 API、构建及运行仍需要 JDK 21。游戏版本不由 API 版本号保证，Mixin 必须与实际游戏方法描述符匹配。
+使用 JDK 21 或更高版本、匹配游戏版本的 `asplit-A.zip` / `asplit-B.zip` 和本版 API JAR。框架 API 输出 Java 21 字节码。API 版本不保证游戏版本兼容，Mixin 必须与实际游戏方法描述符匹配。
 
-从仓库模板创建 MOD：
+从仓库的 `acbric-mod-template` 创建独立 MOD：
 
 ```powershell
-# 在已补齐依赖的框架仓库执行
-.\gradlew.bat build syncModTemplateLibs
-
-# 复制完整 acbric-mod-template（包括本地 libs）作为自己的工程后执行
+# 复制模板并配置 local.properties 后，在独立工程执行
 .\gradlew.bat build
-.\gradlew.bat installMod -PgameDir='C:/Games/Acbric/game'
+.\gradlew.bat installMod
 ```
 
-`installMod` 将 JAR 复制到指定游戏的 `mods/`；重新启动游戏后生效。模板的 `libs/` 仅用于编译，不打进功能 MOD 的 JAR。修改 `gradle.properties` 中的 MOD ID、名称和版本，并同步修改包名、入口路径及图标路径。不要把游戏依赖或用户数据提交到源码仓库。
+按[模板说明](../acbric-mod-template/README.zh-CN.md)配置 `gameInstallDir`、`frameworkDir` 和 `instanceDir`。`installMod` 将 JAR 复制到目标 `mods/`，重新启动游戏后生效；编译依赖不会进入功能 MOD 的 JAR。修改 `gradle.properties` 中的 MOD ID、名称和版本，并同步修改包名、入口路径及图标路径。不要把游戏依赖或用户数据提交到源码仓库。
 
 最小入口实现：
 
@@ -77,7 +70,7 @@ public final class ExampleMod implements AcbricInitializer {
   "depends": {
     "java": ">=21",
     "fabricloader": ">=0.19.3",
-    "acbric_api": ">=0.3.3-dev.3",
+    "acbric_api": ">=0.3.8",
     "airships": "*"
   }
 }
@@ -102,13 +95,15 @@ public final class ExampleMod implements AcbricInitializer {
 | `configDir()` / `ensureConfigDir()` | 获取 / 创建本 MOD 的配置目录 |
 | `dataDir()` / `ensureDataDir()` | 获取 / 创建本 MOD 的数据目录 |
 | `logger()` | 带当前 MOD ID 的 `AcbricLogger` |
-| `ui()` | 按 MOD 隔离的组件窗口工具，自 dev.13；见 [UI](UI.zh-CN.md)。 |
+| `ui()` | 按 MOD 隔离的组件窗口工具；见 [UI](UI.zh-CN.md)。 |
 | `commandPanelUi()` | 按 MOD 隔离的战斗命令面板控件，自 0.3.8；见[命令面板 UI](COMMAND_PANEL_UI.zh-CN.md)。 |
-| `commands()` | 当前 MOD 的命令注册入口，dev.20；见 [命令契约](COMMANDS.zh-CN.md) |
-| `sharedRules(int version, JSONObject values, SharedRules.Validator validator)` | 注册本 MOD 的共享玩法规则（dev.10）；见 [规则契约](SHARED_RULES.zh-CN.md) |
-| `campaignData(Object worldMap)` | 绑定当前 MOD 和指定地图的 `CampaignData`（dev.3 新增） |
-| `config(name, dataVersion, defaults, validator)` | 创建配置句柄；显式读写/迁移/重载（dev.5），见 [CONFIG](CONFIG.zh-CN.md) |
-| `eventScope(name)` | 创建独立的受管理订阅范围（dev.6），见 [契约](EVENT_SCOPES.zh-CN.md) |
+| `commands()` | 当前 MOD 的命令注册入口；见 [命令契约](COMMANDS.zh-CN.md) |
+| `sharedRules(int version, JSONObject values, SharedRules.Validator validator)` | 注册本 MOD 的共享玩法规则；见 [规则契约](SHARED_RULES.zh-CN.md) |
+| `campaignData(Object worldMap)` | 绑定当前 MOD 和指定地图的 `CampaignData` |
+| `config(name, dataVersion, defaults, validator)` | 创建配置句柄；显式读写、迁移和重载，见 [CONFIG](CONFIG.zh-CN.md) |
+| `eventScope(name)` | 创建独立的受管理订阅范围，见[契约](EVENT_SCOPES.zh-CN.md) |
+
+Java MOD 的列表描述可以在 `fabric.mod.json` 的 `custom.acbric.description` 中提供原版语言键（当前包括 `en`、`chi`、`de`、`fr`、`jpn`、`kor`、`ru`）；原版列表和 Acbric 详情页按当前 Locale 选择，缺少语言时回退英文，最后回退顶层 `description`。`description()` 本身仍返回 Fabric metadata 的原始单字符串。
 
 `AcbricLogger` 也可通过 `new AcbricLogger(modId)` 创建。支持 `info(String)`、`warn(String)`、`error(String)`、`error(String, Throwable)`。日志格式为 `[Acbric/<modId>/<level>] ...`；INFO 输出到 stdout，WARN/ERROR 输出到 stderr，Throwable 追加堆栈。它不负责独立日志文件的轮转。
 
@@ -120,7 +115,7 @@ public final class ExampleMod implements AcbricInitializer {
 | --- | --- |
 | `gameDir()` | `<运行包>/game` |
 | `configDir()` | Fabric 配置根目录，通常为 `game/config` |
-| `modsDir()` | 实际 Fabric MOD 目录；外部发行是 Setup.cmd 同级 `mods`，旧布局默认 `game/mods` |
+| `modsDir()` | 实际 Fabric MOD 目录；外部发行是 `Acbric.exe` 同层 `mods`，旧布局默认 `game/mods` |
 | `staticDataDir()` | `game/data`，游戏静态数据 |
 | `generatedDir()` | `game/generated` |
 | `cacheDir()` | `game/.fabric/acbric/cache` |
@@ -244,7 +239,7 @@ example-mod.jar
     └── <原版 MOD 数据及资源>
 ```
 
-首次启动解包到本地原版 MOD 根下的 `<Fabric MOD ID>/`（外部发行是 Setup.cmd 同级 `mods`；旧布局是 `<AGame用户数据>/mods`），缺少 `info.json` 时生成最小元数据。顶层 JAR/ZIP 来源受支持；嵌套 JAR 和展开的目录来源暂不处理。资源型 MOD 可省略 Java 入口，不需要凭空声明一个 Mixin。
+首次启动解包到本地原版 MOD 根下的 `<Fabric MOD ID>/`（外部发行是 `Acbric.exe` 同层 `mods`；旧布局是 `<AGame用户数据>/mods`），缺少 `info.json` 时生成最小元数据。顶层 JAR/ZIP 来源受支持；嵌套 JAR 和展开的目录来源暂不处理。资源型 MOD 可省略 Java 入口，不需要凭空声明一个 Mixin。
 
 资源更新依据 `.acbric-bundle.json` 中的 SHA-256 归属记录：未改动的受管理文件可更新/移除；用户修改、删除、未归属碰撞保留并报告。没有归属记录的旧目录不自动接管，损坏记录会停止该次更新。原目录备份保存在 `<用户数据>/.acbric-bundles/<id>/backups/`；事务日志用于恢复进程中断，不代表硬件故障下的完整持久化保证。
 
@@ -256,60 +251,54 @@ example-mod.jar
 
 需要 API 尚未覆盖的能力时，可以在自己的 MOD 声明 Mixin，并对照实际游戏字节码确定签名、调用 owner 和注入位置。当前无映射，使用 `remap=false`。自定义 Mixin 不会因为公开 API 兼容就自动获得跨游戏版本兼容。
 
-Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/版本/结构并拒绝同名覆盖；不预检全部依赖、嵌套内容或 Mixin 执行，安装后需重启。dev.12 的 MOD 列表同时展示已加载与扫描目录中的已停用 JAR，可选择下次启动启停，见 [MOD 管理](MOD_MANAGEMENT.zh-CN.md)。必须同时更新启动器和 API；不热卸载、不删除归档。
+Fabric MOD 安装界面会暂存 JAR、校验 `fabric.mod.json` 的 schema/ID/版本/结构并拒绝同名覆盖；不预检全部依赖、嵌套内容或 Mixin 执行，安装后需重启。MOD 列表同时展示已加载与扫描目录中的已停用 JAR，可选择下次启动启停，见[MOD 管理](MOD_MANAGEMENT.zh-CN.md)。启动器与 API 必须来自同一发行版；不热卸载、不删除归档。
 
-从 `0.3.3-dev.2` 开始，GameProvider 在依赖解析前从字节码读取 `AGame.VERSION`，把可识别版本报告给 Fabric；无法取得或识别时告警并将规范版本回退到 `0.0.0`。精确依赖原占位值 `0.0.0` 的 MOD 现在可能无法通过依赖检查。有序游戏归档哈希用于区分相同版本号的不同构建，不代表兼容性保证。本地会话报告区分 Loader 已加载与 `acbric` 入口初始化成功；详见[诊断与兼容说明](DIAGNOSTICS.zh-CN.md)，报告没有引入新的公开 MOD API。
+GameProvider 在依赖解析前从字节码读取 `AGame.VERSION`，把可识别版本报告给 Fabric；无法取得或识别时告警并将规范版本回退到 `0.0.0`。精确依赖旧占位值 `0.0.0` 的 MOD 可能无法通过依赖检查。有序游戏归档哈希用于区分相同版本号的不同构建，不代表兼容性保证。详见[诊断与兼容说明](DIAGNOSTICS.zh-CN.md)。
 
-## 10. 验证范围
-
-当前标准构建通过 597 项无界面回归（含 62 项配置检查）。游戏 1.2.15.2 / 1.2.14 真实 Fabric 探针各通过 10 项战役存储和 31 项生命周期/v3.1 示例和 5 项受管理事件检查，配置策略部分使用显式事件派发；不能替代 GUI 与真实联机验收。用户对 dev.4 反馈暂未发现问题，dev.10 仍待完整人工验收。
-
-## 11. 战役数据
+## 10. 战役数据
 
 取得实际地图后使用 `context.campaignData(campaignWorld.map)`。`net.fabricacs.api.save` 提供 `read`、`write`、`remove` 和显式 `migrate`；读取返回独立 `CampaignDataSnapshot`，迁移失败保留原数据。数据按 MOD ID 隔离，通过原版存档管线保存，并随地图恢复，包含暂时没有对应 MOD 的命名空间。序列化不调用 MOD 回调。
 
 写入改变本地共享游戏状态，**不会广播**；需要各端通过确定性模拟或同步指令一致执行。句柄绑定一个地图实例，地图替换后重新获取。支持的值、完整契约、格式处理及存储/恢复边界见[战役数据手册](CAMPAIGN_DATA.zh-CN.md)。
 
-## 12. 战役生命周期
+## 11. 战役生命周期
 
-从 dev.4 起，`AirshipsCampaignEvents` 提供 `CREATED`、`LOADED`、`RESTORED`、`EXITED`。创建通知早于初次自动保存，加载通知在扩展数据读回后；恢复回调仅重新绑定本地句柄，不修改共享状态。参数、时机及边界见[生命周期契约](CAMPAIGN_LIFECYCLE.zh-CN.md)。旧公开成员继续保留。
+`AirshipsCampaignEvents` 提供 `CREATED`、`LOADED`、`RESTORED`、`EXITED`。创建通知早于初次自动保存，加载通知在扩展数据读回后；恢复回调仅重新绑定本地句柄，不修改共享状态。参数、时机及边界见[生命周期契约](CAMPAIGN_LIFECYCLE.zh-CN.md)。
 
-## 13. MOD 配置（dev.5）
+## 12. MOD 配置
 
 使用 `context.config(...)`，再显式 `load/migrate/save/reload`。默认值只补缺失字段，失败保留旧快照；磁盘更新有备份和冲突检查。本地偏好可重载，共享玩法值应固化到战役，详见 [配置接口手册](CONFIG.zh-CN.md)。
 
-## 14. 运行期诊断与订阅范围（dev.6）
+## 13. 运行期诊断与订阅范围
 
-`context.eventScope(name)` 提供 register/registerOnce/close。受管理回调记录 MOD、事件和异常；旧注册语义保持。见 [完整契约](EVENT_SCOPES.zh-CN.md)。新增 81 项范围与 27 项诊断检查；真实加载检查详见本轮变更记录，GUI/联机仍待人工验收。
+`context.eventScope(name)` 提供 register/registerOnce/close。受管理回调记录 MOD、事件和异常；旧注册语义保持。见[完整契约](EVENT_SCOPES.zh-CN.md)。
 
-## 15. 本地代码清单（dev.7）
+## 14. 本地代码清单
 
-[导出与离线比较](CODE_MANIFEST.zh-CN.md) 属于内部诊断工具，不是新增公开 MOD API。597 项标准回归包含 45 项新增清单检查。CODE_MATCH 仅表示启动代码身份一致，dev.9 已接入大厅，dev.10 新增显式声明规则检查，仍不提供自动状态同步；内部握手核心见下节。
+[导出与离线比较](CODE_MANIFEST.zh-CN.md)属于内部诊断工具，不是公开 MOD API。`CODE_MATCH` 仅表示启动代码身份一致，不提供自动状态同步。
 
-## 16. 内部代码握手（dev.8）
+## 15. 内部代码握手
 
-见[协议与状态契约](CODE_HANDSHAKE.zh-CN.md)。这是包内框架基础设施，本轮有 77 项新增回归，不是公开 MOD 网络接口。两套游戏快照的真实 Server/Client 探针已调用验证；dev.9 在战役大厅自动运行。核心结果仍是本机证据，不直接代表开局许可。
+见[协议与状态契约](CODE_HANDSHAKE.zh-CN.md)。这是框架内部基础设施，不是公开 MOD 网络接口；核心结果仍是本机证据，不直接代表开局许可。
 
-## 17. 战役大厅接入（dev.9）
+## 16. 战役大厅接入
 
 见[玩家行为及接入契约](LOBBY_HANDSHAKE.zh-CN.md)。代码检查失败阻断准备/开局，上下文变化撤销准备。所有玩家需使用相同代码及支持该检查的框架；保留旧 MOD 接口不等于支持新旧框架混用联机。本轮没有新增公开网络 API，也没有自动同步配置或状态。
 
-## 18. 共享玩法规则（dev.10）
+## 17. 共享玩法规则
 
-通过 `context.sharedRules` 声明，由 `SharedRules` 管理候选值，`forCampaign(world.map)` 读取已固化值。见 [完整契约与示例](SHARED_RULES.zh-CN.md)。校验器无副作用；规则缺失或版本不符的旧档不能静默补值。大厅全员一致后才可准备，准备后修改撤销旧凭据，不覆盖本地配置。本轮新增 `rules` 公开包及 1 个 Mixin，共 20 个。
+通过 `context.sharedRules` 声明，由 `SharedRules` 管理候选值，`forCampaign(world.map)` 读取已固化值。见[完整契约与示例](SHARED_RULES.zh-CN.md)。校验器必须无副作用；规则缺失或版本不符的旧档不能静默补值。0.3.6 起房主广播规则快照，其他玩家在本地校验后采用，不覆盖本机配置；规则值变化不再撤销准备。
 
-## 19. 存档规则预检查与转换（dev.11）
+## 18. 存档规则预检查与转换
 
-`SharedRules.migration` 注册旧版本到当前版本的显式转换；`CampaignRuleSaves.inspect` 返回报告，`prepare` 生成前后值预览，`writeNew` 只发布到不存在的新目录。普通加载不迁移、不补默认。详见 [完整契约](RULE_SAVE_MIGRATION.zh-CN.md)。新增 `OpenGameMissionMixin`，共 21 个 Mixin；结构错误、原档变化和目标冲突明确拒绝。
+`SharedRules.migration` 注册旧版本到当前版本的显式转换；`CampaignRuleSaves.inspect` 返回报告，`prepare` 生成前后值预览，`writeNew` 只发布到不存在的新目录。普通加载不迁移、不补默认。详见[完整契约](RULE_SAVE_MIGRATION.zh-CN.md)。结构错误、原档变化和目标冲突会明确拒绝。
 
-## 20. 公共 UI 组件（dev.13）
+## 19. 公共 UI 组件
 
-`context.ui()` 注册 MOD 工具入口并打开组件窗口。`Ui` 构建标签、按钮、开关、单行文本、行列布局、面板和滚动区域；`UiWindowHandle` 管理子弹窗和托管资源。完整签名、线程与清理契约、示例及限制见 [UI.zh-CN.md](UI.zh-CN.md)。模态窗口不暂停模拟和网络 tick。框架 [MOD 详情页](MOD_MANAGEMENT.zh-CN.md) 使用同一套组件。
+`context.ui()` 注册 MOD 工具入口并打开组件窗口。`Ui` 构建标签、按钮、开关、单行文本、行列布局、面板和滚动区域；`UiWindowHandle` 管理子弹窗和托管资源。完整签名、线程与清理契约、示例及限制见 [UI](UI.zh-CN.md)。模态窗口不暂停模拟和网络 tick。
 
-本地化：dev.14 新增 `AcbricLanguage.text(英文, 中文)` 与 `ModUi.register(id, Supplier<String>, factory)`，见 [UI.zh-CN.md](UI.zh-CN.md)。
+本地化使用 `AcbricLanguage.text(英文, 中文)` 与 `ModUi.register(id, Supplier<String>, factory)`。`UiScale.setPercent(50..200)`、`percent()`、`useVanilla()` 调整原版界面大小；越界请求抛出 `IllegalArgumentException`。详见[缩放与 UI 契约](UI.zh-CN.md#原版界面缩放)。
 
-0.3.7 起可用 `UiScale.setPercent(50..200)`、`percent()`、`useVanilla()` 调整原版界面大小。见[缩放契约与示例](UI.zh-CN.md#原版界面百分比缩放037)；使用者须依赖 `acbric_api >=0.3.7`。0.3.7.1 修复位图清晰度。
-
-## 21. 战斗命令面板控件（0.3.8）
+## 20. 战斗命令面板控件
 
 `context.commandPanelUi()` 为主战斗命令面板注册最多 4 个原生样式项目，首版包括按钮、原生开关和状态标签；文字、开关状态、提示和启用状态可动态读取，确认交互使用游戏的 `MyDraw` / Hooks 链路。注册时可选择原生面板上方锚点，或游戏视口顶部/中部/底部的左、中、右锚点，并附加有界像素偏移及横向/纵向布局；旧重载继续使用 `PANEL_ABOVE_CENTER` 与 `HORIZONTAL`，`VERTICAL` 可生成分组侧边栏。该接口不调整原生面板尺寸、不自动同步玩法，也不提供快捷键。完整契约见[命令面板 UI](COMMAND_PANEL_UI.zh-CN.md)。

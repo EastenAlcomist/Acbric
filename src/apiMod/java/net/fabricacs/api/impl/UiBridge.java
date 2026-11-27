@@ -141,7 +141,7 @@ public final class UiBridge {
         var mod=manager.entry(modId);boolean zh=FabricModListBridge.chinese();List<UiNode> nodes=new ArrayList<>();
         nodes.add(Ui.label(mod.metadata().getName()+" · "+mod.metadata().getVersion().getFriendlyString()));
         nodes.add(Ui.label("ID: "+modId));nodes.add(Ui.label(()->manager.status(modId,zh)));
-        nodes.add(Ui.label(mod.metadata().getDescription()));
+        nodes.add(Ui.label(FabricModListBridge.localizedDescription(mod.metadata(),net.fabricacs.api.util.AcbricLanguage.currentLocale())));
         nodes.add(Ui.label(mod.archive()==null?manager.displayReason(modId):(zh?"来源：":"Source: ")+mod.archive()));
         if(mod.manageable()&&manager.reason(modId).isEmpty())nodes.add(Ui.button(()->manager.enabledNext(modId)?(zh?"下次启动停用":"Disable on restart"):(zh?"下次启动启用":"Enable on restart"),h->{
             try{manager.toggle(modId);}catch(java.io.IOException ex){h.message(zh?"无法更改":"Cannot change",ex.getMessage());}

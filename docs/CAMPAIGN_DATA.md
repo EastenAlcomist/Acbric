@@ -1,12 +1,8 @@
 # Campaign mod data
 
-> See [dev.11 conversion](RULE_SAVE_MIGRATION.md) for save preflight, explicit adoption/migration and save-as boundaries. Normal loading still does not migrate.
-
-> dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
-
 **English** | [中文](CAMPAIGN_DATA.zh-CN.md)
 
-Requires `acbric_api >=0.3.3-dev.3` (unreleased). This API stores shared, campaign-level JSON data per mod ID. It does not discover arbitrary Java fields, send network messages, or provide per-ship/city storage automatically.
+Applies to `acbric_api 0.3.8`. This API stores shared, campaign-level JSON data per mod ID. It does not discover arbitrary Java fields, send network messages, or provide per-ship/city storage automatically. See [save conversion](RULE_SAVE_MIGRATION.md) for preflight and explicit migration, and [shared rules](SHARED_RULES.md) for declared gameplay values.
 
 ## Access and lifetime
 
@@ -92,10 +88,8 @@ The JSON `WorldMap` constructor restores the block through `InPipe`. Old saves w
 
 All namespaces are retained whether or not their mod is installed, including unrecognized metadata within the supported envelope format. Mod schemas are preserved without running code from missing mods. Missing gameplay mods may nevertheless make a campaign unusable. Preservation requires this feature to be enabled: opening and re-saving with vanilla or older Acbric builds can drop the extension.
 
-## Multiplayer boundary and verification
+## Multiplayer boundary
 
 Save/recovery support is not automatic live replication. All peers need matching framework/mod behavior, gameplay configuration, initial state, commands, execution order and deterministic random usage. Keep local UI settings, local clocks and player-specific preferences outside this shared store. No new command transport, permission checks or mod-set handshake are added in this version. Standalone battle saves, ship designs and automatic object-attached attributes are outside this API's scope.
 
-Validation includes isolated native binary save round-trips, namespace isolation, migration failures, immutable snapshots and state-hash cache behavior. Real Fabric probes against game `1.2.15.2` and `1.2.14` exercise the transformed map constructor, `CampaignWorld` serialization/load, disk round-trips and the actual `StoredState` path, including same-age updates. These checks do not replace a complete live campaign or two-computer multiplayer/reconnection test.
-
-Lifecycle hooks for obtaining/rebinding maps are available since dev.4: [campaign lifecycle](CAMPAIGN_LIFECYCLE.md). The data API itself still requires only dev.3.
+Obtaining/rebinding maps is documented under [campaign lifecycle](CAMPAIGN_LIFECYCLE.md). Missing gameplay MODs, absent coordinated commands or different deterministic execution can still diverge peers; namespace separation also does not prevent a malicious same-process MOD from accessing another namespace.

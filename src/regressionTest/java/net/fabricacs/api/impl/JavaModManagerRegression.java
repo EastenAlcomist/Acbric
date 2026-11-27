@@ -69,6 +69,31 @@ public final class JavaModManagerRegression {
             var consumer=parse(root,metadata("user_mod",",\"depends\":{\"alias_mod\":\">=1.0.0\"}"));
             JavaModManager.validateDependencies(List.of(provider,consumer)); check(true,"provided alias satisfies dependency");
             rejects(()->JavaModManager.validateDependencies(List.of(consumer)), "required dependency missing rejects change");
+            var localized=parse(root,metadata("localized_mod",
+                    ",\"description\":\"Fallback description\",\"custom\":{\"acbric\":{\"description\":{\"en\":\"English description\",\"chi\":\"中文描述\"}}}}"));
+            check(FabricModListBridge.localizedDescription(localized,false).equals("English description"),
+                    "localized English description is preferred");
+            check(FabricModListBridge.localizedDescription(localized,true).equals("中文描述"),
+                    "localized Chinese description is preferred");
+            var allLanguages=parse(root,metadata("all_languages_mod",
+                    ",\"description\":\"English fallback\",\"custom\":{\"acbric\":{\"description\":{\"en\":\"English\",\"de\":\"Deutsch\",\"fr\":\"Français\",\"jpn\":\"日本語\",\"kor\":\"한국어\",\"ru\":\"Русский\"}}}}"));
+            check(FabricModListBridge.localizedDescription(allLanguages,Locale.GERMAN).equals("Deutsch"),
+                    "localized German description is preferred");
+            check(FabricModListBridge.localizedDescription(allLanguages,Locale.FRENCH).equals("Français"),
+                    "localized French description is preferred");
+            check(FabricModListBridge.localizedDescription(allLanguages,Locale.JAPANESE).equals("日本語"),
+                    "localized Japanese description is preferred");
+            check(FabricModListBridge.localizedDescription(allLanguages,Locale.KOREAN).equals("한국어"),
+                    "localized Korean description is preferred");
+            check(FabricModListBridge.localizedDescription(allLanguages,Locale.forLanguageTag("ru")).equals("Русский"),
+                    "localized Russian description is preferred");
+            var fallback=parse(root,metadata("fallback_mod",",\"description\":\"Fallback description\""));
+            check(FabricModListBridge.localizedDescription(fallback,true).equals("Fallback description"),
+                    "missing localized description falls back to Fabric description");
+            var malformed=parse(root,metadata("malformed_mod",
+                    ",\"description\":\"Fallback description\",\"custom\":{\"acbric\":{\"description\":{\"en\":42}}}"));
+            check(FabricModListBridge.localizedDescription(malformed,false).equals("Fallback description"),
+                    "invalid localized description falls back safely");
             var newer=parse(root,metadata("user_mod",",\"depends\":{\"base_mod\":\">=2.0.0\"}"));
             rejects(()->JavaModManager.validateDependencies(List.of(provider,newer)), "wrong dependency version rejected");
             var conflict=parse(root,metadata("user_mod",",\"breaks\":{\"base_mod\":\"*\"}"));

@@ -1,6 +1,6 @@
 # Command API
 
-[中文](COMMANDS.zh-CN.md) · Since `acbric_api 0.3.3-dev.20` (unreleased).
+[中文](COMMANDS.zh-CN.md) · Applies to `acbric_api 0.3.8`.
 
 Commands are a common entry into framework/MOD services. The in-game console and Java callers use the same registry. Commands are not a shell, script interpreter, hot-reload system or network transport.
 
@@ -24,7 +24,7 @@ final class Example implements AcbricInitializer {
 }
 ```
 
-Declare `"acbric_api": ">=0.3.3-dev.20"` and `"java": ">=21"` in `fabric.mod.json`. Invoke `your_mod_id:echo "hello world"`. Keep the registration for the intended lifetime; call `close()` to unregister. Do not put an application-wide command in a temporary UI window's managed resources. Java MOD disable still takes effect after restart.
+Declare `"acbric_api": ">=0.3.8"` and `"java": ">=21"` in `fabric.mod.json`. Invoke `your_mod_id:echo "hello world"`. Keep the registration for the intended lifetime; call `close()` to unregister. Do not put an application-wide command in a temporary UI window's managed resources. Java MOD disable still takes effect after restart.
 
 ## Public surface
 
@@ -66,4 +66,4 @@ Input is a single line of at most 2048 UTF-16 units, with ASCII spaces separatin
 
 Descriptions/result text are limited to 8192 UTF-16 units per language. The diagnostic buffer clips console messages to 4096; see [developer tools](DEVELOPER_TOOLS.md) for storage and display limits. IDs, enum values and commands stay stable in both UI languages. Framework help uses the current game language; MOD text is supplied by its author.
 
-Built-in commands and a test sequence: [developer tools](DEVELOPER_TOOLS.md). Documentation map: [developer guide index](DEVELOPMENT.md).
+Built-in commands and console operation: [developer tools](DEVELOPER_TOOLS.md). Documentation map: [developer guide index](DEVELOPMENT.md).

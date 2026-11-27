@@ -1,83 +1,41 @@
 # 构建与测试指南
 
-> **English**: [BUILDING.md](BUILDING.md)
-> 面向加入本项目的**人类与 agent**。读完这一篇，你应该能在任何一台机器上编译、测试并知道出错时该看哪里。
+[English](BUILDING.md) · 适用于当前 `0.3.8` 源码
 
----
+## 速查
 
-## 0. 速查
-
-| 你想做什么 | Windows (cmd) | Windows (PowerShell) | Linux / macOS / Git Bash |
-|---|---|---|---|
+| 操作 | Windows cmd | PowerShell | Linux / macOS / Git Bash |
+| --- | --- | --- | --- |
 | 只编译 | `build` | `.\build` | `./build.sh` |
-| 编译 + 全部测试 | `build full` | `.\build full` | `./build.sh full` |
+| 编译并运行全部测试 | `build full` | `.\build full` | `./build.sh full` |
 | 清理后编译 | `build clean` | `.\build clean` | `./build.sh clean` |
-| 透传给 Gradle | `build installApiMod` | `.\build installApiMod` | `./build.sh installApiMod` |
-| **跑全部测试** | `test all` | `.\test all` | `./test.sh all` |
-| **只跑某个套件** | `test event` | `.\test event` | `./test.sh event` |
-| 列出所有套件 | `test list` | `.\test list` | `./test.sh list` |
-| 启动游戏 | `gradlew startAirships` | — | `./gradlew startAirships` |
+| 透传 Gradle 任务 | `build <task>` | `.\build <task>` | `./build.sh <task>` |
+| 运行全部测试 | `test all` | `.\test all` | `./test.sh all` |
+| 运行指定套件 | `test event` | `.\test event` | `./test.sh event` |
+| 列出套件 | `test list` | `.\test list` | `./test.sh list` |
+| 启动旧布局游戏 | `gradlew startAirships` | — | `./gradlew startAirships` |
 
-> PowerShell **不会**从当前目录执行 `build.cmd`，必须写 `.\build`。cmd.exe 可以直接敲 `build`。
-> 由于大小写不敏感的文件系统上 `build` 会和 Gradle 的 `build/` 目录撞车，POSIX 端刻意命名为 `build.sh`。
+`build` 和 `test` 只是查找 JDK 并转发给 Gradle。构建逻辑放在 `build.gradle`，不要重复加入批处理或 shell 脚本。
 
----
+## 环境准备
 
-## 1. 为什么需要"快速编译"
+### JDK
 
-这不是为了好看，是实测出来的：
+项目要求 **JDK 21 或更高版本**，源码与目标字节码固定为 Java 21。`build.cmd` / `build.sh` 会依次检查 `JAVA_HOME`、`PATH` 和常见安装目录，并接受主版本不低于 21 的 JDK。
 
-| 操作（Windows、暖守护进程） | 耗时 | 输出行数 |
-|---|---|---|
-| `gradlew --version`（纯启动地板） | 1975 ms | 15 |
-| `gradlew assemble`（改一个源文件后） | 2775 ms | **23** |
-| `gradlew build`（同样改动） | 3822 ms | **167** |
-| `gradlew assemble --no-daemon` | 12421 ms | — |
-| `gradlew assemble` 但缺 `libs/` | 失败 | **825 行** |
+Git Bash、MSYS 和 Cygwin 中的 Windows 形式 `JAVA_HOME` 会由 `build.sh` 转换。若未找到可用 JDK，可显式设置：
 
-四条理由：
+```powershell
+$env:JAVA_HOME = 'C:/Program Files/Eclipse Adoptium/jdk-21'
+```
 
-1. **真正的反馈环是「改代码 → 启动游戏（约 72 s）→ 读日志」。** 编译前的每一步都是纯开销，
-   能砍就砍。这个项目的正确性只有在运行期才暴露（mixin 是加载期字节码注入），所以迭代次数多。
-2. **`build` 原本没有"只编译"的语义。** 上游把 `check` 接到了 `regressionTest` 上，
-   所以 `gradlew build` = 编译 + 1208 项断言。想只编译必须记住 `assemble` 这个 Gradle 内部名。
-   现在 `build` 就是"编译"，`build full` 才是"编译 + 测试"。
-3. **145 行测试噪声会把编译错误埋掉。** 回归会打印大量 `[Acbric] Bundle conflict …`，
-   而编译错误只有几行。默认只编译，错误一眼可见。
-4. **新机器/新协作者的上手成本。** 缺 `libs/` 时 Gradle 会吐 825 行，
-   完全看不出该怎么办；JDK 21 在 F11 之后成了硬门槛但没人帮忙找；
-   Linux/macOS 协作者此前没有任何顺手的入口。
+```sh
+export JAVA_HOME=/path/to/jdk-21
+```
 
----
+### `libs/`
 
-## 2. 一次性准备
-
-### 2.1 JDK 21（必需）
-
-`build.gradle` 里 `sourceCompatibility = JavaVersion.VERSION_21`。
-仓库**故意不写死 JDK 路径**（`gradle.properties` 里没有 `org.gradle.java.home`），
-所以官方要求你自己提供 JDK 21。
-
-`build` / `build.sh` **会自己找**，顺序是：
-
-1. `JAVA_HOME`（若指向的 JDK 主版本 < 21 则跳过）
-2. `PATH` 上的 `java`（同样校验主版本）
-3. 常见安装位置
-
-| 平台 | 扫描的位置 |
-|---|---|
-| Windows | `%ProgramFiles%\Eclipse Adoptium\jdk-2*`、`%ProgramFiles%\Java\jdk-2*`、`Microsoft\jdk-2*`、`Amazon Corretto\jdk2*`、`Zulu\zulu-2*`、`BellSoft\LibericaJDK-2*`、`%USERPROFILE%\.jdks\*` 等 |
-| Linux | `/usr/lib/jvm/*`、`/usr/java/*`、`/opt/java/*`、`/opt/jdk*`、`$HOME/.sdkman/candidates/java/*` |
-| macOS | `/Library/Java/JavaVirtualMachines/*/Contents/Home`、`/opt/homebrew/opt/openjdk*`、`/usr/local/opt/openjdk*` |
-
-一个都找不到时，脚本会打印一段可以直接照做的中文/英文说明并退出，而不是让你去猜 Gradle 的报错。
-
-> **PATH 上只有 Java 8 也没关系**：脚本会跳过它继续找，只有真的一个 JDK 21 都没有才失败。
-> 这一点已实测：把 `JAVA_HOME` 指向 Java 8，脚本照样在磁盘上找到了 Adoptium JDK 21 并编译成功。
-
-### 2.2 `libs/`（编译必需，约 13 MB）
-
-游戏文件不随仓库分发。新版原版安装通常是根目录的 `asplit-A.zip` / `asplit-B.zip` 加 `lib/*.jar`；编译依赖统一复制到本仓库 `libs`。Fabric Loader 来自 Acbric 框架发行包的 `loader-libs`，不是游戏自带依赖：
+游戏文件不随仓库分发。编译需要游戏 A/B 归档、游戏自带库和 Fabric Loader。以当前 Windows 游戏布局为例：
 
 ```powershell
 $gameInstall = 'C:/Games/Airships Conquer the Skies'
@@ -88,220 +46,138 @@ Copy-Item -Path "$gameInstall/lib/*.jar" -Destination ./libs
 Copy-Item -LiteralPath "$framework/loader-libs/fabric-loader-0.19.3.jar" -Destination ./libs
 ```
 
-其他布局请按 `Airships.json` 的 classPath 定位相应文件；POSIX 系统同样将这些归档复制到 `libs`，不要假设原版有一个同名 `libs` 目录。
-
-至少需要这三个文件，缺任何一个都会在编译前被 `verifyFrameworkInputs` 拦下来：
+至少需要：
 
 | 文件 | 用途 |
-|---|---|
-| `libs/asplit-A.zip` | 游戏内核 class（编译 + 运行） |
-| `libs/asplit-B.zip` | 游戏内核 class（编译 + 运行） |
-| `libs/fabric-loader-0.19.3.jar` | `compileOnly` 依赖 |
+| --- | --- |
+| `libs/asplit-A.zip` | 游戏内核类 |
+| `libs/asplit-B.zip` | 游戏内核类 |
+| `libs/fabric-loader-0.19.3.jar` | 编译依赖 |
+| `libs/*.jar` | 游戏自带依赖 |
 
-本仓库自备的这两份归档**当前取自游戏 1.2.15.3**（用 `AGame.VERSION` 核对，见下方命令），编译与无界面回归都以它为准；换基线后必须先 `build clean` 再跑 `test all`。运行期框架同时兼容旧引擎版本（1.2.15.2 等）——不要写死引擎的输入类型，替换引擎后端后按旧引擎编译的强转会直接失败，详见 [EXTERNAL_INSTALL.zh-CN.md](EXTERNAL_INSTALL.zh-CN.md) 与改动记录 0.3.4。
+其他安装布局可按 `Airships.json` 的 classPath 查找对应归档。当前编译基线为游戏 **1.2.15.3**，运行期也支持 1.2.15.2。更换基线后先执行 `build clean`，再运行 `test all`。
+
+核对基线：
 
 ```powershell
-# 核对当前基线（把 AGame.class 取出来看 VERSION 常量；javap 来自 JDK 21）
-java -version   # 确认是 JDK 21
 javap -p -constants -classpath libs com.zarkonnen.airships.AGame | Select-String VERSION
 ```
 
-还有一个文件**只有回归测试需要**（编译不需要）。`verifyTestInputs` 在你跑 `test`/`check` 时检查它，
-所以只编译的 `build` 没有它也能正常工作：
+测试还需要 `libs/FloatIO.jar`，用于加载原版 JSON 小数格式化；只编译时不需要。
 
-| 文件 | 用途 |
-|---|---|
-| `libs/FloatIO.jar` | 原版 JSON 小数格式化；`regressionTest` 用它补丁 `jdk.unsupported` |
+### `game/`
 
-### 2.3 `game/`（只有"启动游戏"才需要）
+`game/` 只用于旧布局 `startAirships`，应包含 `Airships.json`、`data/`、`lib/native` 等文件。编译和无界面回归不需要它。
 
-约 1.3 GB：`Airships.json`、`data/`、`lib/native` 等。
-**编译和无界面回归都不需要它**；只有 `gradlew startAirships` 需要，缺了会被 `verifyGameInputs` 拦下并给出提示。
+日常开发优先构建外部发行包，再在 Setup 中选择已有游戏目录，避免把游戏复制进仓库：
 
-新版开发运行优先使用外部安装方式：构建 `externalDistZip -PbundleRuntime` 后运行包中的 Setup，直接选择自有游戏目录，不复制游戏到仓库。详见 [INSTALLER.zh-CN.md](INSTALLER.zh-CN.md)。上述 `startAirships` 是保留的旧布局开发任务。
-
-对外分享只使用 **externalDistZip**；旧 `distZip` 会带入本地游戏内容，不能作为干净框架包发布。
-
----
-
-## 3. 编译
-
-```sh
-./build.sh              # 只编译：gradle assemble
-./build.sh full         # 编译 + 全部测试：gradle build
-./build.sh clean        # 清理后编译：gradle clean assemble
-./build.sh installApiMod        # 其余参数原样透传给 gradlew
-./build.sh --info assemble      # 也可以带 Gradle 选项
+```powershell
+.\gradlew.bat externalDistZip -PexternalGameDir="C:/Games/Airships Conquer the Skies"
 ```
 
-产物：
+## 编译
 
-| 文件 | 说明 |
-|---|---|
-| `build/libs/Acbric-1.0-SNAPSHOT-api-mod.jar` | API 层（也就是 `game/mods/acbric-api.jar` 的来源） |
+```sh
+./build.sh                     # gradle assemble
+./build.sh full                # gradle build；编译并运行全部测试
+./build.sh clean               # gradle clean assemble
+./build.sh installApiMod       # 其余参数透传
+./build.sh --info assemble     # 支持 Gradle 选项
+```
+
+主要产物：
+
+| 文件 | 内容 |
+| --- | --- |
+| `build/libs/Acbric-1.0-SNAPSHOT-api-mod.jar` | API 与游戏适配层 |
 | `build/libs/Acbric-1.0-SNAPSHOT.jar` | 启动垫片 `AirshipsGameProvider` |
 
-> 脚本只做两件事：**找 JDK 21**、**把命令交给 `gradlew`**。
-> 所有构建逻辑都在 `build.gradle` 里，所以 IDE、CI 和你手敲 `gradlew` 的行为完全一致。
-> 脚本不是构建系统，别往里塞逻辑。
-
-### 为什么快
-
-`gradle.properties` 里开了三项（每一项都有实测依据）：
-
-| 配置 | 效果 |
-|---|---|
-| `org.gradle.configuration-cache=true` | 复用配置阶段，`assemble` 2.8s → **1.9s（约 −33%）** |
-| `org.gradle.parallel=true` | main / apiMod / regressionTest 三个 source set 并行调度 |
-| `org.gradle.caching=true` | 任务输出按内容复用，换分支、重跑更快 |
-| `org.gradle.daemon=true` | **必须保留**：`--no-daemon` 会让 `assemble` 变成 12.4s |
-
-日常编译与回归保留配置缓存。`createBundledJre`、`distDir`、`externalDistDir`、`externalDistZip` 和 `compareCodeManifests` 使用执行期项目服务，已显式声明不兼容配置缓存；运行这些任务时 Gradle 自动丢弃本次配置缓存，不影响其他构建。
-万一某个环境上出现意外，单次关掉即可：
+`gradle.properties` 启用了配置缓存、并行构建、任务缓存和守护进程。发行与维护任务会按需禁用不兼容的配置缓存。若本地出现缓存异常，可单次执行：
 
 ```sh
 ./build.sh --no-configuration-cache
 ```
 
----
-
-## 4. 测试
+## 测试
 
 ```sh
-./test.sh all          # 全部套件（当前 1208 项断言）
-./test.sh event        # 只跑 event
-./test.sh ev           # 唯一前缀也行
-./test.sh data rename  # 多选，按给定顺序执行
-./test.sh cp           # 别名（cp = classpath）
-./test.sh list         # 列出套件与覆盖范围
+./test.sh all
+./test.sh event
+./test.sh data rename
+./test.sh cp
+./test.sh list
 ```
 
-### 套件
+套件选择支持完整名、别名、唯一前缀和唯一子串；未知或歧义名称会直接报错。
 
-| 套件 | 断言 | 覆盖 | 对应 |
-|---|---|---|---|
-| `data` | 3 | `DATA_LOADED` 原样传递游戏结果：不清理诊断、不把失败改成成功 | F01 |
-| `bundle` | 46 | 内嵌原版资源归属存储：9 种路径穿越、更新、保留用户改动、冲突、备份与中断恢复 | F02 / F05 |
-| `classpath` | 2 | 启动类路径按**归档内容**排除 Loader/Mixin/ASM/垫片，保留游戏库，且不重复 | F03 |
-| `external` | 255 | 外部安装/启动、实例配置、Steam 识别与正版启动、维护锁、缓存隔离与一键同步（当前全量验收要求 Windows） | `EXTERNAL_INSTALL.md` · `INSTALLER.md` |
-| `event` | 12 | 事件总线：`registerOnce` 只执行一次、句柄身份、重复注册 | F04 / F12 |
-| `rename` | 7 | 重命名面板新旧事件的顺序与取消契约 | F06 |
-| `mods` | 68 | Fabric MOD 安装校验与 Java JAR 启停管理：非法 schema / id / 缺字段、依赖预检查 | F07 · `MOD_MANAGEMENT.md` |
-| `campaign` | 41 | 战役数据与生命周期：保留缺失 MOD 命名空间、加载出口、显式迁移 | `CAMPAIGN_DATA.md` · `CAMPAIGN_LIFECYCLE.md` |
-| `config` | 119 | MOD 配置与设置契约：草稿、同句柄冲突检查、显式保存 | `CONFIG.md` · `SETTINGS.md` |
-| `scopes` | 108 | 事件订阅范围与运行期诊断：释放监听器、异常原样抛出 | `EVENT_SCOPES.md` |
-| `manifest` | 45 | 本地代码清单导出与离线比较 | `CODE_MANIFEST.md` |
-| `handshake` | 134 | 代码握手协议与大厅准备门禁 | `CODE_HANDSHAKE.md` · `LOBBY_HANDSHAKE.md` |
-| `rules` | 132 | 共享规则声明、一致性检查与旧档显式迁移 | `SHARED_RULES.md` · `RULE_SAVE_MIGRATION.md` |
-| `identity` | 20 | 构建身份与会话启动诊断 | `DIAGNOSTICS.md` |
-| `ui` | 159 | 公共 UI 组件、战斗命令面板标签/开关/按钮、锚点与纵向侧边栏、文本编辑、输入遮蔽、中英文选择、百分比缩放边界与图片适配 | `UI.md` · `COMMAND_PANEL_UI.md` |
-| `devtools` | 56 | 开发者工具与控制台：命令绑定、执行与有界诊断缓冲 | `DEVELOPMENT.md` · `COMMANDS.md` · `DEVELOPER_TOOLS.md` |
+| 套件 | 覆盖 |
+| --- | --- |
+| `data` | `DATA_LOADED` 保留游戏真实结果 |
+| `bundle` | 内嵌原版资源更新、冲突、备份和恢复 |
+| `classpath` | 启动类路径过滤与去重 |
+| `external` | 外部安装、实例、Steam、维护锁、缓存与同步 |
+| `event` | 事件注册、一次性执行和句柄身份 |
+| `rename` | 重命名面板新旧事件顺序与取消 |
+| `mods` | Fabric MOD 安装、Java MOD 启停、多语言描述和原版 MOD 内嵌 ACMOD |
+| `campaign` | 战役数据与生命周期 |
+| `config` | MOD 配置和设置契约 |
+| `scopes` | 订阅范围与运行期诊断 |
+| `manifest` | 代码清单导出与离线比较 |
+| `handshake` | 代码握手和大厅准备门禁 |
+| `rules` | 共享规则与旧档转换 |
+| `identity` | 构建身份和启动诊断 |
+| `ui` | 公共 UI、命令面板和缩放 |
+| `devtools` | 控制台、命令和诊断缓冲 |
 
-**16 个套件，合计 1208 项**；表里的数字是实测值，加完套件请运行 `test list` 核对注册表，再用 `test all` 核对断言数量。
+回归使用 `build/regression-sandbox/` 下的隔离目录，不读取玩家存档。`check` 和显式 `gradlew build` 始终运行全部套件；`test <suite>` 只影响本地快速测试。
 
-选择规则：精确名 → 别名 → **唯一**前缀 → 唯一子串。歧义或未知会直接报错并列出可选套件，
-不会静默跑错东西。常见同义词已登记为别名：`cp`/`classes` → `classpath`、`settings` → `config`、
-`lobby` → `handshake`、`migration` → `rules`、`java-mods` → `mods`、`console` → `devtools`。
+新增套件时：
 
-### 沙箱
+1. 在 `src/regressionTest/java/net/fabricacs/regression/` 添加返回检查数的 `run` 方法。
+2. 在 `FrameworkRegression.SUITES` 注册名称、说明和入口。
+3. 运行 `test list` 和 `test <name>`。
 
-回归**不需要 `game/`**，也**不碰玩家存档**：它把 `user.home`、`APPDATA`、工作目录全部改到
-`build/regression-sandbox/` 下，并在那里写一个指向沙箱的 `launch_settings.json`。
-夹具目录是 `build/regression-sandbox/run-<随机数>/`，可以直接删。
+不要创建平行测试入口。
 
-### CI 语义没有变
+## 跨平台约定
 
-`check` 仍然依赖 `regressionTest`，而不传选择参数时 `regressionTest` **跑全部套件**。
-显式调用 `gradlew build` / `check`（含 `build full`）时会忽略快速测试选择，保证全量。`test` 无参数与 `test all` 会清空继承的 `ACBRIC_SUITES`；直接运行 `regressionTest` 才读取选择参数或环境变量。
+- `.cmd` 只使用 ASCII 和 CRLF；`.sh` 使用 LF。
+- POSIX 入口使用 `build.sh` / `test.sh`，避免与 `build/` 目录冲突。
+- 脚本从自身路径定位仓库根，路径必须加引号。
+- `cmd.exe` 会把 `-Pkey=value` 在 `=` 处拆开。测试脚本改用 `ACBRIC_SUITES` 环境变量，因此各平台调用一致。
 
-```sh
-./build.sh full                                        # = gradlew build = 编译 + 全部套件
-./test.sh all                                          # 只跑全部套件
-gradlew regressionTest -Pacbric.suites=event,rename    # IDE / CI 里的等价写法
+## 外部发行
+
+```powershell
+.\gradlew.bat externalDistZip -PexternalGameDir="C:/Games/Airships Conquer the Skies"
+.\gradlew.bat externalDistZip -PexternalGameDir="C:/Games/Airships Conquer the Skies" -PbundleRuntime=false
 ```
 
-> 启动脚本用**环境变量 `ACBRIC_SUITES`** 而不是 `-Pacbric.suites=` 传选择，
-> 因为 cmd.exe 会把参数里的 `=` 当分隔符拆开；环境变量在 `.cmd` 与 `.sh` 两端行为一致。
-> Gradle 侧两种写法都支持。
+- `externalDistZip` 生成仅含框架、API、模板、文档和启动器的干净包，并**默认**使用 JDK 21 的 `jlink` 生成 `runtime/`。
+- `-PbundleRuntime=false` 生成不带运行时的精简包；启用默认运行时打包时构建 JDK 必须是 Java 21，否则任务明确失败。
+- `externalGameDir` 只用于发行扫描；未提供时使用 `game/`，没有本地 `game/` 时必须显式传入。
+- 输出：`build/external-dist/Acbric-external-<version>.zip`
+- 扫描报告：`build/external-dist/verification.json`
 
-### 加一个新套件
+外部包不包含游戏本体。旧 `distZip` 会带入本地 `game/` 与 `libs/`，只用于旧布局研究。Windows 玩家 EXE 由 `buildPlayerLauncher` 使用 `csc.exe` 构建，普通 Java 编译和测试不会调用它。
 
-1. 在 `src/regressionTest/java/net/fabricacs/regression/` 下按现有风格写一个类
-   （`public static int run(...)`，内部用 `check(condition, message)` 断言并返回条数）。
-2. 在 `FrameworkRegression` 的 `static { ... }` 块里
-   `register("名字", "一句话说明", FrameworkRegression::suiteXxx)`。
-3. 在 `suiteXxx` 里调用它，并像其它套件一样 `checks += ...` 累加。
-4. 跑 `./test.sh list` 与 `./test.sh <新名字>` 验证。
+## 排错
 
-**不要新建平行的测试入口**（第二个 main、第二个 Gradle 任务）——套件注册表是唯一入口，
-这样 `test <名字>` 与 CI 才不会分叉。
+| 现象 | 处理 |
+| --- | --- |
+| `No compatible JDK found (requires 21 or newer).` | 安装 JDK 21+，或设置有效的 `JAVA_HOME`。 |
+| `Missing game files required for compilation` | 按上方补齐 `libs/`。 |
+| `Missing game files required to launch Airships` | 仅影响 `startAirships`；补齐 `game/` 或改用外部发行。 |
+| Gradle Wrapper 锁超时 | 等待其他下载/构建结束，不要删除 `.lck`。 |
+| Linux/macOS 上 `Permission denied` | 执行 `chmod +x gradlew build.sh test.sh`。 |
+| `bad interpreter` | 检查 `.sh` 是否为 LF。 |
+| 首次构建下载依赖很慢 | 需要访问 Maven Central 和 Fabric Maven。 |
+| `Task 'event' not found` | 使用 `test event`，或给 Gradle 参数中的 `=` 段加引号。 |
 
----
+修改 Mixin 或 `fabric.mod.json` 后，应核对真实字节码目标和加载日志。录制绘制器不能替代输入法、窗口焦点和 OpenGL 实机检查。
 
-## 5. 跨平台注意事项
+文档改动后运行：
 
-这套入口是刻意按"换台电脑也不出错"设计的，几条硬约束：
-
-1. **`.cmd` 只写 ASCII，且必须 CRLF。** cmd.exe 按控制台 OEM 代码页读批处理，
-   UTF-8 中文注释在别的代码页机器上会被当成命令执行（本机实测踩到）。
-   `.gitattributes` 里的 `*.cmd text eol=crlf` 保证换行符。
-2. **`.sh` 必须 LF。** CRLF 的 shell 脚本在 Linux/macOS 上会报
-   `bad interpreter: No such file or directory`。`.gitattributes` 里的 `*.sh text eol=lf` 保证。
-3. **不使用无扩展名的 `build` / `test` 作为 POSIX 入口。**
-   在大小写不敏感的文件系统（Windows、macOS 默认）上，它和 Gradle 的 `build/`
-   输出目录冲突，会导致 checkout 异常，所以 POSIX 端是 `build.sh` / `test.sh`。
-4. **`gradlew` 的可执行位已修正为 100755。** 之前是 100644，Linux/macOS 上
-   `./gradlew` 会直接 `Permission denied`。
-5. **脚本全部自定位**：用 `%~dp0` / `$(dirname "$0")` 推出仓库根，不依赖当前目录。
-   路径含空格（例如 `C:\Users\liu chang\…`）时全程加引号——本机就是这个路径，已实测。
-6. **Git Bash / msys / cygwin 的 `JAVA_HOME` 是 Windows 路径**（`C:\Program Files\…`），
-   `build.sh` 会把它归一化成 `/c/Program Files/…` 再判断。
-7. **cmd.exe 会把参数里的 `=` 当分隔符拆开。** `build regressionTest -Pacbric.suites=event`
-   到 Gradle 手里会变成 `-Pacbric.suites` 和 `event` 两个参数，然后报一个莫名其妙的
-   `Task 'event' not found`。要么加引号（`build regressionTest "-Pacbric.suites=event"`），
-   要么用环境变量（`set ACBRIC_SUITES=event`）——启动脚本走的就是后者。
-   `build.cmd` 检测到这种拆分时会先打印一句提示，不让你对着 Gradle 的报错发呆。
-8. **批处理的两个坑已在注释里标出**，改脚本时别踩回去：
-   `for /f ('""quoted exe" args"') ` 的引号数必须是偶数，否则解析器会吞掉整个文件；
-   路径里带 `)` 会提前关闭 `( … )` 块。现在的实现改成"重定向到临时文件 + `set /p`"，两个坑一起绕开。
-
----
-
-## 6. 出错了看这里
-
-| 现象 | 原因 | 处理 |
-|---|---|---|
-| `No JDK 21 found.` | 没装 JDK 21，且 `JAVA_HOME` 也无效 | 装一个，或 `set JAVA_HOME=C:\path\to\jdk-21` / `export JAVA_HOME=/path/to/jdk-21` |
-| `Missing game files required for compilation` | 缺 `libs/asplit-*.zip` 等 | 按提示从自己的 Airships 安装目录复制（见 §2.2） |
-| `Missing game files required to launch Airships` | 缺 `game/Airships.json` 等 | 只有启动游戏才需要；只想编译/测试可以忽略 |
-| `Timeout … gradle-8.13-bin.zip` | 别的进程占着 wrapper 锁（常见是 VS Code 的 Gradle 扩展在后台下载） | 等它下完；不要删 `.lck` |
-| Linux/macOS 上 `./gradlew: Permission denied` | 老版本 checkout 的可执行位丢失 | `chmod +x gradlew build.sh`，或重新 clone（本仓库已把模式修正为 100755） |
-| `bad interpreter` | `.sh` 被 checkout 成 CRLF | 确认 `.gitattributes` 生效：`git check-attr eol build.sh` |
-| 首次构建很慢 | 要从 Maven Central / maven.fabricmc.net 拉 sponge-mixin 与 ASM | 属正常；之后走 Gradle 缓存 |
-| 写了 `-Pacbric.suites=event` 却报 `Task 'event' not found` | cmd.exe 在 `=` 处拆了参数 | 加引号，或改 `set ACBRIC_SUITES=event` |
-| `unknown regression suite: 'x'` | 名字打错，或前缀有歧义 | 先 `test list`；用完整套件名 |
-
----
-
-## 7. 给 agent 的约定
-
-- **默认用 `build`** 验证编译，不要用 `gradlew build`（那会连带跑全部测试、刷 167 行）。
-- 改完 mixin / `fabric.mod.json` 之后必须跑全部回归，并核对真实字节码注入目标与 `@At` 调用点。
-  历史文档引用的 `Ac source/tools/acbric.cmd verify` 不在本仓库或当前工作区；有该工具时运行它，
-  否则使用现有 ASM/字节码检查和真实 Knot 加载验证，并记录覆盖范围，不声称执行了缺失的工具。
-- **不要把逻辑写进 `build.cmd` / `build.sh` / `test.cmd` / `test.sh`**：
-  它们只是"找 JDK + 转发"。要加行为就加 Gradle 任务，这样 IDE 和 CI 都受益。
-- **先跑覆盖你改动的那一套，收尾前再跑 `test all`。** 全量只有 1208 项断言、约 7 秒，
-  没有理由跳过。迭代过程中用 `test <套件>` 更快：改 `BundledResourceStore` 跑 `test bundle`，
-  改 `Event` 跑 `test event`。
-- 新增测试请加进套件注册表（见下文 "加一个新套件"），不要新建平行的测试入口。
-
-## 文档维护
-
-专题说明集中在 `docs/`，入口是 [文档总目录](README.zh-CN.md)。新增或移动文档后，在仓库根目录运行 `python tools/verify_docs.py`，检查本地 Markdown 文件链接；它不检查标题锚点或外部网站。发行包解压后可用 `--root <Acbric目录>` 检查同一套文档入口。历史快照不作为当前构建指引。
-
-## Windows 玩家入口
-
-`externalDistZip` 额外调用 `buildPlayerLauncher`，用 Windows 自带 .NET Framework 4 的 `csc.exe` 编译 `src/launcher/windows/Acbric.cs`。无需安装 WiX。日常 Java 编译和回归不调用该任务。面向玩家使用 `-PbundleRuntime`；EXE 使用包内 Java 21，极简包才需要设置 `JAVA_HOME`。PowerShell 5 脚本和 C# 中文源使用 UTF-8 BOM。
-
-真实 EXE 验收：先运行 `regressionTestClasses` 和 `externalDistZip -PbundleRuntime`，再运行 `python tools/test_player_launcher.py --game-dir "C:/Games/Airships" --tag freshcheck`。仅在 build 下解压；临时类加载器夹具操作 Swing 首页，测试 MOD 验证真实游戏菜单/音频。生成图片与 JSON 证据；不替代人工鼠标、DPI 和跨设备验收。
+```powershell
+python tools/verify_docs.py
+```

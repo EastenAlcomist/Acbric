@@ -1,5 +1,5 @@
 /*
- * ModMixin.java — 在原版 MOD 列表刷新后补入 Fabric 行，保留原版扫描流程。
+ * ModMixin.java — 在原版 MOD 列表刷新后补入 Fabric 行，并扫描原版 MOD 携带的 ACMOD。
  */
 package net.fabricacs.api.mixin;
 
@@ -29,6 +29,7 @@ public abstract class ModMixin {
             if (mod.preemptedBy == null && net.fabricacs.api.impl.DisabledBundledMods.blocked(mod)) mod.preemptedBy = mod;
         }
         FabricModListBridge.appendFabricMods();
+        net.fabricacs.api.impl.NativeEmbeddedAcmods.refresh(Mod.mods);
     }
     @Inject(method = {"isCurrentlyEnabled", "isAvailable"}, at = @At("HEAD"), cancellable = true, remap = false)
     private void acbric$blockDisabledBundle(org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {

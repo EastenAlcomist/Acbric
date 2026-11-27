@@ -1,10 +1,8 @@
-# Local code manifests and offline comparison (dev.7)
-
-> dev.10: see [shared rules](SHARED_RULES.md) for explicit declarations, pre-generation freezing and resume checks. Existing local config/storage writes still do not broadcast. Versioned validation records below are historical.
+# Local code manifests and offline comparison
 
 **English** | [中文](CODE_MANIFEST.zh-CN.md)
 
-This is the first stage of consistency checking: export a local startup code manifest and compare two files. dev.8 adds the [internal handshake core](CODE_HANDSHAKE.md); dev.9 connects [campaign lobby ready/start gates](LOBBY_HANDSHAKE.md). Automatic state synchronization is not implemented. The classes and JSON format are internal diagnostic tooling, not a new stable mod API.
+This tool exports a local startup code manifest and compares two files. Runtime room checks are documented under the [internal handshake](CODE_HANDSHAKE.md) and [campaign lobby integration](LOBBY_HANDSHAKE.md). The classes and JSON format are internal diagnostic tooling, not a stable MOD API, and provide no automatic state synchronization.
 
 ## Export and compare
 
@@ -22,14 +20,7 @@ From the development repository:
 .\gradlew.bat compareCodeManifests '-PmanifestLeft=C:/reports/left.json' '-PmanifestRight=C:/reports/right.json'
 ```
 
-From the root of a complete distribution:
-
-```powershell
-.\jre\bin\java.exe -Dfile.encoding=UTF-8 -cp 'game/mods/acbric-api.jar;libs/*;libs/asplit-A.zip;libs/asplit-B.zip' net.fabricacs.api.impl.CodeManifestCompare C:/reports/left.json C:/reports/right.json
-$LASTEXITCODE
-```
-
-Quote paths containing spaces. The tool reads two files and prints JSON; it does not start the game or use the network. `libs/*` does not include ZIP files: keep both explicit `asplit` entries. In a development checkout the API JAR is `build/libs/Acbric-1.0-SNAPSHOT-api-mod.jar`.
+Quote paths containing spaces. The tool reads two files and prints JSON; it does not start the game or use the network. It requires prepared development dependencies; use the Gradle task above as the stable entry point.
 
 | Status / process exit code | Meaning |
 | --- | --- |
@@ -65,8 +56,4 @@ Ambiguous duplicate ZIP entries, symbolic links and unsupported origins are reje
 
 Hashing runs synchronously once during startup, outside render loops. Before/after inventory checks detect ordinary concurrent changes, but do not lock the filesystem or certify in-memory transformed bytecode. Restart and export again after changing mod files.
 
-## Validation
-
-356 headless checks pass, including 45 new manifest checks. Symlink checks requiring unavailable Windows permissions are explicitly skipped. Isolated Fabric probes using games 1.2.15.2 and 1.2.14 export real nested mods, the new template and legacy mods; existing event, storage and lifecycle probes still pass. All four CLI exit outcomes and self-comparisons of both real exports were checked. GUI, live two-client communication and online servers remain untested.
-
-Subsequent validation: dev.8 brings the total to 433 checks and validates the internal handshake through both native local Server/Client builds. The dev.7 counts and untested scope above describe that earlier stage; dev.9 subsequently adds [lobby integration](LOBBY_HANDSHAKE.md), with 477 standard checks. Its coverage and remaining acceptance are documented separately.
+The manifest covers only the startup code identity listed above. It does not authenticate players or prove that native resources, shared settings, save state or runtime simulation match.

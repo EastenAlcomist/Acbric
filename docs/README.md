@@ -4,7 +4,7 @@
 
 Current development version: **0.3.8**. Players start with setup, MOD authors with the development workflow, and framework contributors with the build guide. Build commands assume the repository root as the working directory.
 
-Topic documents define behavior; changelogs and historical snapshots record earlier states. A dev.N in a topic title usually identifies the feature introduction, not the current framework version. Game content, user configuration and test outputs are not documentation source.
+Topic documents define current behavior; changelogs and historical snapshots record earlier states. Game content, user configuration and test outputs are not documentation source.
 
 ## Usage and development
 
@@ -48,7 +48,7 @@ Topic documents define behavior; changelogs and historical snapshots record earl
 
 | Topic | English | 中文 |
 | --- | --- | --- |
-| External installation mechanics and validation | [English](EXTERNAL_INSTALL.md) | [中文](EXTERNAL_INSTALL.zh-CN.md) |
+| External installation and data isolation | [English](EXTERNAL_INSTALL.md) | [中文](EXTERNAL_INSTALL.zh-CN.md) |
 | Changelog | [English](CHANGELOG.md) | [中文](CHANGELOG.zh-CN.md) |
 | Previous README snapshot (historical) | [English](LEGACY_README.md) | [中文](LEGACY_README.zh-CN.md) |
 

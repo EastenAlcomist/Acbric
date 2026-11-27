@@ -66,6 +66,6 @@ echo   test all                 same as above
 echo   test ^<suite^>...         run selected suites (unique prefix works: ev -^> event)
 echo   test list                list available suites
 echo.
-echo   Suites: data bundle classpath event rename mods
+echo   Run "test list" for the current suites.
 echo   CI and gradlew build always run every suite; this only affects local runs.
 exit /b 0

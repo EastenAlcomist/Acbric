@@ -227,6 +227,7 @@ public final class FrameworkRegression {
     private static void suiteMods(Path root) throws Exception {
         checks += ModManagementRegression.run(root.resolve("mod-management"));
         checks += net.fabricacs.api.impl.JavaModManagerRegression.run(root.resolve("java-mod-manager"));
+        checks += net.fabricacs.api.impl.NativeEmbeddedAcmodRegression.run(root.resolve("native-embedded"));
     }
 
     private static void suiteExternal(Path root) throws Exception {

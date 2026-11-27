@@ -68,12 +68,16 @@ processResources {
     inputs.property 'modId', findProperty('modId')
     inputs.property 'modName', findProperty('modName')
     inputs.property 'modDescription', findProperty('modDescription')
+    inputs.property 'modDescriptionEnglish', findProperty('modDescriptionEnglish')
+    inputs.property 'modDescriptionChinese', findProperty('modDescriptionChinese')
     inputs.property 'modVersion', findProperty('modVersion')
     filesMatching('fabric.mod.json') {
         expand(
                 modId: findProperty('modId'),
                 modName: findProperty('modName'),
                 modDescription: findProperty('modDescription'),
+                modDescriptionEnglish: findProperty('modDescriptionEnglish'),
+                modDescriptionChinese: findProperty('modDescriptionChinese'),
                 modVersion: findProperty('modVersion')
         )
     }

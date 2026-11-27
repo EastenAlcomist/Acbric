@@ -1,9 +1,7 @@
 # Bundled vanilla resource management
 
 JAR mods may supply `acbric_vanilla/`. At preLaunch, Acbric installs these files into
-`<local native MOD root>/<fabric-id>/`. External releases (dev.28+) use the shared `mods` folder beside Setup.cmd inside Acbric; legacy mode uses the vanilla user-data `mods` folder.
-
-外部发行 dev.28 起，配套资源与 Java MOD 共用 Setup.cmd 同级的 `mods`；旧布局仍用原生用户数据下的 mods。
+`<local native MOD root>/<fabric-id>/`. External releases use the shared `mods` folder beside `Acbric.exe`; legacy layouts use the vanilla user-data `mods` folder.
 Top-level JAR/ZIP origins are supported; nested or exploded mod resources are not.
 
 New installations contain `.acbric-bundle.json` with an ownership map of SHA-256 hashes,
@@ -37,22 +35,19 @@ recovery, not a guarantee against hardware/storage failure.
 
 ## Explicit migration of an old directory
 
-Close the game. From a prepared source checkout, run the following with JDK 21. Replace
+Close the game. From a prepared source checkout, run the following with JDK 21 or newer. Replace
 the three final arguments with the actual archive, **vanilla** mods directory and Fabric ID:
 
 ```powershell
+$bundle = 'C:/mods/example.jar'
+$nativeMods = 'C:/Users/you/AppData/Roaming/AirshipsGame/mods'
+$modId = 'example_mod'
 & "$env:JAVA_HOME/bin/java.exe" -cp 'build/libs/Acbric-1.0-SNAPSHOT-api-mod.jar;libs/*;libs/asplit-A.zip;libs/asplit-B.zip' `
     net.fabricacs.api.impl.BundledVanillaModMigration `
-    'C:/mods/example.jar' 'C:/Users/you/AppData/Roaming/AirshipsGame/mods' 'example_mod'
+    $bundle $nativeMods $modId
 ```
 
-From an assembled distribution, use its bundled runtime and API location instead:
-
-```powershell
-& './jre/bin/java.exe' -cp 'game/mods/acbric-api.jar;libs/*;libs/asplit-A.zip;libs/asplit-B.zip' `
-    net.fabricacs.api.impl.BundledVanillaModMigration `
-    'C:/mods/example.jar' 'C:/Users/you/AppData/Roaming/AirshipsGame/mods' 'example_mod'
-```
+The packed `externalDistZip` intentionally omits game libraries, so run this migration from a prepared development checkout. Player installations should use the launcher rather than this internal utility.
 
 Migration requires an existing unmanaged directory. It retains a full backup, adopts
 only files already identical to the supplied bundle, and records different/missing

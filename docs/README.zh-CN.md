@@ -4,7 +4,7 @@
 
 当前开发版：**0.3.8**。玩家从安装指南开始，MOD 作者从开发流程开始，框架贡献者先读构建指南。文档中的构建命令以仓库根目录为工作目录。
 
-专题文档定义行为，CHANGELOG 和历史快照记录当时状态。文档标题中的 dev.N 通常表示功能引入版本，不表示当前框架仍停留在该版本。游戏代码、资源、用户配置和测试产物不纳入文档仓库。
+专题文档定义当前行为；CHANGELOG 和历史快照记录过去状态。游戏代码、资源、用户配置和测试产物不纳入文档仓库。
 
 ## 使用与开发入门
 
@@ -48,7 +48,7 @@
 
 | 主题 | English | 中文 |
 | --- | --- | --- |
-| 外部安装机制与验证边界 | [English](EXTERNAL_INSTALL.md) | [中文](EXTERNAL_INSTALL.zh-CN.md) |
+| 外部安装与数据隔离 | [English](EXTERNAL_INSTALL.md) | [中文](EXTERNAL_INSTALL.zh-CN.md) |
 | 版本改动记录 | [English](CHANGELOG.md) | [中文](CHANGELOG.zh-CN.md) |
 | 整理前 README 快照（历史） | [English](LEGACY_README.md) | [中文](LEGACY_README.zh-CN.md) |
 

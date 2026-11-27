@@ -1,8 +1,8 @@
-# Saved rule preflight and explicit conversion (dev.11)
+# Saved rule preflight and explicit conversion
 
 **English** | [中文](RULE_SAVE_MIGRATION.zh-CN.md)
 
-`acbric_api 0.3.3-dev.11` adds `CampaignRuleSaves` and opt-in direct schema migrations for [shared rules](SHARED_RULES.md). Normal loading still never adopts defaults or runs migrations. A native file-load hook reports incompatible declared rules before constructing the campaign. The existing campaign constructor also checks before `LOADED`, including multiplayer data arriving without the file-load entrypoint.
+Applies to `acbric_api 0.3.8`. `CampaignRuleSaves` provides opt-in direct schema migrations for [shared rules](SHARED_RULES.md). Normal loading never adopts defaults or runs migrations. A native file-load hook reports incompatible declared rules before constructing the campaign; the constructor also checks before `LOADED`, including multiplayer data arriving without the file-load entrypoint.
 
 ## Authoring contract
 
@@ -66,10 +66,6 @@ The destination must not exist; its parent must exist, and source/destination mu
 
 Conversion does not modify an active world or a config file. Multiplayer uses the resulting saved rules and the existing full-peer lobby check. Distribute/load the converted save through the normal workflow; all peers still need matching game/framework/MOD code and saved rules. Do not convert independently using different local defaults or infer full state synchronization from rule agreement.
 
-## Tests and example
+## Known limits
 
-The standard build passes 597 checks, including 56 new file/conversion checks; two existing symlink fixtures are skipped on this host for lack of permission. Two real game versions run the independent test MOD's legacy/v1/v2 variants: 136 checks across six Fabric processes cover actual `WorldGenScreen` construction, `setupPlayer`, native disk save/load, preflight, conversion actions and map-state reconstruction. These use small fixture maps, not procedural generation of a complete world or a rendered GUI.
-
-Four native Server/two-Client experiments across both versions pass 54 top-level checks: converted matching rules allow preparation and differing converted rules block preparation/start. The successful path checks `canStart`, not a full multiplayer game launch. Cross-machine/official-server sessions and full gameplay remain manual.
-
-The separate workspace project `acbric-rules-test` provides three mutually exclusive JAR variants and a bilingual HUD with inspect/preview/write/failure/reload hotkeys. It is distributed in the local test kit, not as a default framework MOD. It changes no damage mechanic. See the workspace test manual for installation and a full old-save upgrade exercise.
+Conversion supports the current directory-save format; other formats are handled by normal loading or explicitly rejected. Cross-machine play, official servers, complete gameplay and hostile concurrent filesystem replacement are outside its guarantees. Matching rules satisfy only part of the lobby gate and do not imply full game-state synchronization.

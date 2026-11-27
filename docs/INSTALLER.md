@@ -1,87 +1,80 @@
-# Acbric player guide (0.3.5.1)
+# Acbric player guide
 
 [中文](INSTALLER.zh-CN.md)
 
 ## First use
 
-1. Fully extract the distribution with bundled Java and open **Acbric.exe** in its `Acbric` folder. Install the game separately: this release is **built for *Airships: Conquer the Skies* 1.2.15.3** (including the LWJGL3 engine backend used by the engine migration MOD), and older engines such as 1.2.15.2 keep working.
-2. The launcher searches Steam automatically. Confirm the displayed location and select **Use this game**. Use **Choose game folder** if nothing was found or you want another installation.
-3. Select **Start game** when ready. Open the same EXE next time; no repeated setup is needed.
-4. To keep the saves, designs and MODs from your original game, select **Sync now** on the home screen (see below).
+1. Fully extract `Acbric-external-<version>.zip` and open `Acbric.exe`. Install the game separately.
+2. The launcher searches Steam automatically. Confirm the location and select **Use this game**, or select **Choose game folder** for another installation.
+3. Select **Start game** when setup is complete. Use the same EXE next time.
 
-The Chinese/English choice at the top right is saved. The default data folder is configured automatically; ordinary players do not need to manage an “instance”. Launcher actions are disabled while the game runs and restored after it closes.
-
-Once setup is ready, the home screen offers **Steam launch (owned copy)**. This requires an installation registered in Steam, a signed-in Steam client and an account that owns App `342560`; launching through Steam enables Steamworks, game status and Workshop access. On first use or after MOD updates, Steam may synchronize subscribed Workshop content before the game reaches its menu. Keep using **Start game** for the original direct launch when Steam or Workshop is not needed.
+The language selector at the top right is saved. While the game runs, launcher actions remain disabled until it exits. On first use, select **Sync now** on the home screen to use the vanilla saves and MODs directly.
 
 ```text
 Acbric/
-├─ Acbric.exe            One everyday entry
-├─ mods/                 Put MODs here
-├─ 使用说明.txt / QUICK_START.txt
-├─ docs/                 Full documentation
-├─ advanced/             Legacy setup, launch and maintenance tools
-├─ core/, loader-libs/, runtime/ and supporting files
-└─ instances/default/    Data created during first setup
+├─ Acbric.exe
+├─ mods/
+├─ docs/
+├─ advanced/
+├─ core/, loader-libs/, runtime/
+└─ instances/default/
 ```
 
-There is one EXE **entry**, not a single-file framework. Keep the entire folder together; create an EXE shortcut for desktop access. Supporting PowerShell scripts do not need to be opened manually.
+`Acbric.exe` is the everyday entry point, not a single-file program. Keep the complete directory together; create an EXE shortcut for desktop access if needed.
+
+## Launch modes
+
+- **Start game** launches directly and does not require Steam.
+- **Steam launch (owned copy)** requires an installation in a real Steam library, a signed-in Steam client and an account that owns App `342560`. It enables Steamworks, game status and Workshop access. Steam may synchronize subscribed content on first use or after MOD updates.
 
 ## Add MODs
 
-Select **Open MOD folder**. Place Java `.jar` MODs or native folders directly containing `info.json` here. Import `.amod` through the game's Install MOD action. The API is included; do not add a duplicate API JAR. Restart after adding, removing or enabling/disabling Java MODs.
+Select **Open MOD folder**:
 
-Old layouts/User folders are not imported on their own; a new instance uses the vanilla saves and MODs directly (next section), so no copying is needed. MOD settings live in `instances/default/config`. Each instance records its own data environment: shared instances use the vanilla data, isolated ones use their own copies.
+- Java MODs: place `.jar` files in the `mods` folder beside Acbric.
+- Native MODs: place folders that directly contain `info.json` in the active data environment's `mods` folder. In shared mode this is the vanilla MOD directory; with environment isolation it is Acbric's `mods` folder.
+- Native `.amod` archives: import them through the game's Install MOD action.
 
-## Sync now (use the vanilla saves and MODs directly, no copying)
+**Open MOD folder** opens the Java MOD root; in shared mode, native MODs belong in the vanilla data directory. The API is included; do not add another copy. Restart after adding, removing or enabling/disabling Java MODs. MOD settings are stored under `instances/default/config`.
 
-By default Acbric does **not** copy any save or MOD: it works directly on the original game data. **Sync now** at the bottom of the home screen detects the vanilla locations and points this instance at them in one click:
+## Saves and MOD data
 
-- Detection: the game installation's `launch_settings.json` (`customDataDirectoryLocation`) wins when you moved the data folder in the original game; otherwise `%APPDATA%\AirshipsGame`, that is `C:\Users\<you>\AppData\Roaming\AirshipsGame`.
-- Used directly: `saves`, designs (`ships`/`buildings`/`landships`), `combats`, `missions`, `recordings` and `recordingsArchive`, plus the vanilla MOD folders under `mods` — all of them stay in the vanilla folder.
-- Only one copy exists: at launch Acbric points both the native data directory and the native MOD scan at that folder, so nothing is duplicated, no extra space is used, the two can never drift apart, and the original game and Acbric share the same data.
-- Java `.jar` MODs still live in the `mods` folder beside `Acbric.exe`: the original game does not load Fabric MODs, so this copy is not duplicated either.
+By default, Acbric uses the vanilla data directly and copies neither saves nor MODs:
 
-Syncing writes and deletes nothing, so it asks for no confirmation and simply reports the detected paths in the status line. If the vanilla folder is missing (for example the original game was never started), the launcher asks you to run it once or to use isolation below.
+1. If the game has a custom data directory, Acbric reads `customDataDirectoryLocation` from the installation's `launch_settings.json`.
+2. Otherwise it uses `%APPDATA%\AirshipsGame`.
+3. **Sync now** binds the current instance to those locations without writing to or deleting vanilla files. Java `.jar` MODs remain in Acbric's `mods` folder.
 
-## Environment isolation (optional)
+For isolated copies, open **Settings → Environment isolation**:
 
-When this instance should use its own data and stop touching the vanilla folder, open **Settings → Environment isolation**:
-
-1. Close the game first; isolation is refused while the game runs or another instance holds the MOD folder.
-2. The confirmation window lists how many files will be copied and removed, where the vanilla data is and what is covered.
-3. On confirmation the vanilla data is mirrored into the instance copies (`instances/default/userdata` and Acbric's `mods`) and the mode switches only after that succeeds. The copy is a **full mirror**: extra items in the instance copy are removed, and everything overwritten or removed is first backed up to `instances/default/userdata/.acbric-sync-backup/<timestamp>/` (split into `userdata/` and `mods/`; the result window shows the path).
-4. Open **Settings → Environment isolation** again to refresh the copies from the current vanilla data. Selecting **Sync now** goes back to using the vanilla data directly; the isolated copies stay on disk and are never deleted. Files in the vanilla folder are never deleted either.
+1. Close the game.
+2. Review the copy/removal scope in the confirmation window.
+3. Acbric mirrors the vanilla data into `instances/default/userdata` and the instance `mods` folder. Overwritten or removed items are backed up first under `instances/default/userdata/.acbric-sync-backup/<timestamp>/`.
+4. Run isolation again to refresh the copies, or select **Sync now** to return to the vanilla data. Acbric does not delete the vanilla directory.
 
 ## Settings and maintenance
 
-- **Change game location**: select a moved or different game, retaining the original data folder, then confirm.
-- **Environment isolation**: switch this instance to its own saves and MODs (see above) — useful when you want two separate progress sets or do not want to touch the vanilla install.
-- **Install update package**: close the game and choose a trusted `Acbric-external-<version>.zip` in Settings. The launcher exits before updating and reopens on success. Do not extract updates over the old directory.
-- **Restore previous version**: restore framework files from before the last update. MODs, saves and settings are not rolled back; older frameworks may not read newer saved data.
-- **Advanced settings**: choose a custom data folder or switch existing instances. Select the instance, load, check and save. Everyday use does not require this screen.
+- **Change game location**: select the moved game installation.
+- **Environment isolation**: switch to independent saves and MOD copies.
+- **Install update package**: close the game and select a trusted `Acbric-external-<version>.zip`. Do not extract an update over the old directory.
+- **Restore previous version**: restore framework files from before the last update. Saves, settings and MODs are not rolled back; older framework versions may not read newer data.
+- **Advanced settings**: configure a custom data directory or switch existing instances. Everyday use does not require this screen.
 
-First upgrade from dev.32 or earlier: extract the new package elsewhere, run its `advanced/Update Acbric.cmd`, and select the original Acbric folder and new ZIP. The old updater does not recognize the EXE file manifest. Releases without a supported manifest require fresh setup; legacy data is not migrated automatically. This compatibility tool is for initial upgrades/recovery; later updates use the EXE.
+To upgrade from dev.32 or earlier, extract the new package elsewhere, run its `advanced/Update Acbric.cmd`, then select the original folder and new ZIP. Packages without a supported manifest require fresh setup; Acbric does not migrate legacy layouts automatically.
 
-Updates still verify ownership manifests, file hashes and core versions. Edited files, path conflicts and occupied files block replacement. Verification does not authenticate the publisher. Keep `.acbric-maintenance` backups. After interrupted updates the EXE offers recovery first. If the entry itself is missing or damaged, use maintenance tools from a separately extracted complete package and select the original folder. Do not relocate it before recovery.
+Updates verify file ownership, hashes and core version. Edited, conflicting or occupied files block replacement; hash checks do not authenticate the publisher. After an interrupted update, follow the launcher's recovery flow and do not move the directory first.
 
-## Getting help
+## Troubleshooting
 
-Normal errors show a readable explanation and **Retry**, without a Java stack trace. Use **Help → Export diagnostics** to save a ZIP and send it to the developer yourself. Export requires confirmation: it contains the version, recent launcher/game-launch logs and potentially local paths, but no saves. Nothing is uploaded automatically. Each category contributes up to 10 logs, at most 1 MiB per log and 10 MiB total; large logs are truncated. Existing reports are not overwritten.
+Send launcher/maintenance logs for launcher problems and the native log to the MOD author for MOD-related game problems.
 
-**Help → Technical details** displays the latest operation's exception only when requested. If Java is missing or the GUI cannot open, the EXE shows a short explanation and an Open diagnostics folder button.
+- Launcher and maintenance logs: `%LOCALAPPDATA%/Acbric/launcher-logs`
+- Complete launch output: `<instance>/logs/acbric/launcher/launch-*.log`
+- Native log: `<instance>/userdata/log.txt`
+- Isolation backups: `<instance>/userdata/.acbric-sync-backup/<timestamp>`
 
-Diagnostic locations:
+Use **Help → Export diagnostics** to create a ZIP containing the version and recent logs. It does not include saves and is never uploaded automatically. **Help → Technical details** shows exception details only when opened.
 
-- Launcher/maintenance logs: `%LOCALAPPDATA%/Acbric/launcher-logs`.
-- Complete game launch output: `<instance>/logs/acbric/launcher/launch-*.log`.
-- Native game log: `<instance>/userdata/log.txt`; provide separately if needed. Export does not collect userdata.
-- Environment isolation backups: `<instance>/userdata/.acbric-sync-backup/<timestamp>`, holding whatever isolation replaced or removed; delete it yourself when it is no longer needed.
-- Advanced setup failures also retain temporary `acbric-setup-*.log` files; ordinary setup exceptions go to launcher logs.
+## Platform and limits
 
-Damaged configuration is preserved rather than reset or replaced with another guessed save folder. Export diagnostics; do not create an empty instance.json. Initial saving retains atomic directory publication, occupancy retries and locking.
-
-## Moving folders and limits
-
-Move the whole Acbric folder, open the EXE and confirm the game to rebind the original instance. For moved external instances, explicitly select the original folder in Advanced settings. Internal instance bindings are relative; external bindings are absolute.
-
-Currently Windows x64. Player packages include Java 21; minimal packages require a valid `JAVA_HOME`. The EXE is not code-signed. There is no online auto-update, automatic legacy import or uninstall wizard; the vanilla data is used directly by default and a copy is made only when you choose **Settings → Environment isolation**. Native GL issues, arbitrary MOD combinations and other devices require targeted acceptance.
+The current player distribution targets Windows x64. Default releases include a fixed Java 21 runtime and do not require a separate Java installation; only minimal packages built with `-PbundleRuntime=false` require a valid `JAVA_HOME`. The EXE is not code-signed. Online auto-update, automatic legacy import and an uninstall wizard are not provided.

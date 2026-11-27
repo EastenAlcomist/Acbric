@@ -9,7 +9,7 @@
 #    ./build.sh help             显示这段说明
 #    ./build.sh <gradle 任务...>  其余参数原样转发给 gradlew
 #
-#  这个脚本只做两件事：定位 JDK 21、把命令拼给 gradlew。
+#  这个脚本只做两件事：定位 JDK 21 或更高版本、把命令拼给 gradlew。
 #  构建逻辑全部在 build.gradle 里，所以 IDE、CI 和手敲 gradlew 的行为一致。
 #
 #  命名：刻意用 build.sh 而不是无扩展名的 build —— 后者在大小写不敏感的
@@ -26,7 +26,7 @@ if [ ! -f ./gradlew ]; then
 fi
 
 # ---------------------------------------------------------------------------
-#  定位 JDK 21：JAVA_HOME -> PATH 上的 java -> 常见安装目录
+#  定位 JDK 21 或更高版本：JAVA_HOME -> PATH 上的 java -> 常见安装目录
 #  只认主版本号 >= 21，避免在 PATH 指向 Java 8 的机器上装死。
 # ---------------------------------------------------------------------------
 java_major() {
@@ -95,15 +95,15 @@ fi
 
 if [ -z "$JH" ]; then
     cat >&2 <<'EOF'
-[build] 找不到 JDK 21。/ no JDK 21 found.
+[build] 找不到兼容的 JDK（需要 21 或更高版本）。/ No compatible JDK found (21 or newer is required).
 
-  本工程要求 JDK 21（build.gradle 里 sourceCompatibility = 21）。请任选一种：
-    1. 安装 JDK 21（Adoptium / Microsoft OpenJDK / Corretto / Homebrew openjdk@21 均可）
-    2. 设置 JAVA_HOME 指向已有的 JDK 21 后重试：
-         export JAVA_HOME=/path/to/jdk-21
+  本工程要求 JDK 21 或更高版本（Java source/target = 21）。请任选一种：
+    1. 安装 JDK 21 或更高版本（Adoptium / Microsoft OpenJDK / Corretto / Homebrew openjdk 均可）
+    2. 设置 JAVA_HOME 指向已有的兼容 JDK 后重试：
+         export JAVA_HOME=/path/to/jdk
 
-  This project requires JDK 21. Install one, or export JAVA_HOME pointing at an
-  existing JDK 21 installation, then run build again.
+  This project requires JDK 21 or newer. Install one, or export JAVA_HOME pointing
+  at an existing compatible JDK, then run build again.
 EOF
     exit 1
 fi
@@ -140,6 +140,6 @@ EOF
     i=$((i + 1))
 done
 
-echo "[build] JDK 21  = $JAVA_HOME"
+echo "[build] JDK     = $JAVA_HOME"
 echo "[build] gradlew $TASKS $*"
 exec ./gradlew $TASKS "$@"

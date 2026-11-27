@@ -2,25 +2,54 @@
 
 **English** | [中文](MOD_MANAGEMENT.zh-CN.md)
 
-API `0.3.3-dev.12` adds Java/Fabric mod controls to the game's mod list. **Changes apply on the next full game restart. Update both the launcher JAR and the API JAR.** No running classes or mixins are unloaded, and no mod archives are moved, renamed or deleted.
+Applies to `acbric_api 0.3.8`. The game's mod list provides Java/Fabric mod controls. **Changes apply on the next full game restart, and the launcher and API must come from the same distribution.** No running classes or mixins are unloaded, and no mod archives are moved, renamed or deleted.
+
+## Localized Java mod descriptions
+
+An optional localized description can be placed under `custom.acbric.description` in `fabric.mod.json` without changing the compatibility semantics of the standard `description` field:
+
+```json
+{
+  "description": "English fallback description.",
+  "custom": {
+    "acbric": {
+      "description": {
+        "en": "English description.",
+        "chi": "Chinese description.",
+        "de": "Deutsche Beschreibung.",
+        "fr": "Description française.",
+        "jpn": "日本語の説明。",
+        "kor": "한국어 설명.",
+        "ru": "Описание на русском."
+      }
+    }
+  }
+}
+```
+
+Keys use the native game language codes, currently `en`, `chi`, `de`, `fr`, `jpn`, `kor` and `ru`. Acbric selects by the active game Locale; `zh`/`zho` alias `chi`, `ja` aliases `jpn`, and `ko` aliases `kor`. If the active language is missing or malformed, Acbric falls back to English, then to the top-level `description`, so existing Java mods require no changes. The localized value is used by Fabric rows in the native mod list and by Acbric's mod details window; the standard Fabric metadata still stores only the top-level single string.
 
 ## Workflow
 
-Since dev.30, Acbric API and Java MOD rows remain visible even when no vanilla MOD is installed, including disabled Java MODs after restart. Only the screen's empty-list check changes; Java rows remain outside vanilla resource loading, Apply and Reload collections.
-
-To reproduce, use a freshly extracted framework and a new instance with Java MODs that contain no `acbric_vanilla` resources and no native `info.json` folders. Check API/Java rows, refresh, reopening and disabling/restarting. Automated entry: `python tools/test_external_release.py --game-dir <game> --java-home <JDK21> --tag <fresh-name> --installer --java-only`. Old dev.29 fails to enter the list drawing branch. Dev.30 passes 26 actual-screen assertions across two processes, covering empty lists, unavailable native rows, mixed rows, refresh/reopen and disabled restart while keeping Java rows out of native available/enabled collections. Also passes 988 standard checks; all 5,325 source game files are unchanged. This does not cover full campaigns, multiplayer or manual clicking of every button.
+Acbric API and Java MOD rows remain visible even when no vanilla MOD is installed, including disabled Java MODs after restart. Java rows remain outside vanilla resource loading, Apply and Reload collections.
 
 Open the mod screen and use **Disable** or **Enable** on a Fabric row. The selection is saved immediately; the status shows the pending restart action. Click again to undo. Restart the game to apply it. Disabled archives remain listed and can be enabled again.
 
-Since 0.3.6 the **multiplayer lobby panel** performs the same operation without leaving the lobby: click the `Acbric` status button at the lobby's top left and the panel lists the current state of Java MODs (AcMod) and native MODs and offers **disable/enable on next start**. The lobby previously had no mod controls at all, and the native mod screen always returns to the main menu with no way back into the lobby; the panel only writes the enabled state and never hot-reloads, so an already confirmed code manifest cannot be invalidated.
+The multiplayer lobby panel offers the same operation without leaving the lobby: select the `Acbric` status button at the top left to view Java MODs (AcMod) and native MODs and choose **disable/enable on next start**. The panel writes only the next-start state and never hot-reloads.
 
 Vanilla Apply, Reload, Reset and Disable All still apply only to vanilla data mods. They neither apply nor undo Java mod selections. Synthetic Java rows remain outside vanilla hot reload. Mod settings, saves and resources are preserved; whether a save works without a gameplay mod depends on that mod.
+
+## ACMODs embedded in native MODs
+
+The API scans both local and Steam-downloaded native MODs. If a native MOD root contains `AcbricMod/` with exactly one lowercase `.jar`, its row shows `carries AcbricMOD` and offers `Enable bundled ACMOD`. The API validates Fabric metadata, copies the JAR into the Java MOD folder, removes its ID from the disabled list, and then shows `Enabled`; Fabric loads it after the next restart.
+
+Different files with the same target name, damaged metadata, multiple JARs, protected IDs and linked paths are rejected or reported as conflicts without overwriting existing files. This is built into the API; do not install `acbric_embedded_mods` separately.
 
 Statuses distinguish loaded code, failed Acbric entrypoints, disabled mods and pending restart actions. Entrypoint success does not validate other entrypoint types, background tasks or gameplay.
 
 ## Scope and dependencies
 
-- Manages regular, visible, lowercase `.jar` files directly in the mod directory: `mods` beside Setup.cmd inside Acbric in external releases (`fabric.modsFolder`, independent of the native MOD root), or normally `game/mods` in legacy layouts; `fabric.modsFolder` is recognized.
+- Manages regular, visible, lowercase `.jar` files directly in the mod directory: `mods` beside `Acbric.exe` in external releases (`fabric.modsFolder`, independent of the native MOD root), or normally `game/mods` in legacy layouts; `fabric.modsFolder` is recognized.
 - Protects `acbric_api`, `fabricloader`, `airships`, `java` and `mixinextras`. Nested mods, development directories, multiple-path and external classpath origins are read-only. Manage embedded libraries through their parent mod.
 - Prechecks required `depends`, versions, `provides` aliases and hard `breaks` conflicts. Disable dependents first; enable libraries first. Other mods are never changed automatically.
 - Reads declared nested metadata within size, count and depth limits so parents with embedded dependencies can be enabled again. Complex candidate/version selection, cyclic groups and unscanned external sources may not be adjustable one row at a time. Fabric remains the final dependency resolver.
@@ -30,7 +59,7 @@ This release does not implement removal, downloads, upgrades, automatic dependen
 
 ## Bundled vanilla resources
 
-On the next launch, a disabled Java mod's resource directory `<Java mod ID>` under the local native MOD root (`mods` beside Setup.cmd inside Acbric in external releases) is blocked when it has valid `.acbric-bundle.json` ownership. Original resource bytes and native enable preferences remain intact. Re-enabling Java code restores normal native enable checks; it does not force a previously disabled native resource mod on.
+On the next launch, a disabled Java mod's resource directory `<Java mod ID>` under the local native MOD root (`mods` beside `Acbric.exe` in external releases) is blocked when it has valid `.acbric-bundle.json` ownership. Original resource bytes and native enable preferences remain intact. Re-enabling Java code restores normal native enable checks; it does not force a previously disabled native resource mod on.
 
 Ownership is checked by directory, so a different native ID in `info.json` works. Legacy unowned bundles require [explicit resource migration](BUNDLED_RESOURCES.md) first; the UI refuses to assume they are safely disabled. Unrelated same-named native directories are not adopted. Copies relocated elsewhere, cached copies and unowned resources are outside this filter.
 
@@ -53,8 +82,4 @@ The active startup snapshot is separate from pending settings, so clicks do not 
 
 If damaged configuration prevents startup, close the game, back up and correct the file. An explicitly empty `disabledMods` list restores manager-disabled mods. If a manually disabled library causes a Loader dependency error, restore it or disable its dependents as well. The framework does not suppress Loader errors. Distribution packages exclude this local selection and lock file.
 
-## Validation
-
-Regression tests cover configuration, protected components, dependency/alias/conflict checks and disk conflicts. Separate real Fabric processes for both game builds cover enabled → disabled → enabled restarts, actual entrypoint/mixin execution, nested libraries, list membership and native resource checks.
-
-Headless tests do not verify rendered controls, mouse interaction, complete campaigns or every third-party mod. Management classes are internal implementation, not a new stable public API.
+Management classes are internal implementation, not a stable public MOD API. Enabling or disabling does not verify a third-party MOD's gameplay, complete campaign saves or every module combination.

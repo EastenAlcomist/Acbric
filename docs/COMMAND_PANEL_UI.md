@@ -145,6 +145,6 @@ There are no custom icon tiles, cooldowns, collapsible sections, section headers
 
 This API draws and receives a click. It does **not** synchronize gameplay. A command that changes combat state must still use the game's deterministic command/network path, or otherwise follow the MOD's multiplayer authority rules. A local UI counter can remain local; shared effects cannot be assumed to replicate from the button callback alone.
 
-## Verification boundary
+## Known limits
 
-The standard UI suite verifies registration isolation, mixed label/toggle/button types, duplicate and capacity rejection, default/custom placement retention, horizontal/vertical layout retention, all anchor families, grouped-height sidebar positioning, offset clamping, dynamic-label deferral, toggle inversion, idempotent close and re-registration. Compilation verifies the real `CommandButtonsPanel` shadow and native draw signatures. An isolated Knot run on game 1.2.15.2 confirms the transformed AFTER injection and bridge classload. GPU placement, overlapping auxiliary panels, DPI/UI scaling, mouse focus switching and multiplayer authority still require targeted in-game acceptance.
+Window anchors can overlap game content or native controls, and dynamic subpanels may occupy nearby areas. Verify placement across selections, tools, DPI and UI scale in game. This API provides no synchronization, authorization or anti-cheat; multiplayer gameplay must use deterministic game commands or the MOD's own authority rules.

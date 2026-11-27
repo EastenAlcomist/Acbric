@@ -1,17 +1,22 @@
-Acbric 简明使用流程 — 0.3.8
+Acbric 简明使用流程 - 0.3.8
 
-1. 完整解压，双击 Acbric.exe。不要单独移动 EXE。
-2. 首次使用会自动查找 Steam 游戏。确认位置后点击“使用此游戏”；找不到时选择游戏文件夹。
-3. 点击“开始游戏”。以后仍使用同一个 EXE，不必重复安装。
-   需要使用 Steamworks 和创意工坊时，点击“Steam 启动（正版）”。游戏必须由 Steam 安装，当前登录账号必须拥有 App 342560；首次启动可能先同步订阅的创意工坊内容。
-4. “打开 MOD 文件夹”：Java MOD 放 .jar，原版 MOD 放直接含 info.json 的文件夹。API 已内置，不要重复添加。
-5. 增删和启停 Java MOD 后重启游戏。默认直接使用原版的存档与 MOD：点首页“一键同步”自动识别原版目录，
-   不复制文件（磁盘上只有一份）。需要这个实例用独立副本时，用“设置 → 环境隔离”。
+1. 完整解压发行包，双击 Acbric.exe。不要只移动 EXE。
+   默认发行包已携带 Java 21 runtime，不需要另外安装 Java。
+2. 首次使用时确认自动找到的 Steam 游戏并点击“使用此游戏”，也可以手动选择游戏文件夹。
+3. 点击“开始游戏”。以后仍使用同一个 EXE。
+4. 需要 Steamworks 和创意工坊时，点击“Steam 启动（正版）”。游戏必须安装在 Steam，当前登录账号必须拥有 App 342560；订阅的创意工坊内容可能先同步。
+5. Java MOD：将 .jar 放入 Acbric.exe 同层 mods。
+   原版 MOD：将直接包含 info.json 的文件夹放入当前数据环境的 mods。共享模式使用原版数据目录；环境隔离模式使用 Acbric 的 mods。
+   API 已内置，不要重复添加。修改 Java MOD 后重启游戏。
+6. 首页“一键同步”让当前实例直接使用原版存档与 MOD，不复制文件。
+   需要独立副本时使用“设置 → 环境隔离”。
 
-右上角可切换中文/English。设置中可更换游戏位置、安装本地更新 ZIP、恢复上一版；关闭游戏后操作。不要直接覆盖解压旧目录。
-遇到问题：帮助 → 导出诊断，将生成的 ZIP 自行发给开发者；不收集存档、不自动上传。
-保存和更新的原有保护仍生效。不要删除损坏配置或备份来绕过检查。
+设置中可以更换游戏位置、安装可信的本地更新 ZIP、恢复上一版。操作前关闭游戏，不要直接把更新包覆盖解压到旧目录。
 
-从 dev.32 或更早版首次升级：另行解压新包，用新包 advanced/Update Acbric.cmd 选择原目录和新 ZIP；之后可在 EXE 内更新。
-存档/设置默认在 instances/default/userdata；MOD 在本目录 mods。需要桌面入口时创建 Acbric.exe 快捷方式。
-完整说明：docs/INSTALLER.zh-CN.md。English: QUICK_START.txt
+遇到问题使用“帮助 → 导出诊断”生成 ZIP，再自行发送给开发者。诊断不包含存档，也不会自动上传。
+
+从 dev.32 或更早版首次升级：另行解压新包，运行其中的 advanced/Update Acbric.cmd，选择原 Acbric 目录和新 ZIP。之后可在 EXE 内更新。
+
+默认实例数据：instances/default
+完整说明：docs/INSTALLER.zh-CN.md
+English quick start: QUICK_START.txt

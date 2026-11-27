@@ -1,39 +1,31 @@
 # Acbric API Developer Guide
 
-Since dev.21, press the **backtick / tilde key** below Esc and left of 1 (physical `GRAVE`; Shift is optional) to open the console with the command field focused. The opening key is consumed. Ctrl/Alt/Meta combinations, inactive displays, native error/help/chat overlays, and existing Acbric windows do not trigger it. Close another Acbric window before using the shortcut. While the console is open this key remains ordinary text; use Esc/X/Close to dismiss. Holding the key cannot repeatedly reopen it. This is a fixed console shortcut, not a general key-binding API.
-
 **English** | [中文](API.zh-CN.md)
 
-Current navigation: [development workflow](DEVELOPMENT.md), [command API](COMMANDS.md), [developer tools and diagnostics](DEVELOPER_TOOLS.md). `context.commands()` is available since dev.20, with typed arguments, help/completion and closeable registrations; existing public APIs remain compatible.
+Current navigation: [development workflow](DEVELOPMENT.md), [command API](COMMANDS.md), [developer tools and diagnostics](DEVELOPER_TOOLS.md).
 
-Applies to **`acbric_api 0.3.8`**, an unpublished development version, not a stable release. This guide follows the source in this repository; older 0.3.2 binaries lack `RENAME_SHIP_*`, and campaign data requires dev.3 or newer.
+Applies to **`acbric_api 0.3.8`**. This guide follows the current source; see the [changelog](CHANGELOG.md) for version changes.
 
-- Installation, building and launching: [README.md](BUILDING.md).
-- Compatibility changes in this revision: [CHANGELOG.md](CHANGELOG.md).
+- Installation, building and launching: [build guide](BUILDING.md).
 - UI event contract: [EVENTS.md](EVENTS.md).
 - Bundled native resources, conflicts and migration: [BUNDLED_RESOURCES.md](BUNDLED_RESOURCES.md).
 - Game build identity and startup reports: [DIAGNOSTICS.md](DIAGNOSTICS.md).
 - Campaign persistence, migration and multiplayer boundaries: [CAMPAIGN_DATA.md](CAMPAIGN_DATA.md).
-
-- [MOD configuration: defaults, validation, migration, backups and explicit reload](CONFIG.md), requires dev.5.
+- MOD configuration: [defaults, validation, migration, backups and explicit reload](CONFIG.md).
 
 ## 1. Development setup and entrypoints
 
-Use JDK 21, `asplit-A.zip` / `asplit-B.zip` matching your game build, and this version of the API JAR. The framework API produces Java 21 bytecode. The template currently retains Java 17 source/target settings, but consuming the API, building and running still require JDK 21. The API version does not guarantee compatibility with a particular game version: mixins must match the actual game method descriptors.
+Use JDK 21 or newer, `asplit-A.zip` / `asplit-B.zip` matching your game build, and this version of the API JAR. The framework API produces Java 21 bytecode. An API version does not guarantee game-version compatibility: mixins must match the actual game method descriptors.
 
-Create a mod from the repository template:
+Create a standalone mod from `acbric-mod-template`:
 
 ```powershell
-# Run in the framework repository after supplying its dependencies
-.\gradlew.bat build syncModTemplateLibs
-
-# Copy the entire acbric-mod-template (including its local libs) to your own project,
-# then run these commands there
+# Copy the template, configure local.properties, then run these in that project
 .\gradlew.bat build
-.\gradlew.bat installMod -PgameDir='C:/Games/Acbric/game'
+.\gradlew.bat installMod
 ```
 
-`installMod` copies the JAR into the specified game's `mods/` directory; restart the game for it to take effect. The template's `libs/` directory is used only for compilation and is not bundled into the feature mod's JAR. Change the mod ID, name and version in `gradle.properties`, and update the package name, entrypoint path and icon path accordingly. Do not commit game dependencies or user data to your source repository.
+Configure `gameInstallDir`, `frameworkDir` and `instanceDir` as described in the [template guide](../acbric-mod-template/README.md). `installMod` copies the JAR to the target `mods/`; restart the game for it to take effect. Compilation dependencies are not bundled into the MOD JAR. Change the mod ID, name and version in `gradle.properties`, and update the package name, entrypoint path and icon path accordingly. Do not commit game dependencies or user data.
 
 A minimal entrypoint:
 
@@ -79,7 +71,7 @@ Corresponding `src/main/resources/fabric.mod.json`:
   "depends": {
     "java": ">=21",
     "fabricloader": ">=0.19.3",
-    "acbric_api": ">=0.3.3-dev.3",
+    "acbric_api": ">=0.3.8",
     "airships": "*"
   }
 }
@@ -104,13 +96,15 @@ Game data and UI objects may not yet exist during pre-launch. Register the appro
 | `configDir()` / `ensureConfigDir()` | Get / create this mod's configuration directory |
 | `dataDir()` / `ensureDataDir()` | Get / create this mod's data directory |
 | `logger()` | `AcbricLogger` tagged with this mod's ID |
-| `ui()` | Owner-scoped component-window tools since dev.13; see [UI](UI.md). |
+| `ui()` | Owner-scoped component-window tools; see [UI](UI.md). |
 | `commandPanelUi()` | Owner-scoped combat command-panel controls since 0.3.8; see [command-panel UI](COMMAND_PANEL_UI.md). |
-| `commands()` | Owner-scoped command registration since dev.20; see [command contract](COMMANDS.md). |
-| `sharedRules(int version, JSONObject values, SharedRules.Validator validator)` | Declare gameplay rules for this MOD (dev.10); see [contract](SHARED_RULES.md) |
-| `campaignData(Object worldMap)` | `CampaignData` scoped to this mod and the given map (since dev.3) |
-| `config(name, dataVersion, defaults, validator)` | Create a configuration handle; explicit I/O, migration and reload (dev.5), see [CONFIG](CONFIG.md) |
-| `eventScope(name)` | Create an independent managed subscription scope (dev.6), see [contracts](EVENT_SCOPES.md) |
+| `commands()` | Owner-scoped command registration; see [command contract](COMMANDS.md). |
+| `sharedRules(int version, JSONObject values, SharedRules.Validator validator)` | Declare gameplay rules for this MOD; see [contract](SHARED_RULES.md) |
+| `campaignData(Object worldMap)` | `CampaignData` scoped to this mod and the given map |
+| `config(name, dataVersion, defaults, validator)` | Create a configuration handle with explicit I/O, migration and reload; see [CONFIG](CONFIG.md) |
+| `eventScope(name)` | Create an independent managed subscription scope; see [contracts](EVENT_SCOPES.md) |
+
+Java MOD list descriptions may provide native language keys under `custom.acbric.description` in `fabric.mod.json` (currently `en`, `chi`, `de`, `fr`, `jpn`, `kor` and `ru`); the native list and Acbric details view select the active Locale, fall back to English, then to the top-level `description`. `description()` itself still returns the raw Fabric metadata string.
 
 You can also construct a logger with `new AcbricLogger(modId)`. It supports `info(String)`, `warn(String)`, `error(String)` and `error(String, Throwable)`. Messages use the format `[Acbric/<modId>/<level>] ...`. INFO goes to stdout; WARN and ERROR go to stderr. A supplied Throwable adds its stack trace. The logger does not manage rotation of separate log files.
 
@@ -122,7 +116,7 @@ The static methods in `net.fabricacs.api.util.AirshipsPaths` use the Fabric game
 | --- | --- |
 | `gameDir()` | `<runtime package>/game` |
 | `configDir()` | Fabric configuration root, normally `game/config` |
-| `modsDir()` | Actual Fabric MOD directory; external release: `mods` beside Setup.cmd inside Acbric; legacy default: `game/mods` |
+| `modsDir()` | Actual Fabric MOD directory; external release: `mods` beside `Acbric.exe`; legacy default: `game/mods` |
 | `staticDataDir()` | `game/data`, for static game data |
 | `generatedDir()` | `game/generated` |
 | `cacheDir()` | `game/.fabric/acbric/cache` |
@@ -247,7 +241,7 @@ example-mod.jar
     └── <native mod data and assets>
 ```
 
-On first launch, resources are extracted to `<Fabric mod ID>/` under the local native MOD root (`mods` beside Setup.cmd inside Acbric in external releases; `<AGame user data>/mods` in legacy layouts). Minimal metadata is generated if `info.json` is absent. Top-level JAR/ZIP sources are supported; nested JARs and unpacked directory sources are not currently processed. Resource-only mods can omit a Java entrypoint and do not need to declare a mixin they do not use.
+On first launch, resources are extracted to `<Fabric mod ID>/` under the local native MOD root (`mods` beside `Acbric.exe` in external releases; `<AGame user data>/mods` in legacy layouts). Minimal metadata is generated if `info.json` is absent. Top-level JAR/ZIP sources are supported; nested JARs and unpacked directory sources are not currently processed. Resource-only mods can omit a Java entrypoint and do not need to declare a mixin they do not use.
 
 Updates use the SHA-256 ownership records in `.acbric-bundle.json`. Unchanged managed files may be updated or removed; user edits, deletions and collisions with unowned files are preserved and reported. Old directories without ownership records are not adopted automatically, and corrupt records stop that update. Original directory backups are kept under `<user data>/.acbric-bundles/<id>/backups/`. The transaction journal supports recovery from process interruption; it does not guarantee full durability against hardware failures.
 
@@ -259,60 +253,54 @@ The public extension surface is `net.fabricacs.api` and its `event`, `util` and 
 
 For capabilities not yet covered by the API, declare mixins in your own mod and use the actual game bytecode to determine signatures, invocation owners and injection points. There are currently no mappings; use `remap=false`. Public API compatibility does not automatically make custom mixins compatible across game versions.
 
-The Fabric mod installation UI stages JARs, validates the schema/ID/version/structure of `fabric.mod.json`, and rejects overwriting an existing file with the same name. It does not preflight all dependencies, nested contents or mixin execution. Restart after installation. Since dev.12, the list also shows disabled archives in the scanned mod directory and supports enable/disable on the next full restart; see [MOD management](MOD_MANAGEMENT.md). Update both launcher and API; no hot unloading or archive removal.
+The Fabric mod installation UI stages JARs, validates the schema/ID/version/structure of `fabric.mod.json`, and rejects overwriting an existing file with the same name. It does not preflight all dependencies, nested contents or mixin execution. Restart after installation. The list also shows disabled archives in the scanned mod directory and supports enable/disable on the next full restart; see [MOD management](MOD_MANAGEMENT.md). Use a launcher and API from the same distribution; there is no hot unloading or archive removal.
 
-Since `0.3.3-dev.2`, GameProvider reads `AGame.VERSION` from bytecode before dependency resolution and reports recognized versions to Fabric. If unavailable or unrecognized, the normalized version falls back to `0.0.0` with a warning. Mods pinned to the former `0.0.0` placeholder may now fail dependency checks. Ordered game archive hashes distinguish different builds sharing a version number; they do not guarantee compatibility. Local session reports distinguish loaded mods from successful `acbric` entrypoints. See [diagnostics and compatibility details](DIAGNOSTICS.md); these reports introduce no new public mod API.
+GameProvider reads `AGame.VERSION` from bytecode before dependency resolution and reports recognized versions to Fabric. If unavailable or unrecognized, the normalized version falls back to `0.0.0` with a warning. Mods pinned to the former `0.0.0` placeholder may fail dependency checks. Ordered game archive hashes distinguish different builds sharing a version number; they do not guarantee compatibility. See [diagnostics and compatibility details](DIAGNOSTICS.md).
 
-## 10. Validation scope
-
-The standard build passes 597 headless assertions, including 62 config checks. Real Fabric probes on games 1.2.15.2 and 1.2.14 each pass 10 campaign-data and 31 lifecycle/demo-v3.1 checks plus 5 managed-event runtime checks. The latter include explicit event dispatch for configuration policies; they do not replace GUI or live multiplayer acceptance. User feedback for dev.4 reports no issues so far; dev.10 remains pending full manual acceptance.
-
-## 11. Campaign data
+## 10. Campaign data
 
 Use `context.campaignData(campaignWorld.map)` after obtaining the actual map. The `net.fabricacs.api.save` API provides `read`, `write`, `remove` and explicit `migrate`; reads return independent `CampaignDataSnapshot` values, and failed migrations preserve the original. Data is namespaced by mod ID, stored through the native save pipeline and restored with the map, including unknown mod namespaces. Serialization runs no mod callbacks.
 
 Writes affect local shared game state and **do not broadcast**. Use deterministic simulation/command execution on all peers. Handles belong to one map instance and must be reacquired after replacement. Supported values, exact contracts, schema handling and storage/recovery limits are in the [campaign data guide](CAMPAIGN_DATA.md).
 
-## 12. Campaign lifecycle
+## 11. Campaign lifecycle
 
-Since dev.4, `AirshipsCampaignEvents` exposes `CREATED`, `LOADED`, `RESTORED` and `EXITED`. Creation precedes the initial autosave; loaded JSON includes campaign extension data; restoration only rebinds local handles and must not mutate shared state. See [the full lifecycle contract](CAMPAIGN_LIFECYCLE.md). Existing public members remain available.
+`AirshipsCampaignEvents` exposes `CREATED`, `LOADED`, `RESTORED` and `EXITED`. Creation precedes the initial autosave; loaded JSON includes campaign extension data; restoration only rebinds local handles and must not mutate shared state. See [the full lifecycle contract](CAMPAIGN_LIFECYCLE.md).
 
-## 13. MOD configuration (dev.5)
+## 12. MOD configuration
 
 Use `context.config(...)` followed by explicit `load/migrate/save/reload`. Defaults fill missing fields only; failures retain the previous snapshot. Disk commits use backups and conflict checks. Local preferences may reload, while shared gameplay rules belong in campaign data. See [the configuration guide](CONFIG.md).
 
-## 14. Runtime diagnostics and event scopes (dev.6)
+## 13. Runtime diagnostics and event scopes
 
-`context.eventScope(name)` provides register/registerOnce/close. Managed failures report MOD/event/exception context; legacy semantics remain. See [full contracts](EVENT_SCOPES.md). Adds 81 scope and 27 diagnostic checks; see the changelog for real-loader coverage. GUI/live multiplayer acceptance remains manual.
+`context.eventScope(name)` provides register/registerOnce/close. Managed failures report MOD/event/exception context; legacy semantics remain. See [full contracts](EVENT_SCOPES.md).
 
-## 15. Local code manifests (dev.7)
+## 14. Local code manifests
 
-[Export and offline comparison](CODE_MANIFEST.md) are internal diagnostic tools, not a new public MOD API. The 597 standard checks include 45 new manifest checks. A CODE_MATCH result covers startup code identity only; lobby integration is available in dev.9, and dev.10 adds declared-rule checks; automatic state synchronization is not implemented. The internal handshake core is described below.
+[Export and offline comparison](CODE_MANIFEST.md) are internal diagnostic tools, not a public MOD API. A `CODE_MATCH` result covers startup code identity only; automatic state synchronization is not implemented.
 
-## 16. Internal code handshake (dev.8)
+## 15. Internal code handshake
 
-See [protocol and state contract](CODE_HANDSHAKE.md). This is package-private framework infrastructure with 77 new regression checks, not a public MOD networking API. Real native Server/Client probes exercise it on both supported game snapshots; dev.9 runs it automatically in campaign lobbies. The core result remains local evidence rather than permission to start.
+See [protocol and state contract](CODE_HANDSHAKE.md). This is framework-internal infrastructure, not a public MOD networking API. The core result remains local evidence rather than permission to start.
 
-## 17. Campaign lobby integration (dev.9)
+## 16. Campaign lobby integration
 
 See [player behavior and integration contract](LOBBY_HANDSHAKE.md). Code failure blocks ready/start; changing context revokes preparation. All participants need matching code and a supporting framework. Existing MOD interfaces remain compatible, but this does not permit mixed old/new frameworks in a room. There is no new public networking API or automatic state/configuration synchronization.
 
-## 18. Shared gameplay rules (dev.10)
+## 17. Shared gameplay rules
 
-Declare with `context.sharedRules`, retain a `SharedRules` handle for candidates, and read frozen values through `forCampaign(world.map)`. See the [complete contract and example](SHARED_RULES.md). Validators must be pure; missing/incompatible saved rules never silently adopt local defaults. All peers must match before preparation; changed candidates revoke preparation without overwriting configuration. Adds the public `rules` package and one mixin, for 20 in total.
+Declare with `context.sharedRules`, retain a `SharedRules` handle for candidates, and read frozen values through `forCampaign(world.map)`. See the [complete contract and example](SHARED_RULES.md). Validators must be pure; missing/incompatible saved rules never silently adopt local defaults. Since 0.3.6 the host broadcasts a rule snapshot, which other players validate locally before adopting; rule changes do not revoke preparation or overwrite local configuration.
 
-## 19. Saved rule preflight and conversion (dev.11)
+## 18. Saved rule preflight and conversion
 
-`SharedRules.migration` registers direct schema upgrades. `CampaignRuleSaves.inspect` returns a report, `prepare` previews before/after values, and `writeNew` publishes only to an absent new directory. Normal loading never migrates or adopts defaults. See the [complete contract](RULE_SAVE_MIGRATION.md). Adds `OpenGameMissionMixin`, for 21 mixins; malformed storage, changed sources and destination conflicts explicitly fail.
+`SharedRules.migration` registers direct schema upgrades. `CampaignRuleSaves.inspect` returns a report, `prepare` previews before/after values, and `writeNew` publishes only to an absent new directory. Normal loading never migrates or adopts defaults. See the [complete contract](RULE_SAVE_MIGRATION.md). Malformed storage, changed sources and destination conflicts explicitly fail.
 
-## 20. Shared UI components (dev.13)
+## 19. Shared UI components
 
-`context.ui()` registers MOD tools and opens native-style component windows. `Ui` builds labels, buttons, toggles, single-line text, rows, columns, panels and scroll regions. `UiWindowHandle` owns dialogs and cleanup resources. See [UI.md](UI.md) for signatures, lifecycle, thread rules, examples and limitations. Native simulation/network ticks continue under modal UI. Framework [MOD details](MOD_MANAGEMENT.md) use the same components.
+`context.ui()` registers MOD tools and opens native-style component windows. `Ui` builds labels, buttons, toggles, single-line text, rows, columns, panels and scroll regions. `UiWindowHandle` owns dialogs and cleanup resources. See [UI](UI.md) for signatures, lifecycle, thread rules, examples and limitations. Native simulation/network ticks continue under modal UI.
 
-Localization: dev.14 adds `AcbricLanguage.text(english, chinese)` and `ModUi.register(id, Supplier<String>, factory)`; see [UI.md](UI.md).
+Localization uses `AcbricLanguage.text(english, chinese)` and `ModUi.register(id, Supplier<String>, factory)`. `UiScale.setPercent(50..200)`, `percent()` and `useVanilla()` adjust the native UI scale; out-of-range requests throw `IllegalArgumentException`. See the [UI and scaling contract](UI.md#native-ui-scaling).
 
-Native UI percentage scaling is available through `UiScale.setPercent(50..200)`, `percent()` and `useVanilla()` since 0.3.7. See [UI scaling contract and example](UI.md#percentage-scaling-of-the-native-ui-037); consuming MODs require `acbric_api >=0.3.7`. Version 0.3.7.1 fixes raster quality.
-
-## 21. Combat command-panel controls (0.3.8)
+## 20. Combat command-panel controls
 
 `context.commandPanelUi()` registers up to four native-style items per MOD for the main combat command panel. The surface supports buttons, native toggles and status labels; text, toggle state, tooltips and enabled states may be dynamic. Accepted button/toggle interactions use the game's `MyDraw` / Hooks path. Registrations may select a native-panel-above anchor or a top/center/bottom viewport anchor, plus a bounded pixel offset and horizontal or vertical layout. Existing overloads keep `PANEL_ABOVE_CENTER` and `HORIZONTAL`; `VERTICAL` produces a grouped sidebar. The surface does not resize the native panel, synchronize gameplay or provide hotkeys. See the [command-panel UI contract](COMMAND_PANEL_UI.md).

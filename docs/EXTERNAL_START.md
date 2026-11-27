@@ -1,72 +1,60 @@
-# Acbric external distribution launcher (0.3.5.1)
+# Acbric external distribution and launch
 
 [中文](EXTERNAL_START.zh-CN.md)
 
-Experimental Windows x64 framework distribution. Bring a complete local game installation and Java 21. No game code, resources, game libraries or player data are included. The graphical setup wizard includes Steam discovery. Local ZIP update/restoration and bilingual quick-start files are available; online auto-update is not implemented. Use a fresh instance and follow these instructions to reinstall MODs and configure settings; automatic migration from legacy layouts is not provided.
+The external Acbric distribution uses an existing game installation. It does not contain game code, assets, game dependencies or player data. Use `Acbric.exe` normally; `advanced/` contains compatibility and diagnostic tools.
 
 ```text
 Acbric/
-├─ Acbric.exe            配置与启动 / Setup and play
-├─ advanced/             兼容维护入口 / Compatibility tools
+├─ Acbric.exe
+├─ advanced/
 ├─ mods/
-│  ├─ arc-overhaul.jar
-│  └─ native-mod/info.json
 ├─ core/acbric-api.jar
+├─ loader-libs/
+├─ runtime/             default Java 21 runtime
 └─ instances/default/...
 ```
 
-Old instance `mods`, `userdata/mods` and the original User folder are not scanned for local MODs. Close the game and copy MODs manually; native folders must directly contain `info.json`. Import native `.amod` archives using the game’s Install MOD action.
+Place Java `.jar` files in Acbric's `mods/`. Native MODs use the active data environment's native `mods/`: the vanilla data directory in shared mode or Acbric's `mods/` in isolation. Native folders must directly contain `info.json`; import `.amod` archives through the game. Legacy directories are not scanned automatically.
 
-## Recommended: unified launcher
+## Player entry
 
-Open **Acbric.exe**, confirm the discovered game and select **Use this game**. Select **Start game** in the same entry thereafter. Ordinary setup requires no instance path or separate check/save steps. The original setup UI is under Settings → Advanced settings; legacy CMD tools are in `advanced/`. See the [player guide](INSTALLER.md).
+Open `Acbric.exe`, confirm the game location and select **Use this game**, then select **Start game**. See the [player guide](INSTALLER.md) for Steam launch, environment isolation, updates and recovery.
 
 ## Manual launch
 
-Extract the package and run in PowerShell, replacing paths with your local paths:
+Players normally do not need this command. For diagnostics, run it from a complete distribution:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "C:/Tools/Acbric/start.ps1" -GameDir "C:/Games/Airships" -InstanceDir "C:/AcbricInstances/default" -JavaHome "C:/Java/jdk-21"
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:/Tools/Acbric/start.ps1" -GameDir "C:/Games/Airships" -InstanceDir "C:/AcbricInstances/default"
 ```
 
-`GameDir` contains `Airships.json` and `asplit-A.zip`. `InstanceDir` is a separate writable directory; neither may contain the other. Pass both paths on each launch without copying the game. If `JavaHome` is omitted, the optional bundled `runtime` takes precedence over `JAVA_HOME`. Do not use the game's Java 8. After moving directories, pass their new paths.
+`GameDir` must contain `Airships.json` and the game A/B archives. `InstanceDir` is writable and must not contain or be contained by the game. If `JavaHome` is omitted, the package `runtime` takes precedence over `JAVA_HOME`. Do not use the game's Java 8.
 
-The launcher verifies SHA-256 hashes of the core and launch dependencies, rechecks the game, then starts a child JVM with the instance as its working directory. The API loads from `core/acbric-api.jar` in the package; **do not copy another API into mods**. The manifest detects missing/changed files; it is not a digital signature. Do not distribute hand-built Knot or internal probe commands as player launchers.
+The launcher verifies its core and launch dependencies, rechecks the game and starts a child JVM in the instance directory. The API loads from `core/acbric-api.jar`; do not copy it into `mods`. Hashes detect missing or changed files; they are not a digital signature.
 
-Only one game process can use an instance at a time. Original installation settings stay unchanged; instances are isolated and do not automatically import existing saves.
+## Data locations
 
-## MODs, settings and logs
+- MODs: `<Acbric folder>/mods/`
+- Saves and native settings: `<InstanceDir>/userdata/`
+- MOD configuration: `<InstanceDir>/config/`
+- Launch overrides: `<InstanceDir>/config/launch-settings.json`
+- Launch log: `<InstanceDir>/logs/acbric/launcher/launch-*.log`
+- Native log: `<InstanceDir>/userdata/log.txt`
 
-- Java MODs, native MODs and bundled resources: `<Acbric framework folder>/mods/`.
-- Saves and native settings: `<InstanceDir>/userdata/`.
-- MOD configuration: `<InstanceDir>/config/`.
-- Launch overrides: `<InstanceDir>/config/launch-settings.json`; native data and GIF output paths remain forced inside the instance.
-- Complete launch output: `<InstanceDir>/logs/acbric/launcher/launch-*.log`; native log: `userdata/log.txt`.
-- Early lookup/core failures: the console prints the temporary `acbric-bootstrap-*.log` or `acbric-launch-*.log` location.
+Instances are isolated by default and do not import old saves automatically. The first launch creates local texture caches; do not share instances, caches or game copies. Third-party Java MODs can still write outside the instance.
 
-First launch creates local texture caches. Do not share instances, caches or game copies with the framework. Arbitrary third-party Java MODs can still write outside the instance.
-
-## Build a distribution or MOD
+## Build a distribution
 
 ```powershell
 .\gradlew.bat externalDistZip -PexternalGameDir="C:/Games/Airships"
-# Optional: include an independent runtime built from the current JDK 21
-.\gradlew.bat externalDistZip -PexternalGameDir="C:/Games/Airships" -PbundleRuntime
+.\gradlew.bat externalDistZip -PexternalGameDir="C:/Games/Airships" -PbundleRuntime=false
 ```
 
-Output: `build/external-dist/Acbric-external-<version>.zip`; recursive content verification: `verification.json` alongside it. Do not share legacy `distZip`: it still includes local game content and remains only for legacy development.
+The default command uses JDK 21 `jlink` to include a fixed Java 21 runtime; the second creates a minimal package without one. Output is `build/external-dist/Acbric-external-<version>.zip`, with `verification.json` alongside it.
 
-In `acbric-mod-template/`, copy `local.properties.example` to `local.properties`. Set local `gameInstallDir`, this distribution's `frameworkDir`, and target `instanceDir`; build using JDK 21. Dependencies are referenced without copying the game into the template. Private paths and legacy libs are excluded from Git/distribution lists. `installMod` requires an explicitly configured target instance.
+The external distribution does not include the game. `externalGameDir` is used only to verify that no local game content entered the package. Legacy `distZip` includes the local game directory and is intended only for legacy-layout development.
 
 ## Known limits
 
-See [external validation](EXTERNAL_INSTALL.md) for menu, campaign and media evidence and limitations. The terrain GL error also reproduced in the legacy layout is deferred by user decision and does not block the installation refactor; it is not fixed. Workshop, arbitrary MODs, other devices and GPU combinations need further acceptance. Setup and local update/restoration are available; uninstall remains a later phase; automatic legacy-data migration is outside the development plan.
-
-## Developer acceptance
-
-```powershell
-python tools/test_distribution_scan.py
-python tools/test_external_release.py --game-dir "C:/Games/Airships" --java-home "C:/Java/jdk-21" --tag releasecheck
-```
-
-Build `regressionTestClasses` and `externalDistZip` first. This creates a fresh isolated directory under build, briefly opens the real game and exits via a test-only MOD after observing menu frames. It also verifies lock rejection, bundle corruption, an invalid installation and independent template compilation. `--arc-jar <path>` optionally adds ARC. Reports are in `build/external-release-tests/<tag>/`; use a fresh tag each time. The production bundle contains no test MOD.
+The current player workflow targets Windows x64. Workshop, arbitrary MODs, other devices and different GPU configurations still require targeted testing. The native terrain GL issue remains deferred, and its origin has not been established.
